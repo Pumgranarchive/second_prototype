@@ -1,0 +1,1 @@
+{ "options" : { "create" : "tags" }, "indexes" : [ { "v" : 1, "key" : { "_id" : 1 }, "ns" : "pumgrana.tags", "name" : "_id_" } ] }
