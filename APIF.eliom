@@ -1,3 +1,8 @@
+(*
+** API Format
+** This module provides some functions to easily format API services' return
+*)
+
 module Yj = Yojson.Safe
 
 let content_type = "JSON"
