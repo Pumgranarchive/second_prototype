@@ -10,6 +10,8 @@ let content_type = "JSON"
 let id_field = "_id"
 let tagsid_field = "tags_id"
 let targetid_field = "target_id"
+let text_field = "text"
+let title_field = "title"
 
 let contents_coll = Mongo.create API_conf.db_url API_conf.db_port
   API_conf.db_name API_conf.contents_coll_name
@@ -17,6 +19,13 @@ let tags_coll = Mongo.create API_conf.db_url API_conf.db_port
   API_conf.db_name API_conf.tags_coll_name
 let links_coll = Mongo.create API_conf.db_url API_conf.db_port
   API_conf.db_name API_conf.links_coll_name
+
+let yes_value = Bson.create_boolean true
+
+let content_format =
+  Bson.add_element id_field yes_value
+    (Bson.add_element title_field yes_value
+       (Bson.add_element text_field yes_value Bson.empty))
 
 (*** This part of code is currently not use  *)
 let content ((id:int), (title:string), (text:string)) =

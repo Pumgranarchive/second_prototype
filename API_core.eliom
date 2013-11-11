@@ -22,10 +22,10 @@ let get_detail content_id =
     let objectId = Bson.create_objectId content_id in
     let bson_condition = Bson.add_element API_tools.id_field objectId Bson.empty
     in
-    let result = Mongo.find_q_one API_tools.contents_coll bson_condition in
+    let result = Mongo.find_q_s_one API_tools.contents_coll bson_condition
+      API_tools.content_format in
     let result_bson = List.hd (MongoReply.get_document_list result) in
-    let lt_rbson = Bson.remove_element API_tools.tagsid_field result_bson in
-    let jcontent =  yojson_of_bson lt_rbson in
+    let jcontent =  yojson_of_bson result_bson in
     API_tools.detail_f API_conf.return_ok jcontent
   with
   | e -> print_endline (Printexc.to_string e);
@@ -43,12 +43,10 @@ let get_detail_by_link link_id =
     let ct_bson_condition =
       Bson.add_element API_tools.id_field target_id Bson.empty
     in
-    let ct_result = Mongo.find_q_one API_tools.contents_coll ct_bson_condition
-    in
+    let ct_result = Mongo.find_q_s_one API_tools.contents_coll ct_bson_condition
+      API_tools.content_format in
     let ct_result_bson = List.hd (MongoReply.get_document_list ct_result) in
-    let lt_ct_rbson = Bson.remove_element API_tools.tagsid_field ct_result_bson
-    in
-    let jcontent = yojson_of_bson lt_ct_rbson in
+    let jcontent = yojson_of_bson ct_result_bson in
     API_tools.detail_f API_conf.return_ok jcontent
   with
   | e -> print_endline (Printexc.to_string e);
@@ -72,11 +70,10 @@ let get_contents filter tags_id =
       | None    -> Bson.empty
       | Some x  -> make_bson_condition Bson.empty x
     in
-    let results = Mongo.find_q API_tools.contents_coll bson_condition in
+    let results = Mongo.find_q_s API_tools.contents_coll bson_condition
+      API_tools.content_format in
     let results_bson = MongoReply.get_document_list results in
     let jcontents = yojson_of_bson_document results_bson in
-
-    (* The return contain tags_id field *)
     API_tools.contents_f API_conf.return_ok jcontents
   with
   | e -> print_endline (Printexc.to_string e);
