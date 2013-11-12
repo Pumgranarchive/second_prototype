@@ -53,7 +53,7 @@ let get_detail_by_link link_id =
     API_tools.detail_f API_conf.return_fail `Null
 
 (* Currently filter does not use,
-   because we are not enought informations in the DB *)
+   because we have enought informations in the DB *)
 let get_contents filter tags_id =
   try
     (* This condition is not good
