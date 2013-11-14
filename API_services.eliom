@@ -27,7 +27,7 @@ let _ =
 (* Contents service is registered is twist step to allow
    pumgrana application to get its reference link. *)
 let contents =
-  Eliom_service.Unsafe.service
+  Eliom_service.Http.service
     ~path:["content"; "list_content"]
     ~get_params:Eliom_parameter.(opt (int "filter") **
                                    opt (list "tags" (string "id")))
