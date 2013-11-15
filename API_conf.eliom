@@ -12,8 +12,8 @@ let tags_coll_name = "tags"
 let links_coll_name = "links"
 
 (* Return values *)
-let return_fail = 0
-let return_ok = 1
+let return_fail = 500
+let return_ok = 200
 
 (* Filter Values *)
 let most_recent = 0

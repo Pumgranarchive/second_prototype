@@ -60,19 +60,12 @@ let get_detail_by_link link_id =
    because we haven't enought informations in the DB *)
 let get_contents filter tags_id =
   try
-    (* This condition is not good
-       It is like OR gate on each tag. *)
-    let rec make_bson_condition bson_condition = function
-      | []      -> bson_condition
-      | id::t   -> make_bson_condition
-        (Bson.add_element API_tools.tagsid_field
-           (Bson.create_objectId id)
-           bson_condition) t
-    in
-
     let bson_condition = match tags_id with
       | None    -> Bson.empty
-      | Some x  -> make_bson_condition Bson.empty x
+      | Some x  -> Bson.add_element API_tools.tagsid_field
+        (Bson.create_doc_element
+           (MongoQueryOp.all (List.map Bson.create_objectId x)))
+        Bson.empty
     in
     let results = Mongo.find_q_s API_tools.contents_coll bson_condition
       API_tools.content_format in
