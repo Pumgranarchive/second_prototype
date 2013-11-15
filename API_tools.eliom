@@ -12,6 +12,8 @@ let tagsid_field = "tags_id"
 let targetid_field = "target_id"
 let text_field = "text"
 let title_field = "title"
+let subject_field = "subject"
+let type_field = "type"
 
 let contents_coll = Mongo.create API_conf.db_url API_conf.db_port
   API_conf.db_name API_conf.contents_coll_name
@@ -26,6 +28,10 @@ let content_format =
   Bson.add_element id_field yes_value
     (Bson.add_element title_field yes_value
        (Bson.add_element text_field yes_value Bson.empty))
+
+let tag_format =
+  Bson.add_element id_field yes_value
+    (Bson.add_element subject_field yes_value Bson.empty)
 
 (*** This part of code is currently not use  *)
 let content ((id:int), (title:string), (text:string)) =
@@ -48,7 +54,7 @@ let tag ((id:int), (subject:string)) =
 let tag_list = flist tag
 (*** End of unused part of code  *)
 
-(** Help to format return *)
+(** Help to format the returned value *)
 let return_f param_name status (param_value:Yj.json) =
   `Assoc [("status", `Int status);
           (param_name, param_value) ]
@@ -58,3 +64,6 @@ let detail_f = return_f "content"
 
 (** Help to format contents return *)
 let contents_f = return_f "contents"
+
+(** Help to format API_service.tags return *)
+let tags_f = return_f "tags"
