@@ -52,7 +52,8 @@ let _ =
 *)
 
 
-let tags = 
+(*** list_tag *)
+let list_tags = 
   Eliom_service.Http.service
     ~path:["tags"; "list_tag"]
     ~get_params:Eliom_parameter.(list "tags" (string "id"))
@@ -61,7 +62,25 @@ let tags =
 let _ = 
   Eliom_registration.String.register
     ~content_type:API_tools.content_type
-    ~service:tags
+    ~service:list_tags
     (fun (tags_id) () ->
       Lwt.return (Yj.to_string (API_core.get_tags tags_id),
                   API_tools.content_type))
+
+(*** get_tags_by_type *)
+let get_tags_by_type = 
+  Eliom_service.Http.service
+    ~path:["tags"; "get_tags_by_type"]
+    ~get_params:Eliom_parameter.(int "type_name")
+    ()
+
+let _ = 
+  Eliom_registration.String.register
+    ~content_type:API_tools.content_type
+    ~service:get_tags_by_type
+    (fun (tag_type) () ->
+      Lwt.return (Yj.to_string (API_core.get_tags_by_type tag_type),
+                  API_tools.content_type))
+
+
+

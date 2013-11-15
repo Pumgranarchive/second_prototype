@@ -112,3 +112,23 @@ let get_tags tags_id =
   | e -> print_endline (Printexc.to_string e);
     API_tools.tags_f API_conf.return_fail `Null
 
+
+
+
+let get_tags_by_type tag_type = 
+  try
+    let convert_param = API_conf.(if tag_type = link_tag then link_tag_str else content_tag_str)
+    in
+    let objectId = Bson.create_string convert_param in
+    let bson_condition = Bson.add_element API_tools.type_field objectId Bson.empty
+    in
+    let result = Mongo.find_q_s API_tools.tags_coll bson_condition
+      API_tools.tag_format in
+    let result_bson = MongoReply.get_document_list result in
+    let jcontent =  yojson_of_bson_document result_bson in
+    API_tools.tags_f API_conf.return_ok jcontent
+  with
+  | e -> print_endline (Printexc.to_string e);
+    API_tools.tags_f API_conf.return_fail `Null
+
+

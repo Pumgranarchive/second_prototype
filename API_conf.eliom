@@ -19,3 +19,10 @@ let return_ok = 1
 let most_recent = 0
 let most_used = 1
 let most_view = 2
+
+(* Tag types *)
+let link_tag = 0
+let content_tag = 1
+
+let link_tag_str = "Link"
+let content_tag_str = "Content"
