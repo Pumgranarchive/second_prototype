@@ -16,6 +16,10 @@ let yojson_of_bson_document bson_l =
   in
   `List (List.rev (aux [] bson_l))
 
+(*
+** Content
+*)
+
 (*** Getters *)
 let get_detail content_id =
   try
@@ -52,8 +56,8 @@ let get_detail_by_link link_id =
   | e -> print_endline (Printexc.to_string e);
     API_tools.detail_f API_conf.return_fail `Null
 
-(* Currently filter does not use,
-   because we are not enought informations in the DB *)
+(* Currently, filter is not used,
+   because we haven't enought informations in the DB *)
 let get_contents filter tags_id =
   try
     (* This condition is not good
@@ -78,3 +82,33 @@ let get_contents filter tags_id =
   with
   | e -> print_endline (Printexc.to_string e);
     API_tools.contents_f API_conf.return_fail `Null
+
+
+(*
+** Tags
+*)
+
+(*** Getters *)
+
+let get_tags tags_id =
+  try
+    (* This condition is not good
+       It is like OR gate on each tag. *)
+    let rec make_bson_condition bson_condition = function
+      | []      -> bson_condition
+      | id::t   -> make_bson_condition
+        (Bson.add_element API_tools.id_field
+           (Bson.create_objectId id)
+           bson_condition) t
+    in
+
+    let bson_condition = make_bson_condition Bson.empty tags_id in
+    let results = Mongo.find_q_s API_tools.tags_coll bson_condition
+      API_tools.tag_format in
+    let results_bson = MongoReply.get_document_list results in
+    let jcontents = yojson_of_bson_document results_bson in
+    API_tools.tags_f API_conf.return_ok jcontents
+  with
+  | e -> print_endline (Printexc.to_string e);
+    API_tools.tags_f API_conf.return_fail `Null
+
