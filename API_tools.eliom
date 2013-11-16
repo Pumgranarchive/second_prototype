@@ -5,7 +5,8 @@
 
 module Yj = Yojson.Safe
 
-let content_type = "JSON"
+(* content type return by API' services *)
+let content_type = "application/json"
 
 let id_field = "_id"
 let tagsid_field = "tags_id"
