@@ -103,7 +103,7 @@ let get_tags tags_id =
 
     let bson_condition = match tags_id with
       | []      -> Bson.empty
-      | id::t	-> (MongoQueryOp.or_op (List.map (document_of_tag) tags_id))
+      | id::t	-> (MongoQueryOp.or_op (List.map document_of_tag tags_id))
 
     in
     let results = Mongo.find_q_s API_tools.tags_coll bson_condition
@@ -144,15 +144,13 @@ let get_tags_from_content content_id =
 
 
     (* step 2: request the associated tags *)
-    let tagsid_field = Bson.get_element API_tools.tagsid_field content_bson in
-    let document_of_tag tag_id = 
-      (Bson.add_element API_tools.id_field (Bson.create_objectId tag_id) Bson.empty)
+    let tag_id_list = Bson.get_list(Bson.get_element API_tools.tagsid_field content_bson) in
+    let document_of_tag_id_list tag_id_list = 
+      (Bson.add_element API_tools.id_field tag_id_list Bson.empty)
     in
     let tag_bson_condition =
       (MongoQueryOp.or_op
-      	 (List.map document_of_tag
-            (List.map Bson.get_objectId
-    	       (Bson.get_list tagsid_field))))
+      	 (List.map document_of_tag_id_list tag_id_list))
     in
     let results_tag = Mongo.find_q_s API_tools.tags_coll tag_bson_condition
       API_tools.tag_format in
