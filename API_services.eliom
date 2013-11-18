@@ -14,7 +14,7 @@ module Yj = Yojson.Safe
 let _ =
   Eliom_registration.String.register_service
     ~content_type:API_tools.content_type
-    ~path:["content"; "detail"]
+    ~path:["api"; "content"; "detail"]
     ~get_params:Eliom_parameter.(suffix (string "content_id"))
     (fun content_id () ->
       Lwt.return (Yj.to_string (API_core.get_detail content_id),
@@ -23,7 +23,7 @@ let _ =
 let _ =
   Eliom_registration.String.register_service
     ~content_type:API_tools.content_type
-    ~path:["content"; "detail_by_link"]
+    ~path:["api"; "content"; "detail_by_link"]
     ~get_params:Eliom_parameter.(suffix (string "link_id"))
     (fun link_id () ->
       Lwt.return (Yj.to_string (API_core.get_detail_by_link link_id),
@@ -33,7 +33,7 @@ let _ =
    pumgrana application to get its reference link. *)
 let contents =
   Eliom_service.Http.service
-    ~path:["content"; "list_content"]
+    ~path:["api"; "content"; "list_content"]
     ~get_params:Eliom_parameter.(suffix (opt (string "filter") **
                                            opt (list "tags" (string "id"))))
     ()
@@ -54,7 +54,7 @@ let _ =
 
 let tags =
   Eliom_service.Http.service
-    ~path:["tags"; "list_tag"]
+    ~path:["api"; "tags"; "list_tag"]
     ~get_params:Eliom_parameter.(list "tags" (string "id"))
     ()
 
