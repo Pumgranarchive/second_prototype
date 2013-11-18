@@ -94,16 +94,15 @@ let get_contents filter tags_id =
 let get_tags tags_id =
   try
 
-    let tag_to_document tag_id = 
+    let document_of_tag tag_id = 
       (Bson.add_element API_tools.id_field (Bson.create_objectId tag_id) Bson.empty)
     in
 
     let bson_condition = match tags_id with
       | []      -> Bson.empty
-      | id::t	-> (MongoQueryOp.or_op (List.map (tag_to_document) tags_id))
+      | id::t	-> (MongoQueryOp.or_op (List.map (document_of_tag) tags_id))
 
     in
-    (* let bson_condition = make_bson_condition Bson.empty tags_id in *)
     let results = Mongo.find_q_s API_tools.tags_coll bson_condition
       API_tools.tag_format in
     let results_bson = MongoReply.get_document_list results in
@@ -129,5 +128,37 @@ let get_tags_by_type tag_type =
   with
   | e -> print_endline (Printexc.to_string e);
     API_tools.tags_f API_conf.return_fail `Null
+
+
+let get_tags_from_content content_id =
+  try
+    (* step 1: request the content *)
+    let content_objectId = Bson.create_objectId content_id in
+    let content_bson_condition = Bson.add_element API_tools.id_field content_objectId Bson.empty
+    in
+    let result_content = Mongo.find_q_one API_tools.contents_coll content_bson_condition in
+    let content_bson = List.hd(MongoReply.get_document_list result_content) in
+
+
+    (* step 2: request the associated tags *)
+    let tagsid_field = Bson.get_element API_tools.tagsid_field content_bson in
+    let document_of_tag tag_id = 
+      (Bson.add_element API_tools.id_field (Bson.create_objectId tag_id) Bson.empty)
+    in
+    let tag_bson_condition =
+      (MongoQueryOp.or_op
+      	 (List.map document_of_tag
+            (List.map Bson.get_objectId
+    	       (Bson.get_list tagsid_field))))
+    in
+    let results_tag = Mongo.find_q_s API_tools.tags_coll tag_bson_condition
+      API_tools.tag_format in
+    let results_bson = MongoReply.get_document_list results_tag in
+    let jcontent = yojson_of_bson_document results_bson in
+    API_tools.tags_f API_conf.return_ok jcontent
+
+  with
+  | e -> print_endline (Printexc.to_string e);
+    API_tools.detail_f API_conf.return_fail `Null
 
 
