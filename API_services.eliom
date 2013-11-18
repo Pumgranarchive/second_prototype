@@ -15,7 +15,7 @@ let _ =
   Eliom_registration.String.register_service
     ~content_type:API_tools.content_type
     ~path:["content"; "detail"]
-    ~get_params:Eliom_parameter.(string "content_id")
+    ~get_params:Eliom_parameter.(suffix (string "content_id"))
     (fun content_id () ->
       Lwt.return (Yj.to_string (API_core.get_detail content_id),
                   API_tools.content_type))
@@ -24,7 +24,7 @@ let _ =
   Eliom_registration.String.register_service
     ~content_type:API_tools.content_type
     ~path:["content"; "detail_by_link"]
-    ~get_params:Eliom_parameter.(string "link_id")
+    ~get_params:Eliom_parameter.(suffix (string "link_id"))
     (fun link_id () ->
       Lwt.return (Yj.to_string (API_core.get_detail_by_link link_id),
                   API_tools.content_type))
@@ -34,8 +34,8 @@ let _ =
 let contents =
   Eliom_service.Http.service
     ~path:["content"; "list_content"]
-    ~get_params:Eliom_parameter.(opt (int "filter") **
-                                   opt (list "tags" (string "id")))
+    ~get_params:Eliom_parameter.(suffix (opt (string "filter") **
+                                           opt (list "tags" (string "id"))))
     ()
 
 let _ =
@@ -52,13 +52,13 @@ let _ =
 *)
 
 
-let tags = 
+let tags =
   Eliom_service.Http.service
     ~path:["tags"; "list_tag"]
     ~get_params:Eliom_parameter.(list "tags" (string "id"))
     ()
 
-let _ = 
+let _ =
   Eliom_registration.String.register
     ~content_type:API_tools.content_type
     ~service:tags

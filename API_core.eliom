@@ -60,6 +60,14 @@ let get_detail_by_link link_id =
    because we haven't enought informations in the DB *)
 let get_contents filter tags_id =
   try
+    let () =
+      match filter with
+      | None                    -> ()
+      | Some "MOST_USED"        -> ()
+      | Some "MOST_VIEW"        -> ()
+      | Some "MOST_RECENT"      -> ()
+      | Some x                  -> failwith "get_contents has a bad value."
+    in
     let bson_condition = match tags_id with
       | None    -> Bson.empty
       | Some x  -> Bson.add_element API_tools.tagsid_field
