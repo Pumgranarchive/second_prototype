@@ -16,6 +16,7 @@ let title_field = "title"
 let subject_field = "subject"
 let type_field = "type"
 
+(* DB's collection *)
 let contents_coll = Mongo.create API_conf.db_url API_conf.db_port
   API_conf.db_name API_conf.contents_coll_name
 let tags_coll = Mongo.create API_conf.db_url API_conf.db_port

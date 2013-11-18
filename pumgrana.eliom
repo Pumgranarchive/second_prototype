@@ -24,5 +24,5 @@ let () =
            Html5.F.(body [
              h2 [pcdata "Pumgrana"];
              p [a ~service:API_services.contents [pcdata "get link test"]
-                   (Some 1, Some (["1"; "2"]))]
+                   (None, Some (["1"; "2"]))]
            ])))

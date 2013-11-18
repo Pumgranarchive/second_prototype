@@ -60,6 +60,14 @@ let get_detail_by_link link_id =
    because we haven't enought informations in the DB *)
 let get_contents filter tags_id =
   try
+    let () =
+      match filter with
+      | None                    -> ()
+      | Some "MOST_USED"        -> ()
+      | Some "MOST_VIEW"        -> ()
+      | Some "MOST_RECENT"      -> ()
+      | Some x                  -> failwith "get_contents has a bad value."
+    in
     let bson_condition = match tags_id with
       | None    -> Bson.empty
       | Some x  -> Bson.add_element API_tools.tagsid_field
@@ -85,17 +93,17 @@ let get_contents filter tags_id =
 
 let get_tags tags_id =
   try
-    (* This condition is not good
-       It is like OR gate on each tag. *)
-    let rec make_bson_condition bson_condition = function
-      | []      -> bson_condition
-      | id::t   -> make_bson_condition
-        (Bson.add_element API_tools.id_field
-           (Bson.create_objectId id)
-           bson_condition) t
+
+    let tag_to_document tag_id = 
+      (Bson.add_element API_tools.id_field (Bson.create_objectId tag_id) Bson.empty)
     in
 
-    let bson_condition = make_bson_condition Bson.empty tags_id in
+    let bson_condition = match tags_id with
+      | []      -> Bson.empty
+      | id::t	-> (MongoQueryOp.or_op (List.map (tag_to_document) tags_id))
+
+    in
+    (* let bson_condition = make_bson_condition Bson.empty tags_id in *)
     let results = Mongo.find_q_s API_tools.tags_coll bson_condition
       API_tools.tag_format in
     let results_bson = MongoReply.get_document_list results in
@@ -104,8 +112,6 @@ let get_tags tags_id =
   with
   | e -> print_endline (Printexc.to_string e);
     API_tools.tags_f API_conf.return_fail `Null
-
-
 
 
 let get_tags_by_type tag_type = 
