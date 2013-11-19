@@ -35,22 +35,25 @@ let get_detail content_id =
   | e -> print_endline (Printexc.to_string e);
     API_tools.detail_f API_conf.return_fail `Null
 
+let get_content_id_from_link link_id =
+  let objectId = Bson.create_objectId link_id in
+  let bson_condition =
+    Bson.add_element API_tools.id_field objectId Bson.empty
+  in
+  let result = Mongo.find_q_one API_tools.links_coll bson_condition in
+  let result_bson = List.hd (MongoReply.get_document_list result) in
+  Bson.get_element API_tools.targetid_field result_bson
+
 let get_detail_by_link link_id =
   try
-    let l_objectId = Bson.create_objectId link_id in
-    let l_bson_condition =
-      Bson.add_element API_tools.id_field l_objectId Bson.empty
-    in
-    let l_result = Mongo.find_q_one API_tools.links_coll l_bson_condition in
-    let l_result_bson = List.hd (MongoReply.get_document_list l_result) in
-    let target_id = Bson.get_element API_tools.targetid_field l_result_bson in
-    let ct_bson_condition =
+    let target_id = get_content_id_from_link link_id in
+    let bson_condition =
       Bson.add_element API_tools.id_field target_id Bson.empty
     in
-    let ct_result = Mongo.find_q_s_one API_tools.contents_coll ct_bson_condition
+    let result = Mongo.find_q_s_one API_tools.contents_coll bson_condition
       API_tools.content_format in
-    let ct_result_bson = List.hd (MongoReply.get_document_list ct_result) in
-    let jcontent = yojson_of_bson ct_result_bson in
+    let result_bson = List.hd (MongoReply.get_document_list result) in
+    let jcontent = yojson_of_bson result_bson in
     API_tools.detail_f API_conf.return_ok jcontent
   with
   | e -> print_endline (Printexc.to_string e);
