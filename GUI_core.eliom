@@ -16,4 +16,14 @@ let get_detail_content content_id =
                 -> title, text, id
     | _         -> failwith "invalide content format"
   in
-  title, text, id
+  let content_tags = API_core.get_tags_from_content content_id in
+  let tags_id = match content_tags with
+    | `Assoc [(_, _); (_, `List l)]     ->
+    let aux = function
+      | `Assoc [(_, `String subject);
+                (_, `String id)]        -> subject, id
+      | _                               -> failwith "invalide tags format"
+    in List.map aux l
+    | _                                 -> failwith "invalide tags format"
+  in
+  (title, text, id), tags_id

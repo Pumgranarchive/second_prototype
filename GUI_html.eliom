@@ -21,13 +21,17 @@ let main_html contents =
             [pcdata "main_service"] (Some "t", None)]
     ])
 
-let content_detail (c_title, c_text, c_id) =
+let content_detail ((c_title, c_text, c_id), tags_id) =
+  let aux (subject, id) =  pcdata (subject ^ " ") in
+  let tags_subjects = List.map aux tags_id in
   Eliom_tools.F.html
     ~title:"Pumgrana"
     ~css:[["css";"pumgrana.css"]]
     Html5.F.(body [
       h2 [pcdata "Pumgrana"];
       h3 [pcdata "Content detail"];
-      p [pcdata c_title];
-      p [pcdata c_text]
+      h5 [pcdata c_title];
+      p [pcdata c_text];
+      h4 [pcdata "Tags"];
+      p tags_subjects
     ])
