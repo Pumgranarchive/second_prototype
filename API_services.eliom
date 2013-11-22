@@ -97,4 +97,20 @@ let _ =
                   API_tools.content_type))
 
 
+(*** get_tag_from_content_link *)
+let get_tags_from_content_link = 
+  Eliom_service.Http.service
+    ~path:["api"; "tags"; "list_from_content_link"]
+    ~get_params:Eliom_parameter.(suffix (string "content_id"))
+    ()
+
+let _ = 
+  Eliom_registration.String.register
+    ~content_type:API_tools.content_type
+    ~service:get_tags_from_content_link
+    (fun (content_id) () ->
+      Lwt.return (Yj.to_string (API_core.get_tags_from_content_link content_id),
+                  API_tools.content_type))
+
+
 
