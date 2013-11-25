@@ -183,10 +183,15 @@ let get_tags_from_content_link content_id =
       in
       List.map Bson.create_objectId (aux [] (List.map Bson.get_objectId list))
     in
-    let get_tags current_link = Bson.get_list(Bson.get_element API_tools.tags_field current_link) in
-    let rec create_tag_list = function
-      | []	-> []
-      | l::t	-> (get_tags l)@(create_tag_list t)
+    let rec create_tag_list list =
+      let get_tags current_link = Bson.get_list(Bson.get_element API_tools.tags_field current_link)
+      in
+      let rec aux new_list = function
+        | []	-> new_list
+        | l::t	-> aux ((get_tags l)@new_list) t
+      in
+      aux [] list
+
     in
     let tags_id = remove_duplicate (create_tag_list links_bson) in
 
