@@ -167,12 +167,8 @@ let get_tags_from_content_link content_id =
   try
     (* step 1: get links related to the content*)
     let content_objectId = Bson.create_objectId content_id in
-    let add_element type_field = Bson.add_element type_field content_objectId Bson.empty in
-    let originid_bson_condition = add_element API_tools.originid_field in
-    let targetid_bson_condition = add_element API_tools.targetid_field in
-    let link_bson_condition = MongoQueryOp.or_op [originid_bson_condition; targetid_bson_condition]
-    in
-    let result_links = Mongo.find_q API_tools.links_coll link_bson_condition in
+    let originid_bson_condition = Bson.add_element API_tools.originid_field content_objectId Bson.empty in
+    let result_links = Mongo.find_q API_tools.links_coll originid_bson_condition in
     let links_bson = MongoReply.get_document_list result_links in
 
 
