@@ -47,5 +47,8 @@ let get_detail_content content_id =
 
 
 let get_contents filter tags_id =
-  let contents = API_core.get_contents filter tags_id in
-  unformat_service_return unformat_list_content contents
+  let contents_json = API_core.get_contents filter tags_id in
+  let tags_json = API_core.get_tags_by_type API_conf.content_tag
+  let contents = unformat_service_return unformat_list_content contents_json in
+  let tags = unformat_service_return unformat_list_tags tags_json in
+  (contents, tags)
