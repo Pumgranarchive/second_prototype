@@ -162,8 +162,6 @@ let get_tags_from_content content_id =
   | e -> print_endline (Printexc.to_string e);
     API_tools.detail_f API_conf.return_fail `Null
 
-
-<<<<<<< HEAD
 (*
 ** Links
 *)
@@ -213,7 +211,7 @@ let get_links_from_content_tags content_id tags_id =
   with
   | e -> print_endline (Printexc.to_string e);
     API_tools.detail_f API_conf.return_fail `Null *)
-=======
+
 let get_tags_from_content_link content_id =
   try
     (* step 1: get links related to the content*)
@@ -259,6 +257,3 @@ let get_tags_from_content_link content_id =
   with
   | e -> print_endline (Printexc.to_string e);
     API_tools.detail_f API_conf.return_fail `Null
-
-
->>>>>>> 4d3b561f2ff6ac2678d06480f6cac3db6b35fb37
