@@ -9,12 +9,21 @@ open Eliom_content.Html5
 open Eliom_content.Html5.F
 
 let main_html contents =
+  let content_html_list =
+    List.map (fun (title, text, id) ->
+      li [a ~service:GUI_services.content_detail_service [pcdata title] id;
+         br ();
+         span [pcdata text];
+         br ()])
+      contents
+  in
   Eliom_tools.F.html
     ~title:"Pumgrana"
     ~css:[["css";"pumgrana.css"]]
     Html5.F.(body [
       h2 [pcdata "Pumgrana"];
       p [pcdata "Content list"];
+      ul content_html_list;
       p [pcdata "Tags list"];
       (* Test link to main service *)
       p [a ~service:GUI_services.main_service
