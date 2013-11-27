@@ -4,6 +4,8 @@
   it GUI html
 *)
 
+module Yj = Yojson.Safe
+
 let failure_string = "Invalide content format"
 
 let get_contents filter tags_id =
@@ -24,15 +26,21 @@ let unformat_tag = function
             (_, `String id)]    -> subject, id
   | _                           -> failwith failure_string
 
-let unformat_list func = function
+let unformat_list (func: Yj.json -> 'a) (l: Yj.json) = match l with
   | `List l                     -> List.map func l
   | _                           -> failwith failure_string
 
 let unformat_list_tag = unformat_list unformat_tag
+let unformat_list_content = unformat_list unformat_content
 
 let get_detail_content content_id =
   let content = API_core.get_detail content_id in
   let title, text, id = unformat_service_return unformat_content content in
   let content_tags = API_core.get_tags_from_content content_id in
   let tags_id = unformat_service_return unformat_list_tag content_tags in
-  (title, text, id), tags_id
+  (* let links = API_core.get_links_from_content content_id in *)
+  (* let link_list = unformat_service_return unformat_list_content links in *)
+  let link_list = [] in
+  let tags_link = API_core.get_tags_from_content_link content_id in
+  let tags_link_list = unformat_service_return unformat_list_tag tags_link in
+  (title, text, id), tags_id, link_list, tags_link_list

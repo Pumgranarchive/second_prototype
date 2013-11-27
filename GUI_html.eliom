@@ -21,7 +21,7 @@ let main_html contents =
             [pcdata "main_service"] (Some "t", None)]
     ])
 
-let content_detail ((c_title, c_text, c_id), tags_id) =
+let content_detail ((c_title, c_text, c_id), tags_id, links, tags_link) =
   let aux (subject, id) =  pcdata (subject ^ " ") in
   let tags_subjects = List.map aux tags_id in
   Eliom_tools.F.html
