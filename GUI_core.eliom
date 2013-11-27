@@ -44,3 +44,28 @@ let get_detail_content content_id =
   let tags_link = API_core.get_tags_from_content_link content_id in
   let tags_link_list = unformat_service_return unformat_list_tag tags_link in
   (title, text, id), tags_id, link_list, tags_link_list
+
+
+let get_contents filter tags_id =
+  let get_contents = function
+    | `Assoc [(_, _); (_, `List l)] -> l
+    | _         -> failwith "invalide content format"
+  in
+  let get_content = function
+    | `Assoc [(_, `String text);
+              (_, `String title);
+              (_, `String id)]
+                -> title, text, id
+    | _         -> failwith "invalide content format"
+  in
+  let contents = get_contents (API_core.get_contents filter tags_id) in
+
+  let return contents =
+    let rec aux new_list = function
+      | []                -> new_list
+      | content::t        -> aux ((get_content content)::new_list) t
+    in
+    aux [] contents
+
+  in
+  return contents
