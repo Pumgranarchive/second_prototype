@@ -184,7 +184,8 @@ let get_tags_from_content_link content_id =
       List.map Bson.create_objectId (aux [] (List.map Bson.get_objectId list))
     in
     let rec create_tag_list list =
-      let get_tags current_link = Bson.get_list(Bson.get_element API_tools.tags_field current_link)
+      let get_tags current_link = Bson.get_list
+        (Bson.get_element API_tools.tags_field current_link)
       in
       let rec aux new_list = function
         | []	-> new_list
@@ -196,14 +197,15 @@ let get_tags_from_content_link content_id =
     let tags_id = remove_duplicate (create_tag_list links_bson) in
 
     let document_of_tag tag_id =
-      (Bson.add_element API_tools.id_field tag_id Bson.empty)
+      Bson.add_element API_tools.id_field tag_id Bson.empty
     in
-    let bson_condition = MongoQueryOp.or_op (List.map document_of_tag tags_id) in
-
+    let bson_tags_id_list = List.map document_of_tag tags_id in
+    let bson_condition = MongoQueryOp.or_op bson_tags_id_list in
     let results = Mongo.find_q_s API_tools.tags_coll bson_condition
       API_tools.tag_format in
     let results_bson = MongoReply.get_document_list results in
-    let jcontents = yojson_of_bson_document results_bson in
+    let jresult = yojson_of_bson_document results_bson in
+    let jcontents = if bson_tags_id_list != [] then jresult else `Null in
     API_tools.tags_f API_conf.return_ok jcontents
   with
   | e -> print_endline (Printexc.to_string e);
