@@ -162,6 +162,57 @@ let get_tags_from_content content_id =
   | e -> print_endline (Printexc.to_string e);
     API_tools.detail_f API_conf.return_fail `Null
 
+(*
+** Links
+*)
+
+(*** Getters *)
+let get_links_from_content content_id =
+ try
+    (* getting every link with 'content_id' as origin *)
+    let content_objectId = Bson.create_objectId content_id in
+    let document_of_link_id_list field link_id_list =
+      (Bson.add_element field link_id_list Bson.empty)
+    in
+    let result_content = Mongo.find_q_one API_tools.links_coll (document_of_link_id_list API_tools.originid_field content_objectId) in
+    (* hd is for testing, later you have to loop *)
+    let content_bson = List.hd(MongoReply.get_document_list result_content) in
+    let link_id_list = Bson.get_element API_tools.targetid_field content_bson in
+
+    (* getting content to return *)
+    let link_query    = document_of_link_id_list API_tools.id_field link_id_list in
+    let result_query  = Mongo.find_q_s_one API_tools.contents_coll link_query
+      API_tools.content_format
+    in
+    let mongo_query   = MongoReply.get_document_list result_query in
+    API_tools.contents_f API_conf.return_ok (yojson_of_bson_document mongo_query)
+  with
+  | e -> print_endline (Printexc.to_string e);
+    API_tools.detail_f API_conf.return_fail `Null
+(*
+let get_links_from_content_tags content_id tags_id =
+ try
+    (* getting every link with 'content_id' as origin *)
+    let content_objectId = Bson.create_objectId content_id in
+    let document_of_link_id_list field link_id_list =
+      (Bson.add_element field link_id_list Bson.empty)
+    in
+    let result_content = Mongo.find_q_one API_tools.links_coll (document_of_link_id_list API_tools.originid_field content_objectId) in
+    (* hd is for testing, later you have to loop *)
+    let content_bson = List.hd(MongoReply.get_document_list result_content) in
+    let link_id_list = Bson.get_element API_tools.targetid_field content_bson in
+
+    (* getting content to return *)
+    let link_query    = document_of_link_id_list API_tools.id_field link_id_list in
+    let link_bson_condition =
+      (MongoQueryOp.or_op (List.map (Bson.add_element API_tools.tagsid_field tags_id link_query)))
+    in
+    let result_query = Mongo.find_q_s API_tools.contents_coll link_bson_condition in
+    let mongo_query   = MongoReply.get_document_list result_query in
+    API_tools.contents_f API_conf.return_ok (yojson_of_bson_document mongo_query)
+  with
+  | e -> print_endline (Printexc.to_string e);
+    API_tools.detail_f API_conf.return_fail `Null *)
 
 let get_tags_from_content_link content_id =
   try
@@ -184,7 +235,8 @@ let get_tags_from_content_link content_id =
       List.map Bson.create_objectId (aux [] (List.map Bson.get_objectId list))
     in
     let rec create_tag_list list =
-      let get_tags current_link = Bson.get_list(Bson.get_element API_tools.tags_field current_link)
+      let get_tags current_link = Bson.get_list
+        (Bson.get_element API_tools.tags_field current_link)
       in
       let rec aux new_list = function
         | []	-> new_list
@@ -196,17 +248,16 @@ let get_tags_from_content_link content_id =
     let tags_id = remove_duplicate (create_tag_list links_bson) in
 
     let document_of_tag tag_id =
-      (Bson.add_element API_tools.id_field tag_id Bson.empty)
+      Bson.add_element API_tools.id_field tag_id Bson.empty
     in
-    let bson_condition = MongoQueryOp.or_op (List.map document_of_tag tags_id) in
-
+    let bson_tags_id_list = List.map document_of_tag tags_id in
+    let bson_condition = MongoQueryOp.or_op bson_tags_id_list in
     let results = Mongo.find_q_s API_tools.tags_coll bson_condition
       API_tools.tag_format in
     let results_bson = MongoReply.get_document_list results in
-    let jcontents = yojson_of_bson_document results_bson in
+    let jresult = yojson_of_bson_document results_bson in
+    let jcontents = if bson_tags_id_list != [] then jresult else `Null in
     API_tools.tags_f API_conf.return_ok jcontents
   with
   | e -> print_endline (Printexc.to_string e);
     API_tools.detail_f API_conf.return_fail `Null
-
-
