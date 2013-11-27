@@ -10,6 +10,7 @@ let content_type = "application/json"
 
 let id_field = "_id"
 let tagsid_field = "tags_id"
+let tags_field = "tags"
 let targetid_field = "target_id"
 let originid_field = "origin_id"
 let text_field = "text"
@@ -71,5 +72,5 @@ let contents_f = return_f "contents"
 (** Help to format API_service.tags return *)
 let tags_f = return_f "tags"
 
-(** Help to format API_service.tags return *)
+(** Help to format API_service.links return *)
 let links_f = return_f "links"

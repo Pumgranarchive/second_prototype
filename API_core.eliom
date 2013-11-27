@@ -97,13 +97,13 @@ let get_contents filter tags_id =
 let get_tags tags_id =
   try
 
-    let document_of_tag tag_id = 
+    let document_of_tag tag_id =
       (Bson.add_element API_tools.id_field (Bson.create_objectId tag_id) Bson.empty)
     in
 
     let bson_condition = match tags_id with
       | []      -> Bson.empty
-      | id::t	-> (MongoQueryOp.or_op (List.map document_of_tag tags_id))
+      | id::t	->  (MongoQueryOp.or_op (List.map document_of_tag tags_id))
 
     in
     let results = Mongo.find_q_s API_tools.tags_coll bson_condition
@@ -116,7 +116,7 @@ let get_tags tags_id =
     API_tools.tags_f API_conf.return_fail `Null
 
 
-let get_tags_by_type tag_type = 
+let get_tags_by_type tag_type =
   try
     let convert_param = API_conf.(if tag_type = link_tag then link_tag_str else content_tag_str)
     in
@@ -145,7 +145,7 @@ let get_tags_from_content content_id =
 
     (* step 2: request the associated tags *)
     let tag_id_list = Bson.get_list(Bson.get_element API_tools.tagsid_field content_bson) in
-    let document_of_tag_id_list tag_id_list = 
+    let document_of_tag_id_list tag_id_list =
       (Bson.add_element API_tools.id_field tag_id_list Bson.empty)
     in
     let tag_bson_condition =
@@ -163,6 +163,7 @@ let get_tags_from_content content_id =
     API_tools.detail_f API_conf.return_fail `Null
 
 
+<<<<<<< HEAD
 (*
 ** Links
 *)
@@ -212,3 +213,52 @@ let get_links_from_content_tags content_id tags_id =
   with
   | e -> print_endline (Printexc.to_string e);
     API_tools.detail_f API_conf.return_fail `Null *)
+=======
+let get_tags_from_content_link content_id =
+  try
+    (* step 1: get links related to the content*)
+    let content_objectId = Bson.create_objectId content_id in
+    let originid_bson_condition = Bson.add_element API_tools.originid_field content_objectId Bson.empty in
+    let result_links = Mongo.find_q API_tools.links_coll originid_bson_condition in
+    let links_bson = MongoReply.get_document_list result_links in
+
+
+    (* step 2: request the related tags *)
+    let rec remove_duplicate list =
+      let rec aux new_list = function
+        | []      -> new_list
+        | e::t    ->
+          if (List.exists (fun c -> (String.compare c e) = 0) new_list)
+          then aux new_list t
+          else aux (e::new_list) t
+      in
+      List.map Bson.create_objectId (aux [] (List.map Bson.get_objectId list))
+    in
+    let rec create_tag_list list =
+      let get_tags current_link = Bson.get_list(Bson.get_element API_tools.tags_field current_link)
+      in
+      let rec aux new_list = function
+        | []	-> new_list
+        | l::t	-> aux ((get_tags l)@new_list) t
+      in
+      aux [] list
+
+    in
+    let tags_id = remove_duplicate (create_tag_list links_bson) in
+
+    let document_of_tag tag_id =
+      (Bson.add_element API_tools.id_field tag_id Bson.empty)
+    in
+    let bson_condition = MongoQueryOp.or_op (List.map document_of_tag tags_id) in
+
+    let results = Mongo.find_q_s API_tools.tags_coll bson_condition
+      API_tools.tag_format in
+    let results_bson = MongoReply.get_document_list results in
+    let jcontents = yojson_of_bson_document results_bson in
+    API_tools.tags_f API_conf.return_ok jcontents
+  with
+  | e -> print_endline (Printexc.to_string e);
+    API_tools.detail_f API_conf.return_fail `Null
+
+
+>>>>>>> 4d3b561f2ff6ac2678d06480f6cac3db6b35fb37
