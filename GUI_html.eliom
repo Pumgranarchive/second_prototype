@@ -34,10 +34,7 @@ let main_html contents =
       h2 [pcdata "Pumgrana"];
       p [pcdata "Content list"];
       ul content_html_list;
-      p [pcdata "Tags list"];
-      (* Test link to main service *)
-      p [a ~service:GUI_services.main_service
-            [pcdata "main_service"] (Some "t", None)]
+      p [pcdata "Tags list"]
     ])
 
 let content_detail ((c_title, c_text, c_id), tags_id, links, tags_link) =
