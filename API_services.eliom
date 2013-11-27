@@ -96,5 +96,36 @@ let _ =
       Lwt.return (Yj.to_string (API_core.get_tags_from_content content_id),
                   API_tools.content_type))
 
+(*
+** links
+*)
 
+(*** get_links_from_content *)
+let get_links_from_content = 
+  Eliom_service.Http.service
+    ~path:["api"; "links"; "list_from_content"]
+    ~get_params:Eliom_parameter.(suffix (string "link_id"))
+    ()
 
+let _ = 
+  Eliom_registration.String.register
+    ~content_type:API_tools.content_type
+    ~service:get_links_from_content
+    (fun (link_id) () ->
+      Lwt.return (Yj.to_string (API_core.get_links_from_content link_id),
+                  API_tools.content_type))
+
+(*** get_links_from_content_tags *)
+(* let get_links_from_content_tags = 
+  Eliom_service.Http.service
+    ~path:["api"; "links"; "list_from_content_tags"]
+    ~get_params:Eliom_parameter.(suffix (string "link_id") ** (string "tags_id"))
+    ()
+
+let _ = 
+  Eliom_registration.String.register
+    ~content_type:API_tools.content_type
+    ~service:get_links_from_content_tags
+    (fun (link_id) () ->
+      Lwt.return (Yj.to_string (API_core.get_links_from_content_tags link_id),
+                  API_tools.content_type)) *)
