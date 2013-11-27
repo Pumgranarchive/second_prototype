@@ -11,12 +11,12 @@ open Eliom_content.Html5.F
 let build_tags_form tags =
   let tags_html = List.flatten
     (List.map (fun (subject, id) ->
-      [raw_input ~input_type:`Checkbox ~name:id ();
+      [br ();
        pcdata subject;
-       br ()])
+       raw_input ~input_type:`Checkbox ~name:id ()])
        tags)
   in
-  tags_html
+  List.rev ((raw_input ~input_type:`Submit ~value:"Submit" ())::tags_html)
 
 let main_html contents =
   let content_html_list =
