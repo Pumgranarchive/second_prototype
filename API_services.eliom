@@ -98,14 +98,14 @@ let _ =
 let get_links_from_content =
   Eliom_service.Http.service
     ~path:["api"; "link"; "list_from_content"]
-    ~get_params:Eliom_parameter.(suffix (string "link_id"))
+    ~get_params:Eliom_parameter.(suffix (string "content_id"))
     ()
 
 let _ =
   Eliom_registration.String.register
     ~service:get_links_from_content
-    (fun (link_id) () ->
-      Lwt.return (Yj.to_string (API_core.get_links_from_content link_id),
+    (fun content_id () ->
+      Lwt.return (Yj.to_string (API_core.get_links_from_content content_id),
                   API_tools.content_type))
 
 let get_tags_from_content_link =
