@@ -75,9 +75,8 @@ let get_detail_content content_id =
     let title, text, id = unformat_service_return unformat_content content in
     let content_tags = API_core.get_tags_from_content content_id in
     let tags_id = unformat_service_return unformat_list_tag content_tags in
-  (* let links = API_core.get_links_from_content content_id in *)
-  (* let link_list = unformat_service_return unformat_list_content links in *)
-    let link_list = [] in
+    let links = API_core.get_links_from_content content_id in
+    let link_list = unformat_service_return unformat_list_content links in
     let tags_link = API_core.get_tags_from_content_link content_id in
     let tags_link_list = unformat_service_return unformat_list_tag tags_link in
     (title, text, id), tags_id, link_list, tags_link_list
