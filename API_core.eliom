@@ -22,18 +22,16 @@ let yojson_of_bson_document bson_l =
 
 (*** Getters *)
 let get_detail content_id =
-  try
+  let aux () =
     let objectId = Bson.create_objectId content_id in
     let bson_condition = Bson.add_element API_tools.id_field objectId Bson.empty
     in
     let result = Mongo.find_q_s_one API_tools.contents_coll bson_condition
       API_tools.content_format in
     let result_bson = List.hd (MongoReply.get_document_list result) in
-    let jcontent =  yojson_of_bson result_bson in
-    API_tools.detail_f API_conf.return_ok jcontent
-  with
-  | e -> print_endline (Printexc.to_string e);
-    API_tools.detail_f API_conf.return_fail `Null
+    yojson_of_bson result_bson
+  in
+  API_tools.check_return aux "content"
 
 let get_content_id_from_link link_id =
   let objectId = Bson.create_objectId link_id in
@@ -45,7 +43,7 @@ let get_content_id_from_link link_id =
   Bson.get_element API_tools.targetid_field result_bson
 
 let get_detail_by_link link_id =
-  try
+  let aux () =
     let target_id = get_content_id_from_link link_id in
     let bson_condition =
       Bson.add_element API_tools.id_field target_id Bson.empty
@@ -53,16 +51,14 @@ let get_detail_by_link link_id =
     let result = Mongo.find_q_s_one API_tools.contents_coll bson_condition
       API_tools.content_format in
     let result_bson = List.hd (MongoReply.get_document_list result) in
-    let jcontent = yojson_of_bson result_bson in
-    API_tools.detail_f API_conf.return_ok jcontent
-  with
-  | e -> print_endline (Printexc.to_string e);
-    API_tools.detail_f API_conf.return_fail `Null
+    yojson_of_bson result_bson
+  in
+  API_tools.check_return aux "content"
 
 (* Currently, filter is not used,
    because we haven't enought informations in the DB *)
 let get_contents filter tags_id =
-  try
+  let aux () =
     let () =
       match filter with
       | None                    -> ()
@@ -81,11 +77,9 @@ let get_contents filter tags_id =
     let results = Mongo.find_q_s API_tools.contents_coll bson_condition
       API_tools.content_format in
     let results_bson = MongoReply.get_document_list results in
-    let jcontents = yojson_of_bson_document results_bson in
-    API_tools.contents_f API_conf.return_ok jcontents
-  with
-  | e -> print_endline (Printexc.to_string e);
-    API_tools.contents_f API_conf.return_fail `Null
+    yojson_of_bson_document results_bson
+  in
+  API_tools.check_return aux "contents"
 
 
 (*
@@ -95,8 +89,7 @@ let get_contents filter tags_id =
 (*** Getters *)
 
 let get_tags tags_id =
-  try
-
+  let aux () =
     let document_of_tag tag_id =
       (Bson.add_element API_tools.id_field (Bson.create_objectId tag_id) Bson.empty)
     in
@@ -109,15 +102,13 @@ let get_tags tags_id =
     let results = Mongo.find_q_s API_tools.tags_coll bson_condition
       API_tools.tag_format in
     let results_bson = MongoReply.get_document_list results in
-    let jcontents = yojson_of_bson_document results_bson in
-    API_tools.tags_f API_conf.return_ok jcontents
-  with
-  | e -> print_endline (Printexc.to_string e);
-    API_tools.tags_f API_conf.return_fail `Null
+    yojson_of_bson_document results_bson
+  in
+  API_tools.check_return aux "tags"
 
 
 let get_tags_by_type tag_type =
-  try
+  let aux () =
     let convert_param = API_conf.(if tag_type = link_tag then link_tag_str else content_tag_str)
     in
     let objectId = Bson.create_string convert_param in
@@ -126,15 +117,13 @@ let get_tags_by_type tag_type =
     let result = Mongo.find_q_s API_tools.tags_coll bson_condition
       API_tools.tag_format in
     let result_bson = MongoReply.get_document_list result in
-    let jcontent =  yojson_of_bson_document result_bson in
-    API_tools.tags_f API_conf.return_ok jcontent
-  with
-  | e -> print_endline (Printexc.to_string e);
-    API_tools.tags_f API_conf.return_fail `Null
+    yojson_of_bson_document result_bson
+  in
+  API_tools.check_return aux "tags"
 
 
 let get_tags_from_content content_id =
-  try
+  let aux () =
     (* step 1: request the content *)
     let content_objectId = Bson.create_objectId content_id in
     let content_bson_condition = Bson.add_element API_tools.id_field content_objectId Bson.empty
@@ -155,12 +144,9 @@ let get_tags_from_content content_id =
     let results_tag = Mongo.find_q_s API_tools.tags_coll tag_bson_condition
       API_tools.tag_format in
     let results_bson = MongoReply.get_document_list results_tag in
-    let jcontent = yojson_of_bson_document results_bson in
-    API_tools.tags_f API_conf.return_ok jcontent
-
-  with
-  | e -> print_endline (Printexc.to_string e);
-    API_tools.detail_f API_conf.return_fail `Null
+    yojson_of_bson_document results_bson
+  in
+  API_tools.check_return aux "tags"
 
 (*
 ** Links
@@ -168,7 +154,7 @@ let get_tags_from_content content_id =
 
 (*** Getters *)
 let get_links_from_content content_id =
- try
+  let aux () =
     (* getting every link with 'content_id' as origin *)
     let content_objectId = Bson.create_objectId content_id in
     let document_of_link_id_list field link_id_list =
@@ -185,13 +171,13 @@ let get_links_from_content content_id =
       API_tools.content_format
     in
     let mongo_query   = MongoReply.get_document_list result_query in
-    API_tools.contents_f API_conf.return_ok (yojson_of_bson_document mongo_query)
-  with
-  | e -> print_endline (Printexc.to_string e);
-    API_tools.detail_f API_conf.return_fail `Null
+    yojson_of_bson_document mongo_query
+  in
+  API_tools.check_return aux "contents"
+
 (*
 let get_links_from_content_tags content_id tags_id =
- try
+  let aux () =
     (* getting every link with 'content_id' as origin *)
     let content_objectId = Bson.create_objectId content_id in
     let document_of_link_id_list field link_id_list =
@@ -209,13 +195,13 @@ let get_links_from_content_tags content_id tags_id =
     in
     let result_query = Mongo.find_q_s API_tools.contents_coll link_bson_condition in
     let mongo_query   = MongoReply.get_document_list result_query in
-    API_tools.contents_f API_conf.return_ok (yojson_of_bson_document mongo_query)
-  with
-  | e -> print_endline (Printexc.to_string e);
-    API_tools.detail_f API_conf.return_fail `Null *)
+    yojson_of_bson_document mongo_query
+  in
+  API_tools.check_return aux "contents"
+*)
 
 let get_tags_from_content_link content_id =
-  try
+  let aux () =
     (* step 1: get links related to the content*)
     let content_objectId = Bson.create_objectId content_id in
     let originid_bson_condition = Bson.add_element API_tools.originid_field content_objectId Bson.empty in
@@ -256,8 +242,6 @@ let get_tags_from_content_link content_id =
       API_tools.tag_format in
     let results_bson = MongoReply.get_document_list results in
     let jresult = yojson_of_bson_document results_bson in
-    let jcontents = if bson_tags_id_list != [] then jresult else `Null in
-    API_tools.tags_f API_conf.return_ok jcontents
-  with
-  | e -> print_endline (Printexc.to_string e);
-    API_tools.detail_f API_conf.return_fail `Null
+    if bson_tags_id_list != [] then jresult else `Null
+  in
+  API_tools.check_return aux "tags"

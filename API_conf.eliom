@@ -14,6 +14,7 @@ let links_coll_name = "links"
 (* Return values *)
 let return_fail = 500
 let return_ok = 200
+let return_no_content = 204
 
 (* Filter Values *)
 let most_recent = 0

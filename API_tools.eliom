@@ -74,3 +74,19 @@ let tags_f = return_f "tags"
 
 (** Help to format API_service.links return *)
 let links_f = return_f "links"
+
+(** [check_return func content_name]
+    func: the function which return the result.
+    content_name: the name of the content in the result. *)
+let check_return func content_name =
+  try
+    match func () with
+    | `Null     -> return_f content_name API_conf.return_no_content `Null
+    | `List []  -> return_f content_name API_conf.return_no_content `Null
+    | ret       -> return_f content_name API_conf.return_ok ret
+  with
+  | exc   ->
+    begin
+      print_endline (Printexc.to_string exc);
+      return_f content_name API_conf.return_fail `Null
+    end
