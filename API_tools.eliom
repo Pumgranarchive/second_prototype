@@ -68,15 +68,22 @@ let format_ret param_name status (param_value:Yj.json) =
 
 (** [check_return func content_name]
     func: the function which return the result.
-    content_name: the name of the content in the result. *)
+    content_name: the name of the content in the result.
+
+    If the exception Failure "no content" is fired, 204 is returned.
+    For any others exceptions, 500 is returned *)
 let check_return func content_name =
+  let null_return () =
+    format_ret content_name API_conf.return_no_content `Null
+  in
   try
     match func () with
-    | `Null     -> format_ret content_name API_conf.return_no_content `Null
-    | `List []  -> format_ret content_name API_conf.return_no_content `Null
+    | `Null     -> null_return ()
+    | `List []  -> null_return ()
     | ret       -> format_ret content_name API_conf.return_ok ret
   with
-  | exc   ->
+  | Failure "no content"        -> null_return ()
+  | exc                         ->
     begin
       print_endline (Printexc.to_string exc);
       format_ret content_name API_conf.return_fail `Null
