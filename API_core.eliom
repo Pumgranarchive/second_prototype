@@ -5,17 +5,6 @@
 
 module Yj = Yojson.Safe
 
-(*** Tools *)
-let yojson_of_bson bson =
-  Yj.from_string (Bson.to_simple_json bson)
-
-let yojson_of_bson_document bson_l =
-  let rec aux yojson_l = function
-    | []        -> yojson_l
-    | h::t      -> aux ((yojson_of_bson h)::yojson_l) t
-  in
-  `List (List.rev (aux [] bson_l))
-
 (*
 ** Content
 *)
@@ -29,7 +18,7 @@ let get_detail content_id =
     let result = Mongo.find_q_s_one API_tools.contents_coll bson_condition
       API_tools.content_format in
     let result_bson = List.hd (MongoReply.get_document_list result) in
-    yojson_of_bson result_bson
+    API_tools.yojson_of_bson result_bson
   in
   API_tools.check_return aux "content"
 
@@ -51,7 +40,7 @@ let get_detail_by_link link_id =
     let result = Mongo.find_q_s_one API_tools.contents_coll bson_condition
       API_tools.content_format in
     let result_bson = List.hd (MongoReply.get_document_list result) in
-    yojson_of_bson result_bson
+    API_tools.yojson_of_bson result_bson
   in
   API_tools.check_return aux "content"
 
@@ -77,7 +66,7 @@ let get_contents filter tags_id =
     let results = Mongo.find_q_s API_tools.contents_coll bson_condition
       API_tools.content_format in
     let results_bson = MongoReply.get_document_list results in
-    yojson_of_bson_document results_bson
+    API_tools.yojson_of_bson_document results_bson
   in
   API_tools.check_return aux "contents"
 
@@ -102,7 +91,7 @@ let get_tags tags_id =
     let results = Mongo.find_q_s API_tools.tags_coll bson_condition
       API_tools.tag_format in
     let results_bson = MongoReply.get_document_list results in
-    yojson_of_bson_document results_bson
+    API_tools.yojson_of_bson_document results_bson
   in
   API_tools.check_return aux "tags"
 
@@ -117,7 +106,7 @@ let get_tags_by_type tag_type =
     let result = Mongo.find_q_s API_tools.tags_coll bson_condition
       API_tools.tag_format in
     let result_bson = MongoReply.get_document_list result in
-    yojson_of_bson_document result_bson
+    API_tools.yojson_of_bson_document result_bson
   in
   API_tools.check_return aux "tags"
 
@@ -144,7 +133,7 @@ let get_tags_from_content content_id =
     let results_tag = Mongo.find_q_s API_tools.tags_coll tag_bson_condition
       API_tools.tag_format in
     let results_bson = MongoReply.get_document_list results_tag in
-    yojson_of_bson_document results_bson
+    API_tools.yojson_of_bson_document results_bson
   in
   API_tools.check_return aux "tags"
 
@@ -171,7 +160,7 @@ let get_links_from_content content_id =
       API_tools.content_format
     in
     let mongo_query   = MongoReply.get_document_list result_query in
-    yojson_of_bson_document mongo_query
+    API_tools.yojson_of_bson_document mongo_query
   in
   API_tools.check_return aux "contents"
 
@@ -195,7 +184,7 @@ let get_links_from_content_tags content_id tags_id =
     in
     let result_query = Mongo.find_q_s API_tools.contents_coll link_bson_condition in
     let mongo_query   = MongoReply.get_document_list result_query in
-    yojson_of_bson_document mongo_query
+    API_tools.yojson_of_bson_document mongo_query
   in
   API_tools.check_return aux "contents"
 *)
@@ -241,7 +230,7 @@ let get_tags_from_content_link content_id =
     let results = Mongo.find_q_s API_tools.tags_coll bson_condition
       API_tools.tag_format in
     let results_bson = MongoReply.get_document_list results in
-    let jresult = yojson_of_bson_document results_bson in
+    let jresult = API_tools.yojson_of_bson_document results_bson in
     if bson_tags_id_list != [] then jresult else `Null
   in
   API_tools.check_return aux "tags"

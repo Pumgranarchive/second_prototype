@@ -5,7 +5,9 @@
 
 module Yj = Yojson.Safe
 
-(* content type return by API' services *)
+(*** Static string for configuration / selection *)
+
+(** content type return by API' services *)
 let content_type = "application/json"
 
 let id_field = "_id"
@@ -18,13 +20,16 @@ let title_field = "title"
 let subject_field = "subject"
 let type_field = "type"
 
-(* DB's collection *)
+(*** DB's collection *)
+
 let contents_coll = Mongo.create API_conf.db_url API_conf.db_port
   API_conf.db_name API_conf.contents_coll_name
 let tags_coll = Mongo.create API_conf.db_url API_conf.db_port
   API_conf.db_name API_conf.tags_coll_name
 let links_coll = Mongo.create API_conf.db_url API_conf.db_port
   API_conf.db_name API_conf.links_coll_name
+
+(*** Request format tools  *)
 
 let yes_value = Bson.create_boolean true
 
@@ -37,43 +42,24 @@ let tag_format =
   Bson.add_element id_field yes_value
     (Bson.add_element subject_field yes_value Bson.empty)
 
-(*** This part of code is currently not use  *)
-let content ((id:int), (title:string), (text:string)) =
-  `Assoc [("id", `Int id);
-          ("title", `String title);
-          ("text", `String text)]
+(*** Cast tools *)
 
-let flist func l =
-  let rec aux nl = function
-  | h::t        -> aux ((func h)::nl) t
-  | []          -> nl
-  in `List (List.rev (aux [] l))
+let yojson_of_bson bson =
+  Yj.from_string (Bson.to_simple_json bson)
 
-let content_list = flist content
+let yojson_of_bson_document bson_l =
+  let rec aux yojson_l = function
+    | []        -> yojson_l
+    | h::t      -> aux ((yojson_of_bson h)::yojson_l) t
+  in
+  `List (List.rev (aux [] bson_l))
 
-let tag ((id:int), (subject:string)) =
-    `Assoc [("id", `Int id);
-            ("subject", `String subject)]
+(*** Manage return tools *)
 
-let tag_list = flist tag
-(*** End of unused part of code  *)
-
-(** Help to format the returned value *)
-let return_f param_name status (param_value:Yj.json) =
+(** Format the returned value *)
+let format_ret param_name status (param_value:Yj.json) =
   `Assoc [("status", `Int status);
           (param_name, param_value) ]
-
-(** Help to format detail return *)
-let detail_f = return_f "content"
-
-(** Help to format contents return *)
-let contents_f = return_f "contents"
-
-(** Help to format API_service.tags return *)
-let tags_f = return_f "tags"
-
-(** Help to format API_service.links return *)
-let links_f = return_f "links"
 
 (** [check_return func content_name]
     func: the function which return the result.
@@ -81,12 +67,12 @@ let links_f = return_f "links"
 let check_return func content_name =
   try
     match func () with
-    | `Null     -> return_f content_name API_conf.return_no_content `Null
-    | `List []  -> return_f content_name API_conf.return_no_content `Null
-    | ret       -> return_f content_name API_conf.return_ok ret
+    | `Null     -> format_ret content_name API_conf.return_no_content `Null
+    | `List []  -> format_ret content_name API_conf.return_no_content `Null
+    | ret       -> format_ret content_name API_conf.return_ok ret
   with
   | exc   ->
     begin
       print_endline (Printexc.to_string exc);
-      return_f content_name API_conf.return_fail `Null
+      format_ret content_name API_conf.return_fail `Null
     end
