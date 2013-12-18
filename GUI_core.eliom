@@ -6,10 +6,10 @@
 
 module Yj = Yojson.Safe
 
-let failure_string n = Printf.sprintf "Invalide content format %d" n
-
 let get_contents filter tags_id =
   []
+
+let failure_string n = Printf.sprintf "Invalide content format %d" n
 
 let power num pow =
   let rec aux nb = function
