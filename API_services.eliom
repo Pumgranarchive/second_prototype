@@ -65,7 +65,7 @@ let _ =
 (*** get_tags_by_type *)
 let get_tags_by_type =
   Eliom_service.Http.service
-    ~path:["api"; "tags"; "get_tags_by_type"]
+    ~path:["api"; "tags"; "list_by_type"]
     ~get_params:Eliom_parameter.(suffix (int "type_name"))
     ()
 
@@ -90,6 +90,22 @@ let _ =
       Lwt.return (Yj.to_string (API_core.get_tags_from_content content_id),
                   API_tools.content_type))
 
+
+(*** get_tag_from_content_link *)
+let get_tags_from_content_link =
+  Eliom_service.Http.service
+    ~path:["api"; "tags"; "list_from_content_link"]
+    ~get_params:Eliom_parameter.(suffix (string "content_id"))
+    ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:get_tags_from_content_link
+    (fun (content_id) () ->
+      Lwt.return (Yj.to_string (API_core.get_tags_from_content_link content_id),
+                  API_tools.content_type))
+
+
 (*
 ** links
 *)
@@ -108,18 +124,6 @@ let _ =
       Lwt.return (Yj.to_string (API_core.get_links_from_content content_id),
                   API_tools.content_type))
 
-let get_tags_from_content_link =
-  Eliom_service.Http.service
-    ~path:["api"; "tags"; "list_from_content_link"]
-    ~get_params:Eliom_parameter.(suffix (string "content_id"))
-    ()
-
-let _ =
-  Eliom_registration.String.register
-    ~service:get_tags_from_content_link
-    (fun (content_id) () ->
-      Lwt.return (Yj.to_string (API_core.get_tags_from_content_link content_id),
-                  API_tools.content_type))
 
 (*** get_links_from_content_tags *)
 (* let get_links_from_content_tags =

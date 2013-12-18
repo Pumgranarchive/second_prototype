@@ -28,7 +28,8 @@ let build_links_list links =
   in
   List.map aux links
 
-let main_html contents =
+let main_html contents_and_tags =
+  let (contents, tags) = contents_and_tags in
   let content_html_list =
     List.map (fun (title, text, id) ->
       li [a ~service:GUI_services.content_detail_service [pcdata title] id;
