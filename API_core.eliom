@@ -20,7 +20,7 @@ let get_detail content_id =
     let result_bson = List.hd (MongoReply.get_document_list result) in
     API_tools.yojson_of_bson result_bson
   in
-  API_tools.check_return aux "content"
+  API_tools.check_return aux API_tools.detail_ret_name
 
 let get_content_id_from_link link_id =
   let objectId = Bson.create_objectId link_id in
@@ -42,7 +42,7 @@ let get_detail_by_link link_id =
     let result_bson = List.hd (MongoReply.get_document_list result) in
     API_tools.yojson_of_bson result_bson
   in
-  API_tools.check_return aux "content"
+  API_tools.check_return aux API_tools.detail_ret_name
 
 (* Currently, filter is not used,
    because we haven't enought informations in the DB *)
@@ -68,7 +68,7 @@ let get_contents filter tags_id =
     let results_bson = MongoReply.get_document_list results in
     API_tools.yojson_of_bson_document results_bson
   in
-  API_tools.check_return aux "contents"
+  API_tools.check_return aux API_tools.contents_ret_name
 
 
 (*
@@ -93,7 +93,7 @@ let get_tags tags_id =
     let results_bson = MongoReply.get_document_list results in
     API_tools.yojson_of_bson_document results_bson
   in
-  API_tools.check_return aux "tags"
+  API_tools.check_return aux API_tools.tags_ret_name
 
 
 let get_tags_by_type tag_type =
@@ -108,7 +108,7 @@ let get_tags_by_type tag_type =
     let result_bson = MongoReply.get_document_list result in
     API_tools.yojson_of_bson_document result_bson
   in
-  API_tools.check_return aux "tags"
+  API_tools.check_return aux API_tools.tags_ret_name
 
 
 let get_tags_from_content content_id =
@@ -135,7 +135,7 @@ let get_tags_from_content content_id =
     let results_bson = MongoReply.get_document_list results_tag in
     API_tools.yojson_of_bson_document results_bson
   in
-  API_tools.check_return aux "tags"
+  API_tools.check_return aux API_tools.tags_ret_name
 
 (*
 ** Links
@@ -162,7 +162,7 @@ let get_links_from_content content_id =
     let mongo_query   = MongoReply.get_document_list result_query in
     API_tools.yojson_of_bson_document mongo_query
   in
-  API_tools.check_return aux "contents"
+  API_tools.check_return aux API_tools.links_ret_name
 
 (*
 let get_links_from_content_tags content_id tags_id =
@@ -186,7 +186,7 @@ let get_links_from_content_tags content_id tags_id =
     let mongo_query   = MongoReply.get_document_list result_query in
     API_tools.yojson_of_bson_document mongo_query
   in
-  API_tools.check_return aux "contents"
+  API_tools.check_return aux API_tools.links_ret_name
 *)
 
 let get_tags_from_content_link content_id =
@@ -233,4 +233,4 @@ let get_tags_from_content_link content_id =
     let jresult = API_tools.yojson_of_bson_document results_bson in
     if bson_tags_id_list != [] then jresult else `Null
   in
-  API_tools.check_return aux "tags"
+  API_tools.check_return aux API_tools.tags_ret_name

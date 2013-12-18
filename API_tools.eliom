@@ -20,6 +20,11 @@ let title_field = "title"
 let subject_field = "subject"
 let type_field = "type"
 
+let detail_ret_name = "content"
+let contents_ret_name = "contents"
+let tags_ret_name = "tags"
+let links_ret_name = contents_ret_name
+
 (*** DB's collection *)
 
 let contents_coll = Mongo.create API_conf.db_url API_conf.db_port
