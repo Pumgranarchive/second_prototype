@@ -188,7 +188,7 @@ let get_tags_from_content_link content_id =
     let originid_bson_condition = Bson.add_element API_tools.originid_field content_objectId Bson.empty in
     let result_links = Mongo.find_q API_tools.links_coll originid_bson_condition in
     let links_bson = MongoReply.get_document_list result_links in
-
+    if links_bson = [] then failwith "no content";
 
     (* step 2: request the related tags *)
     let rec remove_duplicate list =
@@ -213,12 +213,12 @@ let get_tags_from_content_link content_id =
 
     in
     let tags_id = remove_duplicate (create_tag_list links_bson) in
+    if tags_id = [] then failwith "no content";
 
     let document_of_tag tag_id =
       Bson.add_element API_tools.id_field tag_id Bson.empty
     in
     let bson_tags_id_list = List.map document_of_tag tags_id in
-    if bson_tags_id_list = [] then failwith "no content";
     let bson_condition = MongoQueryOp.or_op bson_tags_id_list in
     let results = Mongo.find_q_s API_tools.tags_coll bson_condition
       API_tools.tag_format in
