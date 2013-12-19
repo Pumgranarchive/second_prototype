@@ -17,8 +17,7 @@ let get_detail content_id =
     in
     let result = Mongo.find_q_s_one API_tools.contents_coll bson_condition
       API_tools.content_format in
-    let result_bson = List.hd (MongoReply.get_document_list result) in
-    API_tools.yojson_of_bson result_bson
+    API_tools.yojson_of_mongoreply result
   in
   API_tools.check_return aux API_tools.detail_ret_name
 
@@ -39,8 +38,7 @@ let get_detail_by_link link_id =
     in
     let result = Mongo.find_q_s_one API_tools.contents_coll bson_condition
       API_tools.content_format in
-    let result_bson = List.hd (MongoReply.get_document_list result) in
-    API_tools.yojson_of_bson result_bson
+    API_tools.yojson_of_mongoreply result
   in
   API_tools.check_return aux API_tools.detail_ret_name
 
@@ -65,8 +63,7 @@ let get_contents filter tags_id =
     in
     let results = Mongo.find_q_s API_tools.contents_coll bson_condition
       API_tools.content_format in
-    let results_bson = MongoReply.get_document_list results in
-    API_tools.yojson_of_bson_document results_bson
+    API_tools.yojson_of_mongoreply_list results
   in
   API_tools.check_return aux API_tools.contents_ret_name
 
@@ -90,8 +87,7 @@ let get_tags tags_id =
     in
     let results = Mongo.find_q_s API_tools.tags_coll bson_condition
       API_tools.tag_format in
-    let results_bson = MongoReply.get_document_list results in
-    API_tools.yojson_of_bson_document results_bson
+    API_tools.yojson_of_mongoreply_list results
   in
   API_tools.check_return aux API_tools.tags_ret_name
 
@@ -105,8 +101,7 @@ let get_tags_by_type tag_type =
     in
     let result = Mongo.find_q_s API_tools.tags_coll bson_condition
       API_tools.tag_format in
-    let result_bson = MongoReply.get_document_list result in
-    API_tools.yojson_of_bson_document result_bson
+    API_tools.yojson_of_mongoreply_list result
   in
   API_tools.check_return aux API_tools.tags_ret_name
 
@@ -132,8 +127,7 @@ let get_tags_from_content content_id =
     in
     let results_tag = Mongo.find_q_s API_tools.tags_coll tag_bson_condition
       API_tools.tag_format in
-    let results_bson = MongoReply.get_document_list results_tag in
-    API_tools.yojson_of_bson_document results_bson
+    API_tools.yojson_of_mongoreply_list results_tag
   in
   API_tools.check_return aux API_tools.tags_ret_name
 
@@ -159,8 +153,7 @@ let get_links_from_content content_id =
     let result_query  = Mongo.find_q_s_one API_tools.contents_coll link_query
       API_tools.content_format
     in
-    let mongo_query   = MongoReply.get_document_list result_query in
-    API_tools.yojson_of_bson_document mongo_query
+    API_tools.yojson_of_mongoreply_list result_query
   in
   API_tools.check_return aux API_tools.links_ret_name
 
@@ -183,8 +176,7 @@ let get_links_from_content_tags content_id tags_id =
       (MongoQueryOp.or_op (List.map (Bson.add_element API_tools.tagsid_field tags_id link_query)))
     in
     let result_query = Mongo.find_q_s API_tools.contents_coll link_bson_condition in
-    let mongo_query   = MongoReply.get_document_list result_query in
-    API_tools.yojson_of_bson_document mongo_query
+    API_tools.yojson_of_mongoreply_list result_query
   in
   API_tools.check_return aux API_tools.links_ret_name
 *)
@@ -230,7 +222,6 @@ let get_tags_from_content_link content_id =
     let bson_condition = MongoQueryOp.or_op bson_tags_id_list in
     let results = Mongo.find_q_s API_tools.tags_coll bson_condition
       API_tools.tag_format in
-    let results_bson = MongoReply.get_document_list results in
-    API_tools.yojson_of_bson_document results_bson
+    API_tools.yojson_of_mongoreply_list results
   in
   API_tools.check_return aux API_tools.tags_ret_name

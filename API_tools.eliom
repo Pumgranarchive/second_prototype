@@ -49,15 +49,25 @@ let tag_format =
 
 (*** Cast tools *)
 
+(** Cast single bson document to yojson *)
 let yojson_of_bson bson =
   Yj.from_string (Bson.to_simple_json bson)
 
-let yojson_of_bson_document bson_l =
+(** Cast list of bson document to yojson *)
+let yojson_of_bson_list bson_l =
   let rec aux yojson_l = function
     | []        -> yojson_l
     | h::t      -> aux ((yojson_of_bson h)::yojson_l) t
   in
   `List (List.rev (aux [] bson_l))
+
+(** Cast single mongreply document to yojson *)
+let yojson_of_mongoreply mrd =
+    yojson_of_bson (List.hd (MongoReply.get_document_list mrd))
+
+(** Cast mongreply document list to yojson *)
+let yojson_of_mongoreply_list mrd =
+    yojson_of_bson_list (MongoReply.get_document_list mrd)
 
 (*** Manage return tools *)
 
