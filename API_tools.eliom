@@ -46,6 +46,8 @@ let tag_format =
   Bson.add_element id_field yes_value
     (Bson.add_element subject_field yes_value Bson.empty)
 
+let link_format = content_format
+
 (*** Cast tools *)
 
 (** Convert string objectID from mongo in Hexa 12 char format
