@@ -71,6 +71,36 @@ let _ =
     ~get_params:Eliom_parameter.(suffix (opt (string "filter")))
     (fun filter -> get_contents_handler (filter, None))
 
+(* Insert content *)
+let fallback_insert_content =
+  Eliom_service.Http.service
+    ~path:["api"; "content"; "insert"]
+    ~get_params:Eliom_parameter.unit
+    ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:fallback_insert_content
+    (fun () () ->
+      Lwt.return ("test get",
+                  API_tools.content_type))
+
+let insert_content =
+  Eliom_service.Http.post_service
+    ~fallback:fallback_insert_content
+    ~post_params:Eliom_parameter.(string "title" **
+                                  string "text" **
+                                  opt (list "tags" (string "subject")))
+    ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:insert_content
+    (fun () (title, (text, tags_subject)) ->
+      Lwt.return ("test post",
+                  API_tools.content_type))
+
+
 (*
 ** Tags
 *)
