@@ -18,8 +18,8 @@ let power num pow =
     | p                   -> aux (num *. nb) (p -. 1.)
   in aux 1. pow
 
-(* Convert string objectID from mongo in Hexa 12 char format
-   into string in hex 24 char format *)
+(** Convert string objectID from mongo in Hexa 12 char format
+    into string in hex 24 char format *)
 let string_of_id str_id =
   try
     let base = 16 in
@@ -45,32 +45,38 @@ let string_of_id str_id =
   with
   | e -> print_endline (Printexc.to_string e); "0"
 
+(** Unformat the API's service return  *)
 let unformat_service_return func = function
   | `Assoc [(_, _); (_, data)]  -> func data
   | _                           -> failwith (failure_string "uf: service return")
 
+(** Unformat the API's content return  *)
 let unformat_content = function
   | `Assoc [(_, `String text);
             (_, `String title);
             (_, `String id)]    -> title, text, string_of_id id
   | _                           -> failwith (failure_string "uf: content")
 
+(** Unformat the API's tag return  *)
 let unformat_tag = function
   | `Assoc [(_, `String subject);
             (_, `String id)]    -> subject, string_of_id id
   | _                           -> failwith (failure_string "uf: tag")
 
+(** Unformat the API's list return  *)
 let unformat_list (func: Yj.json -> 'a) (l: Yj.json) = match l with
   | `List l                     -> List.map func l
   | `Null                       -> []
   | _                           -> failwith (failure_string "uf: list")
 
+(* Some unformat shorcuts *)
 let unformat_list_tag = unformat_list unformat_tag
 let unformat_list_content = unformat_list unformat_content
 let unformat_list_link = unformat_list unformat_content
 
 }}
 
+(** Get all data for get_detail html service. *)
 let get_detail_content content_id =
   try
     let content = API_core.get_detail content_id in
@@ -86,6 +92,7 @@ let get_detail_content content_id =
   | e -> print_endline (Printexc.to_string e);
     ("title", "text", "id"), [], [], []
 
+(** Get all data for get_contents html service. *)
 let get_contents filter tags_id =
   let contents_json = API_core.get_contents filter tags_id in
   let tags_json = API_core.get_tags_by_type API_conf.content_tag in
