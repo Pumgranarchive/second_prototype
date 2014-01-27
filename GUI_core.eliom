@@ -4,12 +4,11 @@
   it GUI html
 *)
 
+{shared{
+
 module Yj = Yojson.Safe
 
-let get_contents filter tags_id =
-  []
-
-let failure_string n = Printf.sprintf "Invalide content format %d" n
+let failure_string s = Printf.sprintf "Invalide content format %s" s
 
 let power num pow =
   let rec aux nb = function
@@ -48,26 +47,29 @@ let string_of_id str_id =
 
 let unformat_service_return func = function
   | `Assoc [(_, _); (_, data)]  -> func data
-  | _                           -> failwith (failure_string 1)
+  | _                           -> failwith (failure_string "uf: service return")
 
 let unformat_content = function
   | `Assoc [(_, `String text);
             (_, `String title);
             (_, `String id)]    -> title, text, string_of_id id
-  | _                           -> failwith (failure_string 2)
+  | _                           -> failwith (failure_string "uf: content")
 
 let unformat_tag = function
   | `Assoc [(_, `String subject);
             (_, `String id)]    -> subject, string_of_id id
-  | _                           -> failwith (failure_string 3)
+  | _                           -> failwith (failure_string "uf: tag")
 
 let unformat_list (func: Yj.json -> 'a) (l: Yj.json) = match l with
   | `List l                     -> List.map func l
   | `Null                       -> []
-  | _                           -> failwith (failure_string 4)
+  | _                           -> failwith (failure_string "uf: list")
 
 let unformat_list_tag = unformat_list unformat_tag
 let unformat_list_content = unformat_list unformat_content
+let unformat_list_link = unformat_list unformat_content
+
+}}
 
 let get_detail_content content_id =
   try
@@ -76,7 +78,7 @@ let get_detail_content content_id =
     let content_tags = API_core.get_tags_from_content content_id in
     let tags_id = unformat_service_return unformat_list_tag content_tags in
     let links = API_core.get_links_from_content content_id in
-    let link_list = unformat_service_return unformat_list_content links in
+    let link_list = unformat_service_return unformat_list_link links in
     let tags_link = API_core.get_tags_from_content_link content_id in
     let tags_link_list = unformat_service_return unformat_list_tag tags_link in
     (title, text, id), tags_id, link_list, tags_link_list
@@ -90,4 +92,3 @@ let get_contents filter tags_id =
   let contents = unformat_service_return unformat_list_content contents_json in
   let tags = unformat_service_return unformat_list_tag tags_json in
   (contents, tags)
-
