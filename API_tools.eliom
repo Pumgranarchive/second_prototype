@@ -20,10 +20,9 @@ let title_field = "title"
 let subject_field = "subject"
 let type_field = "type"
 
-let detail_ret_name = "content"
 let contents_ret_name = "contents"
 let tags_ret_name = "tags"
-let links_ret_name = contents_ret_name
+let links_ret_name = "links"
 
 (*** DB's collection *)
 
@@ -61,12 +60,12 @@ let yojson_of_bson_list bson_l =
   in
   `List (List.rev (aux [] bson_l))
 
-(** Cast single mongreply document to yojson *)
-let yojson_of_mongoreply mrd =
-    yojson_of_bson (List.hd (MongoReply.get_document_list mrd))
+(* (\** Cast single mongreply document to yojson *\) *)
+(* let yojson_of_mongoreply mrd = *)
+(*     yojson_of_bson (List.hd (MongoReply.get_document_list mrd)) *)
 
-(** Cast mongreply document list to yojson *)
-let yojson_of_mongoreply_list mrd =
+(** Cast mongreply document list to yojson list *)
+let yojson_of_mongoreply mrd =
     yojson_of_bson_list (MongoReply.get_document_list mrd)
 
 (*** Manage return tools *)
@@ -86,11 +85,15 @@ let check_return func content_name =
   let null_return () =
     format_ret content_name API_conf.return_no_content `Null
   in
+  let valided_return ret =
+    format_ret content_name API_conf.return_ok (`List ret)
+  in
   try
     match func () with
     | `Null     -> null_return ()
     | `List []  -> null_return ()
-    | ret       -> format_ret content_name API_conf.return_ok ret
+    | `List ret -> valided_return ret
+    | ret       -> valided_return [ret]
   with
   | Failure "no content"        -> null_return ()
   | exc                         ->

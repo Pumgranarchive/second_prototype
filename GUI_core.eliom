@@ -80,7 +80,9 @@ let unformat_list_link = unformat_list unformat_content
 let get_detail_content content_id =
   try
     let content = API_core.get_detail content_id in
-    let title, text, id = unformat_service_return unformat_content content in
+    let title, text, id =
+      List.hd (unformat_service_return unformat_list_content content)
+    in
     let content_tags = API_core.get_tags_from_content content_id in
     let tags_id = unformat_service_return unformat_list_tag content_tags in
     let links = API_core.get_links_from_content content_id in
