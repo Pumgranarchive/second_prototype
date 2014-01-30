@@ -54,6 +54,7 @@ let handle_refresh_links content_id links_html submit =
         GUI_core.unformat_list_link yojson_links
       in
       let div_links = build_links_list links in
+      remove_all_child ();
       let rec display = function
         | []          -> ()
         | block::tail ->
@@ -64,11 +65,10 @@ let handle_refresh_links content_id links_html submit =
     let lwt_links_json = Eliom_client.call_service
       ~service:%API_services.get_links_from_content content_id () in
     lwt links_json = lwt_links_json in
-  remove_all_child ();
-  Lwt.return (display_links links_json)
-in
-Lwt.async (fun () -> Lwt_js_events.click dom_submit >>= fun _ ->
-  refresh_links_html ())
+    Lwt.return (display_links links_json)
+  in
+  Lwt.async (fun () -> Lwt_js_events.click dom_submit >>= fun _ ->
+    refresh_links_html ())
 
 }}
 

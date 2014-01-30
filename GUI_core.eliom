@@ -18,33 +18,6 @@ let power num pow =
     | p                   -> aux (num *. nb) (p -. 1.)
   in aux 1. pow
 
-(** Convert string objectID from mongo in Hexa 12 char format
-    into string in hex 24 char format *)
-let string_of_id str_id =
-  try
-    let base = 16 in
-    let length = 12 in
-    let buf = Buffer.create length in
-    let char_of_hex_int h =
-      String.get (Printf.sprintf "%x" h) 0
-    in
-    let rec aux position =
-      if (position >= length) then ()
-      else
-        begin
-          let n = Char.code (String.get str_id position) in
-          let n1 = n mod base in
-          let n2 = (n - n1) / base in
-          Buffer.add_char buf (char_of_hex_int n2);
-          Buffer.add_char buf (char_of_hex_int n1);
-          aux (position + 1)
-        end
-    in
-    aux 0;
-    Buffer.contents buf
-  with
-  | e -> print_endline (Printexc.to_string e); "0"
-
 (** Unformat the API's service return  *)
 let unformat_service_return func = function
   | `Assoc [(_, _); (_, data)]  -> func data
@@ -52,15 +25,15 @@ let unformat_service_return func = function
 
 (** Unformat the API's content return  *)
 let unformat_content = function
-  | `Assoc [(_, `String text);
+  | `Assoc [(_, `String id);
             (_, `String title);
-            (_, `String id)]    -> title, text, string_of_id id
+            (_, `String text)]    -> title, text, id
   | _                           -> failwith (failure_string "uf: content")
 
 (** Unformat the API's tag return  *)
 let unformat_tag = function
-  | `Assoc [(_, `String subject);
-            (_, `String id)]    -> subject, string_of_id id
+  | `Assoc [(_, `String id);
+            (_, `String subject)]    -> subject, id
   | _                           -> failwith (failure_string "uf: tag")
 
 (** Unformat the API's list return  *)

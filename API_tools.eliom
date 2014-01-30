@@ -48,9 +48,45 @@ let tag_format =
 
 (*** Cast tools *)
 
+(** Convert string objectID from mongo in Hexa 12 char format
+    into string in hex 24 char format *)
+let string_of_id str_id =
+  try
+    let base = 16 in
+    let length = 12 in
+    let buf = Buffer.create length in
+    let char_of_hex_int h =
+      String.get (Printf.sprintf "%x" h) 0
+    in
+    let rec aux position =
+      if (position >= length) then ()
+      else
+        begin
+          let n = Char.code (String.get str_id position) in
+          let n1 = n mod base in
+          let n2 = (n - n1) / base in
+          Buffer.add_char buf (char_of_hex_int n2);
+          Buffer.add_char buf (char_of_hex_int n1);
+          aux (position + 1)
+        end
+    in
+    aux 0;
+    Buffer.contents buf
+  with
+  | e -> print_endline (Printexc.to_string e); "0"
+
 (** Cast single bson document to yojson *)
 let yojson_of_bson bson =
-  Yj.from_string (Bson.to_simple_json bson)
+  let tmp = Yj.from_string (Bson.to_simple_json bson) in
+  let rec check_id_format newlist = function
+    | []                        -> newlist
+    | ("_id", `String id)::tail ->
+      check_id_format (("_id", `String (string_of_id id))::newlist) tail
+    | head::tail                -> check_id_format (head::newlist) tail
+  in
+  match tmp with
+  | `Assoc list -> `Assoc (check_id_format [] list)
+  | _           -> tmp
 
 (** Cast list of bson document to yojson *)
 let yojson_of_bson_list bson_l =
