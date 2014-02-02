@@ -112,7 +112,7 @@ let removing_text_field = function
     let rec scanner nl = function
       | (`Assoc list)::tail     ->
         let rec remover nl = function
-          | []                -> nl
+          | []                -> List.rev nl
           | ("text", _)::tail -> remover (("text", `String "")::nl) tail
           | head::tail        -> remover (head::nl) tail
         in scanner ((`Assoc (remover [] list))::nl) tail
