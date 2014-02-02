@@ -106,6 +106,16 @@ let yojson_of_mongoreply mrd =
 
 (*** Manage return tools *)
 
+(** Removing the value from text field *)
+let removing_text_field = function
+  | `Assoc list ->
+    let rec remover nl = function
+      | []                -> nl
+      | ("text", _)::tail -> remover (("text", `String "")::nl) tail
+      | head::tail        -> remover (head::nl) tail
+    in `Assoc (remover [] list)
+  | yl          -> yl
+
 (** Format the returned value *)
 let format_ret param_name status (param_value:Yj.json) =
   `Assoc [("status", `Int status);

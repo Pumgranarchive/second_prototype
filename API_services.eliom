@@ -51,7 +51,7 @@ let _ =
 
 let list_tags =
   Eliom_service.Http.service
-    ~path:["api"; "tags"; "list_tag"]
+    ~path:["api"; "tag"; "list_tag"]
     ~get_params:Eliom_parameter.(suffix (list "tags" (string "id")))
     ()
 
@@ -65,8 +65,8 @@ let _ =
 (*** get_tags_by_type *)
 let get_tags_by_type =
   Eliom_service.Http.service
-    ~path:["api"; "tags"; "list_by_type"]
-    ~get_params:Eliom_parameter.(suffix (int "type_name"))
+    ~path:["api"; "tag"; "list_by_type"]
+    ~get_params:Eliom_parameter.(suffix (string "type_name"))
     ()
 
 let _ =
@@ -79,7 +79,7 @@ let _ =
 (*** get_tag_from_content *)
 let get_tags_from_content =
   Eliom_service.Http.service
-    ~path:["api"; "tags"; "list_from_content"]
+    ~path:["api"; "tag"; "list_from_content"]
     ~get_params:Eliom_parameter.(suffix (string "content_id"))
     ()
 
@@ -94,7 +94,7 @@ let _ =
 (*** get_tag_from_content_link *)
 let get_tags_from_content_link =
   Eliom_service.Http.service
-    ~path:["api"; "tags"; "list_from_content_link"]
+    ~path:["api"; "tag"; "list_from_content_links"]
     ~get_params:Eliom_parameter.(suffix (string "content_id"))
     ()
 
