@@ -7,13 +7,13 @@ let _ =
   Pumgrana.App.register
     ~service:GUI_services.starting_service
     (fun () () ->
-      Lwt.return (GUI_html.main_html (GUI_core.get_contents None None)))
+      Lwt.return (GUI_html.home_html (GUI_core.get_contents None None)))
 
 let _ =
   Pumgrana.App.register
-    ~service:GUI_services.main_service
+    ~service:GUI_services.home_service
     (fun (filter, tags_id) () ->
-      Lwt.return (GUI_html.main_html (GUI_core.get_contents filter tags_id)))
+      Lwt.return (GUI_html.home_html (GUI_core.get_contents filter tags_id)))
 
 let _ =
   Pumgrana.App.register

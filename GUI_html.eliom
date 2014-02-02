@@ -72,8 +72,8 @@ let handle_refresh_links content_id links_html submit =
 
 }}
 
-(** Display the main html service *)
-let main_html contents_and_tags =
+(** Display the home html service *)
+let home_html contents_and_tags =
   let (contents, tags) = contents_and_tags in
   let content_html_list =
     List.map (fun (title, text, id) ->
