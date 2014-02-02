@@ -20,21 +20,23 @@ let power num pow =
 
 (** Unformat the API's service return  *)
 let unformat_service_return func = function
-  | `Assoc [(_, _); (_, data)]  -> func data
-  | _                           -> failwith (failure_string "uf: service return")
+  | `Assoc [(_, _); (_, data)]          -> func data
+  | `Assoc [(_, _); (_, _); (_, data)]  -> func data
+  | _                                   ->
+    failwith (failure_string "uf: service return")
 
 (** Unformat the API's content return  *)
 let unformat_content = function
   | `Assoc [(_, `String id);
             (_, `String title);
-            (_, `String text)]    -> title, text, id
+            (_, `String text)]  -> title, text, id
   | _                           -> failwith (failure_string "uf: content")
 
 (** Unformat the API's tag return  *)
 let unformat_tag = function
   | `Assoc [(_, `String id);
-            (_, `String subject)]    -> subject, id
-  | _                           -> failwith (failure_string "uf: tag")
+            (_, `String subject)]       -> subject, id
+  | _                                   -> failwith (failure_string "uf: tag")
 
 (** Unformat the API's list return  *)
 let unformat_list (func: Yj.json -> 'a) (l: Yj.json) = match l with
@@ -65,7 +67,7 @@ let get_detail_content content_id =
     (title, text, id), tags_id, link_list, tags_link_list
   with
   | e -> print_endline (Printexc.to_string e);
-    ("title", "text", "id"), [], [], []
+    ("title", "Internal server error", "id"), [], [], []
 
 (** Get all data for get_contents html service. *)
 let get_contents filter tags_id =
