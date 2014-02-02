@@ -108,13 +108,18 @@ let yojson_of_mongoreply mrd =
 
 (** Removing the value from text field *)
 let removing_text_field = function
-  | `Assoc list ->
-    let rec remover nl = function
-      | []                -> nl
-      | ("text", _)::tail -> remover (("text", `String "")::nl) tail
-      | head::tail        -> remover (head::nl) tail
-    in `Assoc (remover [] list)
-  | yl          -> yl
+  | `List l     ->
+    let rec scanner nl = function
+      | (`Assoc list)::tail     ->
+        let rec remover nl = function
+          | []                -> nl
+          | ("text", _)::tail -> remover (("text", `String "")::nl) tail
+          | head::tail        -> remover (head::nl) tail
+        in scanner ((`Assoc (remover [] list))::nl) tail
+      | head::tail              -> scanner (head::nl) tail
+      | []                      -> nl
+    in `List (scanner [] l)
+  | yl  -> yl
 
 (** Format the returned value *)
 let format_ret param_name status (param_value:Yj.json) =
