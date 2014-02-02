@@ -52,7 +52,8 @@ let get_contents filter tags_id =
       | Some "MOST_USED"        -> ()
       | Some "MOST_VIEW"        -> ()
       | Some "MOST_RECENT"      -> ()
-      | Some x                  -> failwith "get_contents got a bad value."
+      | Some x                  ->
+        raise API_conf.(Pum_exc (return_forbidden, errstr_forbidden x))
     in
     let bson_condition = match tags_id with
       | None    -> Bson.empty
@@ -98,7 +99,8 @@ let get_tags_by_type tag_type =
       match tag_type with
       | "LINK"     -> Bson.create_string API_conf.link_tag_str
       | "CONTENT"  -> Bson.create_string API_conf.content_tag_str
-      | _          -> failwith "get_tags_by_type got a bad value."
+      | x          ->
+        raise API_conf.(Pum_exc (return_forbidden, errstr_forbidden x))
     in
     let bson_condition =
       Bson.add_element API_tools.type_field bson_type Bson.empty
@@ -149,7 +151,8 @@ let get_tags_from_content_link content_id =
     let result_links = Mongo.find_q API_tools.links_coll originid_bson_condition
     in
     let links_bson = MongoReply.get_document_list result_links in
-    if links_bson = [] then failwith "no content";
+    if links_bson = [] then
+      raise API_conf.(Pum_exc (return_no_content, "This content has no link."));
 
     (* step 2: request the related tags *)
     let rec remove_duplicate list =
@@ -174,7 +177,8 @@ let get_tags_from_content_link content_id =
 
     in
     let tags_id = remove_duplicate (create_tag_list links_bson) in
-    if tags_id = [] then failwith "no content";
+    if tags_id = [] then
+      raise API_conf.(Pum_exc (return_no_content, "These links has no tag."));
 
     let document_of_tag tag_id =
       Bson.add_element API_tools.id_field tag_id Bson.empty

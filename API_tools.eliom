@@ -122,19 +122,27 @@ let removing_text_field = function
   | yl  -> yl
 
 (** Format the returned value *)
-let format_ret param_name status (param_value:Yj.json) =
-  `Assoc [("status", `Int status);
-          (param_name, param_value) ]
+let format_ret param_name status ?error_str (param_value:Yj.json) =
+  match error_str with
+  | None           -> `Assoc [("status", `Int status);
+                              (param_name, param_value)]
+  | Some str       -> `Assoc [("status", `Int status);
+                              ("error", `String str);
+                              (param_name, param_value)]
 
 (** [check_return func content_name]
     func: the function which return the result.
     content_name: the name of the content in the result.
 
-    If the exception Failure "no content" is fired, 204 is returned.
-    For any others exceptions, 500 is returned *)
+    If the exception API_conf.Pum_exc (value, error_str) is fired,
+    this data are use for the return.
+    For any others exceptions, internal server error (500) is returned *)
 let check_return func content_name =
   let null_return () =
     format_ret content_name API_conf.return_no_content `Null
+  in
+  let error_return status error_str =
+    format_ret content_name status ~error_str `Null
   in
   let valided_return ret =
     format_ret content_name API_conf.return_ok (`List ret)
@@ -146,9 +154,9 @@ let check_return func content_name =
     | `List ret -> valided_return ret
     | ret       -> valided_return [ret]
   with
-  | Failure "no content"        -> null_return ()
+  | API_conf.Pum_exc (v, str)   -> error_return v str
   | exc                         ->
     begin
       print_endline (Printexc.to_string exc);
-      format_ret content_name API_conf.return_fail `Null
+      error_return API_conf.return_internal_error API_conf.errstr_internal_error
     end

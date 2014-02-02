@@ -11,10 +11,22 @@ let contents_coll_name = "contents"
 let tags_coll_name = "tags"
 let links_coll_name = "links"
 
+(* API exception *)
+exception Pum_exc of int * string
+
 (* Return values *)
-let return_fail = 500
 let return_ok = 200
+let return_created = 201
 let return_no_content = 204
+let return_forbidden = 403
+let return_not_found = 404
+let return_internal_error = 500
+
+(* Error string values *)
+let errstr_forbidden name = name ^ ": is Forbidden"
+let errstr_not_found name = name ^ ": is Not Found"
+let errstr_internal_error = "Internal server error"
+
 
 (* Filter Values *)
 let most_recent = 0
