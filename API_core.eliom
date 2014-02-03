@@ -274,7 +274,7 @@ let get_tags_from_content_link content_id =
 let get_links_from_content content_id =
   let aux () =
     (* getting every link with 'content_id' as origin *)
-    let content_objectId = Bson.create_objectId content_id in
+    let content_objectId = API_tools.objectid_of_string content_id in
 
     let result_content =
       Mongo.find_q API_tools.links_coll
@@ -303,10 +303,11 @@ let get_links_from_content content_id =
 let get_links_from_content_tags content_id tags_id =
   let aux () =
     (* getting every link with 'content_id' as origin *)
-    let content_objectId = Bson.create_objectId content_id in
+    let content_objectId = API_tools.objectid_of_string content_id in
 
     let document_of_tag tag_id =
-      Bson.add_element API_tools.tags_field (Bson.create_objectId tag_id) Bson.empty
+      Bson.add_element API_tools.tags_field
+        (API_tools.objectid_of_string tag_id) Bson.empty
     in
     let bson_tags_id_list = List.map document_of_tag tags_id in
     let bson_tags_condition = MongoQueryOp.and_op bson_tags_id_list in
@@ -332,4 +333,4 @@ let get_links_from_content_tags content_id tags_id =
     API_tools.removing_text_field
       (API_tools.yojson_of_mongoreply result_query)
   in
-  API_tools.check_return aux API_tools.links_ret_name
+  API_tools.check_return ~param_name:API_tools.links_ret_name aux
