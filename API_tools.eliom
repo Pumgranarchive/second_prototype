@@ -63,6 +63,22 @@ let tag_format =
   Bson.add_element id_field yes_value
     (Bson.add_element subject_field yes_value Bson.empty)
 
+(*** Getter tools  *)
+
+let get_id_state coll =
+  List.map (fun e -> Bson.get_objectId (Bson.get_element id_field e))
+    (MongoReply.get_document_list (Mongo.find coll))
+
+let get_last_created_id coll saved_state =
+  let new_state = get_id_state coll in
+  let rec aux = function
+    | []        -> failwith "not any new id found"
+    | h::t      ->
+      if (List.exists (fun e -> (String.compare h e) == 0) saved_state)
+      then aux t
+      else h
+  in aux new_state
+
 (*** Cast tools *)
 
 let objectid_of_string str =
