@@ -18,13 +18,13 @@ exception Pum_exc of int * string
 let return_ok = 200
 let return_created = 201
 let return_no_content = 204
-let return_forbidden = 403
 let return_not_found = 404
 let return_internal_error = 500
 
 (* Error string values *)
-let errstr_forbidden name = name ^ ": is Forbidden"
-let errstr_not_found name = name ^ ": is Not Found"
+let errstr_not_found str = "'" ^ str ^ "' is Not Found"
+let errstr_not_objectid str = "'" ^ str ^ "' is not an valid object id."
+let errstr_not_expected str = "'" ^ str ^ "' is not the expected value."
 let errstr_internal_error = "Internal server error"
 
 

@@ -90,7 +90,17 @@ let home_html contents_and_tags =
       h2 [pcdata "Pumgrana"];
       p [pcdata "Content list"];
       ul content_html_list;
-      p [pcdata "Tags list"]
+      p [pcdata "Tags list"];
+      post_form
+        ~service:API_services.insert_content
+        (fun (title, (text, tas_subject)) ->
+          [fieldset
+              [string_input ~input_type:`Hidden
+                  ~name:title ~value:"title" ();
+               string_input ~input_type:`Hidden
+                 ~name:text ~value:"text" ();
+               string_input ~input_type:`Submit
+                 ~value:"Sub" ()]]) ()
     ])
 
 (** Display the content detail html service *)

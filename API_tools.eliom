@@ -33,6 +33,23 @@ let tags_coll = Mongo.create API_conf.db_url API_conf.db_port
 let links_coll = Mongo.create API_conf.db_url API_conf.db_port
   API_conf.db_name API_conf.links_coll_name
 
+(*** Checking tools  *)
+
+let check_empty_yojson yj original_value =
+  if (yj = `List [])
+  then raise API_conf.(Pum_exc(return_not_found,
+                               errstr_not_found original_value))
+  else yj
+
+let check_empty_ocaml_list l original_value =
+  if (l = [])
+  then raise API_conf.(Pum_exc(return_not_found,
+                               errstr_not_found original_value))
+  else l
+
+let check_empty_bson bs =
+  check_empty_ocaml_list (MongoReply.get_document_list bs)
+
 (*** Request format tools  *)
 
 let yes_value = Bson.create_boolean true
@@ -47,6 +64,13 @@ let tag_format =
     (Bson.add_element subject_field yes_value Bson.empty)
 
 (*** Cast tools *)
+
+let objectid_of_string str =
+  try
+    Bson.create_objectId str
+  with
+  | Bson.Invalid_objectId     ->
+    raise API_conf.(Pum_exc (return_no_content, errstr_not_objectid str))
 
 (** Convert string objectID from mongo in Hexa 12 char format
     into string in hex 24 char format *)
