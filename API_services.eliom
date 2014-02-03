@@ -184,17 +184,17 @@ let _ =
 
 
 (* Get_links_from_content_tags *)
-(* let get_links_from_content_tags =
+let get_links_from_content_tags =
      Eliom_service.Http.service
        ~path:["api"; "link"; "list_from_content_tags"]
-       ~get_params:Eliom_parameter.(suffix (string "link_id") **
-          (string "tags_id"))
+       ~get_params:Eliom_parameter.(suffix ((string "content_id") **
+          (list "tags" (string "id"))))
        ()
 
 (** This function manage the computation
    of the get_links_from_content_tags sercice *)
-let get_links_from_content_tags_handler (links_id, tags_id) () =
-   Lwt.return (Yj.to_string (API_core.get_links_from_content_tags link_id),
+let get_links_from_content_tags_handler (content_id, tags_id) () =
+   Lwt.return (Yj.to_string (API_core.get_links_from_content_tags content_id tags_id),
       API_tools.content_type)
 
 (** Simple service registration *)
@@ -203,12 +203,10 @@ let _ =
    ~service:get_links_from_content_tags
    get_links_from_content_tags_handler
 
-(** This service allow a simpler matching url without superfluous slashs,
-    due by the two optional parameters. *)
-let _ =
-   Eliom_registration.String.register_service
-    ~path:["api"; "link"; "list_from_content_tags"]
-    ~get_params:Eliom_parameter.(suffix (string "link_id"))
-   (fun link_id -> get_links_from_content_tags_handler (link_id, None))
-
-*)
+(* (\** This service allow a simpler matching url without superfluous slashs, *)
+(*     due by the two optional parameters. *\) *)
+(* let _ = *)
+(*    Eliom_registration.String.register_service *)
+(*     ~path:["api"; "link"; "list_from_content_tags"] *)
+(*     ~get_params:Eliom_parameter.(suffix (string "content_id")) *)
+(*    (fun content_id -> get_links_from_content_tags_handler (content_id, None)) *)

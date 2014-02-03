@@ -216,6 +216,7 @@ let get_tags_from_content content_id =
 (* Warning: if a tag_id does not exist no error will be fire. *)
 let get_tags_from_content_link content_id =
   let aux () =
+
     (* step 1: get links related to the content*)
     let content_object_id = API_tools.objectid_of_string content_id in
     let originid_bson_query =
@@ -273,55 +274,62 @@ let get_tags_from_content_link content_id =
 let get_links_from_content content_id =
   let aux () =
     (* getting every link with 'content_id' as origin *)
-    let content_object_id = API_tools.objectid_of_string content_id in
-    let document_of_link_id_list field link_id_list =
-      (Bson.add_element field link_id_list Bson.empty)
-    in
+    let content_objectId = Bson.create_objectId content_id in
+
     let result_content =
-      Mongo.find_q_one API_tools.links_coll
-        (document_of_link_id_list API_tools.originid_field content_object_id)
+      Mongo.find_q API_tools.links_coll
+        (Bson.add_element API_tools.originid_field content_objectId Bson.empty)
     in
-    (* hd is for testing, later you have to loop *)
-    let content_bson = List.hd(MongoReply.get_document_list result_content) in
-    let link_id_list = Bson.get_element API_tools.targetid_field content_bson in
+    let content_bson_list = MongoReply.get_document_list result_content in
+    if content_bson_list = [] then
+      raise API_conf.(Pum_exc (return_no_content, "This content has no link."));
+
+    let make_link_id_list content_bson =
+      Bson.add_element API_tools.id_field (Bson.get_element API_tools.targetid_field content_bson) Bson.empty in
+
+    let link_id_list = List.map make_link_id_list content_bson_list in
 
     (* getting content to return *)
-    let link_query    = document_of_link_id_list API_tools.id_field link_id_list
+    let link_query    = (MongoQueryOp.or_op link_id_list)
     in
-    let result_query  = Mongo.find_q_s_one API_tools.contents_coll link_query
-      API_tools.content_format
+    let result_query  = Mongo.find_q_s API_tools.contents_coll link_query
+      API_tools.link_format
     in
     API_tools.removing_text_field
       (API_tools.yojson_of_mongoreply result_query)
   in
   API_tools.check_return ~param_name:API_tools.links_ret_name aux
 
-(*
-  let get_links_from_content_tags content_id tags_id =
+let get_links_from_content_tags content_id tags_id =
   let aux () =
-  (* getting every link with 'content_id' as origin *)
-  let content_object_id = API_tools.objectid_of_string content_id in
-  let document_of_link_id_list field link_id_list =
-  (Bson.add_element field link_id_list Bson.empty)
-  in
-  let result_content = Mongo.find_q_one API_tools.links_coll
-  (document_of_link_id_list API_tools.originid_field content_object_id)
-  in
-  (* hd is for testing, later you have to loop *)
-  let content_bson = List.hd(MongoReply.get_document_list result_content) in
-  let link_id_list = Bson.get_element API_tools.targetid_field content_bson in
+    (* getting every link with 'content_id' as origin *)
+    let content_objectId = Bson.create_objectId content_id in
 
-  (* getting content to return *)
-  let link_query    = document_of_link_id_list API_tools.id_field link_id_list
-  in
-  let link_bson_query =
-  (MongoQueryOp.or_op (List.map
-  (Bson.add_element API_tools.tagsid_field tags_id link_query)))
-  in
-  let result_query =
-  Mongo.find_q_s API_tools.contents_coll link_bson_query
-  in
-  API_tools.yojson_of_mongoreply result_query
+    let document_of_tag tag_id =
+      Bson.add_element API_tools.tags_field (Bson.create_objectId tag_id) Bson.empty
+    in
+    let bson_tags_id_list = List.map document_of_tag tags_id in
+    let bson_tags_condition = MongoQueryOp.and_op bson_tags_id_list in
+    let result_content =
+      Mongo.find_q API_tools.links_coll
+        (Bson.add_element API_tools.originid_field content_objectId bson_tags_condition)
+    in
+    let content_bson_list = MongoReply.get_document_list result_content in
+    if content_bson_list = [] then
+      raise API_conf.(Pum_exc (return_no_content, "This content has no link."));
+
+    let make_link_id_list content_bson =
+      Bson.add_element API_tools.id_field (Bson.get_element API_tools.targetid_field content_bson) Bson.empty in
+
+    let link_id_list = List.map make_link_id_list content_bson_list in
+
+    (* getting content to return *)
+    let link_query    = (MongoQueryOp.or_op link_id_list)
+    in
+    let result_query  = Mongo.find_q_s API_tools.contents_coll link_query
+      API_tools.link_format
+    in
+    API_tools.removing_text_field
+      (API_tools.yojson_of_mongoreply result_query)
   in
   API_tools.check_return aux API_tools.links_ret_name
-*)
