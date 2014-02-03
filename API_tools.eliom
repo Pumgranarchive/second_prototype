@@ -5,6 +5,16 @@
 
 module Yj = Yojson.Safe
 
+(*** Generation tools  *)
+
+Random.init 0
+
+let new_rand () = Random.float 200.
+
+let process_rand = new_rand ()
+
+let new_id () = process_rand +. new_rand () +. Unix.time ()
+
 (*** Static string for configuration / selection *)
 
 (** content type return by API' services *)
@@ -23,6 +33,9 @@ let type_field = "type"
 let contents_ret_name = "contents"
 let tags_ret_name = "tags"
 let links_ret_name = "links"
+let content_id_ret_name = "content_id"
+let tags_id_ret_name = "tags_id"
+let links_id_ret_name = "links_id"
 
 (*** DB's collection *)
 
@@ -32,23 +45,6 @@ let tags_coll = Mongo.create API_conf.db_url API_conf.db_port
   API_conf.db_name API_conf.tags_coll_name
 let links_coll = Mongo.create API_conf.db_url API_conf.db_port
   API_conf.db_name API_conf.links_coll_name
-
-(*** Checking tools  *)
-
-let check_empty_yojson yj original_value =
-  if (yj = `List [])
-  then raise API_conf.(Pum_exc(return_not_found,
-                               errstr_not_found original_value))
-  else yj
-
-let check_empty_ocaml_list l original_value =
-  if (l = [])
-  then raise API_conf.(Pum_exc(return_not_found,
-                               errstr_not_found original_value))
-  else l
-
-let check_empty_bson bs =
-  check_empty_ocaml_list (MongoReply.get_document_list bs)
 
 (*** Request format tools  *)
 
@@ -144,6 +140,30 @@ let yojson_of_bson_list bson_l =
 let yojson_of_mongoreply mrd =
     yojson_of_bson_list (MongoReply.get_document_list mrd)
 
+(*** Checking tools  *)
+
+let check_empty_yojson yj original_value =
+  if (yj = `List [])
+  then raise API_conf.(Pum_exc(return_not_found,
+                               errstr_not_found original_value))
+  else yj
+
+let check_empty_ocaml_list l original_value =
+  if (l = [])
+  then raise API_conf.(Pum_exc(return_not_found,
+                               errstr_not_found original_value))
+  else l
+
+let check_empty_bson bs =
+  check_empty_ocaml_list (MongoReply.get_document_list bs)
+
+let check_exist coll id =
+  let object_id = objectid_of_string id in
+  let bson_query = Bson.add_element id_field object_id Bson.empty in
+  let result = MongoReply.get_document_list (Mongo.find_q coll bson_query) in
+  if (result = [])
+  then raise API_conf.(Pum_exc(return_not_found, API_conf.errstr_not_found id))
+
 (*** Manage return tools *)
 
 (** Removing the value from text field *)
@@ -162,13 +182,19 @@ let removing_text_field = function
   | yl  -> yl
 
 (** Format the returned value *)
-let format_ret param_name status ?error_str (param_value:Yj.json) =
-  match error_str with
-  | None           -> `Assoc [("status", `Int status);
-                              (param_name, param_value)]
-  | Some str       -> `Assoc [("status", `Int status);
-                              ("error", `String str);
-                              (param_name, param_value)]
+let format_ret ?param_name status ?error_str (param_value:Yj.json) =
+  let assoc_list = [] in
+  let assoc_list_1 =
+    match param_name with
+    | None      -> assoc_list
+    | Some name -> (name, param_value)::assoc_list
+  in
+  let assoc_list_2 =
+    match error_str with
+    | None      -> assoc_list_1
+    | Some str  -> ("error", `String str)::assoc_list_1
+  in
+  `Assoc (("status", `Int status)::assoc_list_2)
 
 (** [check_return func content_name]
     func: the function which return the result.
@@ -177,22 +203,22 @@ let format_ret param_name status ?error_str (param_value:Yj.json) =
     If the exception API_conf.Pum_exc (value, error_str) is fired,
     this data are use for the return.
     For any others exceptions, internal server error (500) is returned *)
-let check_return func content_name =
+let check_return ?(default_return=API_conf.return_ok) ?param_name func =
   let null_return () =
-    format_ret content_name API_conf.return_no_content `Null
+    format_ret ?param_name API_conf.return_no_content `Null
   in
   let error_return status error_str =
-    format_ret content_name status ~error_str `Null
+    format_ret ?param_name status ~error_str `Null
   in
   let valided_return ret =
-    format_ret content_name API_conf.return_ok (`List ret)
+    format_ret ?param_name default_return (`List ret)
   in
   try
-    match func () with
-    | `Null     -> null_return ()
-    | `List []  -> null_return ()
-    | `List ret -> valided_return ret
-    | ret       -> valided_return [ret]
+    match func (), param_name with
+    | `Null, Some _     -> null_return ()
+    | `List [], _       -> null_return ()
+    | `List ret, _      -> valided_return ret
+    | ret, _            -> valided_return [ret]
   with
   | API_conf.Pum_exc (v, str)   -> error_return v str
   | exc                         ->

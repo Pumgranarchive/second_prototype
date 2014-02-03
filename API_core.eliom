@@ -20,7 +20,7 @@ let get_detail content_id =
     let ret = API_tools.yojson_of_mongoreply result in
     API_tools.check_empty_yojson ret content_id
   in
-  API_tools.check_return aux API_tools.contents_ret_name
+  API_tools.check_return ~param_name:API_tools.contents_ret_name aux
 
 let get_content_id_from_link link_id =
   let object_id = API_tools.objectid_of_string link_id in
@@ -46,7 +46,7 @@ let get_detail_by_link link_id =
     let ret = API_tools.yojson_of_mongoreply result in
     API_tools.check_empty_yojson ret link_id
   in
-  API_tools.check_return aux API_tools.contents_ret_name
+  API_tools.check_return ~param_name:API_tools.contents_ret_name aux
 
 (* Currently, filter is not used,
    because we haven't enought informations in the DB
@@ -76,49 +76,65 @@ let get_contents filter tags_id =
       API_tools.content_format in
     API_tools.yojson_of_mongoreply results
   in
-  API_tools.check_return aux API_tools.contents_ret_name
+  API_tools.check_return ~param_name:API_tools.contents_ret_name aux
 
 (*** Setters  *)
 
 (* Currently tags_subject is not used *)
 let insert_content title text tags_subject =
-  let bson_title = Bson.create_string title in
-  let bson_text = Bson.create_string text in
-  let content = Bson.add_element API_tools.title_field bson_title
-    (Bson.add_element API_tools.text_field bson_text Bson.empty)
+  let aux () =
+    let bson_title = Bson.create_string title in
+    let bson_text = Bson.create_string text in
+    let content = Bson.add_element API_tools.title_field bson_title
+      (Bson.add_element API_tools.text_field bson_text Bson.empty)
+    in
+  (* ! THE ID NEED TO BE GET BY ANOTHER MANNER ! *)
+    let saved_state = API_tools.get_id_state API_tools.contents_coll in
+    Mongo.insert API_tools.contents_coll [content];
+    `String (API_tools.get_last_created_id API_tools.contents_coll saved_state)
   in
-  (* ! THE ID NEED TO BE GET WITH ANOTHER MANNER ! *)
-  let saved_state = API_tools.get_id_state API_tools.contents_coll in
-  Mongo.insert API_tools.contents_coll [content];
-  API_tools.get_last_created_id API_tools.contents_coll saved_state
+  API_tools.check_return
+    ~param_name:API_tools.content_id_ret_name
+    ~default_return:API_conf.return_created aux
 
 (* Warning: does not raise exception if content_id does not match *)
 let update_content content_id title text =
-  let object_id = API_tools.objectid_of_string content_id in
-  let bson_query = Bson.add_element API_tools.id_field object_id Bson.empty
+  let aux () =
+    API_tools.check_exist API_tools.contents_coll content_id;
+    let object_id = API_tools.objectid_of_string content_id in
+    let bson_query = Bson.add_element API_tools.id_field object_id Bson.empty
+    in
+    let content = Bson.empty in
+    let content_1 = match title with
+      | None      -> content
+      | Some x    -> Bson.add_element
+        API_tools.title_field (Bson.create_string x) content
+    in
+    let content_2 = match text with
+      | None      -> content_1
+      | Some x    -> Bson.add_element
+        API_tools.text_field (Bson.create_string x) content_1
+    in
+    if content = Bson.empty
+    then raise API_conf.(Pum_exc (return_not_found,
+                                  "title and text can not be both null"));
+    Mongo.update_one API_tools.contents_coll (bson_query, content_2);
+    `Null
   in
-  let content = Bson.empty in
-  let content_1 = match title with
-    | None      -> content
-    | Some x    -> Bson.add_element
-      API_tools.title_field (Bson.create_string x) content
-  in
-  let content_2 = match text with
-    | None      -> content_1
-    | Some x    -> Bson.add_element
-      API_tools.text_field (Bson.create_string x) content_1
-  in
-  if content = Bson.empty
-  then raise API_conf.(Pum_exc (return_not_found,
-                                "title and text can not be both null"));
-  Mongo.update_one API_tools.contents_coll (bson_query, content_2)
+  API_tools.check_return aux
 
 (* Warning: does not raise exception if content_id does not match *)
 let delete_content content_id =
-  let object_id = API_tools.objectid_of_string content_id in
-  let bson_query = Bson.add_element API_tools.id_field object_id Bson.empty
+  let aux () =
+    API_tools.check_exist API_tools.contents_coll content_id;
+    let object_id = API_tools.objectid_of_string content_id in
+    let bson_query = Bson.add_element API_tools.id_field object_id Bson.empty
+    in
+    Mongo.delete_one API_tools.contents_coll bson_query;
+    `Null
   in
-  Mongo.delete_one API_tools.contents_coll bson_query
+  API_tools.check_return aux
+
 (*
 ** Tags
 *)
@@ -142,7 +158,7 @@ let get_tags tags_id =
       API_tools.tag_format in
     API_tools.yojson_of_mongoreply results
   in
-  API_tools.check_return aux API_tools.tags_ret_name
+  API_tools.check_return ~param_name:API_tools.tags_ret_name aux
 
 
 let get_tags_by_type tag_type =
@@ -161,7 +177,7 @@ let get_tags_by_type tag_type =
       API_tools.tag_format in
     API_tools.yojson_of_mongoreply result
   in
-  API_tools.check_return aux API_tools.tags_ret_name
+  API_tools.check_return ~param_name:API_tools.tags_ret_name aux
 
 (* Warning: if one tag_id does not exist, no error will be fire. *)
 let get_tags_from_content content_id =
@@ -195,7 +211,7 @@ let get_tags_from_content content_id =
       API_tools.tag_format in
     API_tools.yojson_of_mongoreply results_tag
   in
-  API_tools.check_return aux API_tools.tags_ret_name
+  API_tools.check_return ~param_name:API_tools.tags_ret_name aux
 
 (* Warning: if a tag_id does not exist no error will be fire. *)
 let get_tags_from_content_link content_id =
@@ -247,7 +263,7 @@ let get_tags_from_content_link content_id =
       API_tools.tag_format in
     API_tools.yojson_of_mongoreply results
   in
-  API_tools.check_return aux API_tools.tags_ret_name
+  API_tools.check_return ~param_name:API_tools.tags_ret_name aux
 
 (*
 ** Links
@@ -278,7 +294,7 @@ let get_links_from_content content_id =
     API_tools.removing_text_field
       (API_tools.yojson_of_mongoreply result_query)
   in
-  API_tools.check_return aux API_tools.links_ret_name
+  API_tools.check_return ~param_name:API_tools.links_ret_name aux
 
 (*
   let get_links_from_content_tags content_id tags_id =
