@@ -97,7 +97,6 @@ let insert_content title text tags_subject =
     ~param_name:API_tools.content_id_ret_name
     ~default_return:API_conf.return_created aux
 
-(* Warning: does not raise exception if content_id does not match *)
 let update_content content_id title text =
   let aux () =
     API_tools.check_exist API_tools.contents_coll content_id;
@@ -123,7 +122,6 @@ let update_content content_id title text =
   in
   API_tools.check_return aux
 
-(* Warning: does not raise exception if content_id does not match *)
 let delete_content content_id =
   let aux () =
     API_tools.check_exist API_tools.contents_coll content_id;
@@ -134,6 +132,15 @@ let delete_content content_id =
     `Null
   in
   API_tools.check_return aux
+
+let delete_contents contents_id =
+  let aux () =
+    let rec deleter ret = function
+      | []      -> ret
+      | id::t   -> deleter ((delete_content id)::ret) t
+    in `List (deleter [] contents_id)
+  in
+  API_tools.check_return ~param_name:API_tools.detail_ret_name aux
 
 (*
 ** Tags

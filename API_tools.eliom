@@ -36,6 +36,7 @@ let links_ret_name = "links"
 let content_id_ret_name = "content_id"
 let tags_id_ret_name = "tags_id"
 let links_id_ret_name = "links_id"
+let detail_ret_name = "links_id"
 
 (*** DB's collection *)
 
