@@ -223,7 +223,11 @@ let check_return ?(default_return=API_conf.return_ok) ?param_name func =
     | `List ret, _      -> valided_return ret
     | ret, _            -> valided_return [ret]
   with
-  | API_conf.Pum_exc (v, str)   -> error_return v str
+  | API_conf.Pum_exc (v, str)   ->
+    begin
+      print_endline ((string_of_int v) ^ ": " ^ str);
+      error_return v str
+    end
   | exc                         ->
     begin
       print_endline (Printexc.to_string exc);
