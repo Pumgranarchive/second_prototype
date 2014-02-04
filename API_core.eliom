@@ -331,7 +331,7 @@ let insert_tags type_name id_opt subjects =
 let delete_tag tag_id =
   let aux () =
     API_tools.check_exist API_tools.tags_coll tag_id;
-    let object_id = API_tools.objectid_of_string content_id in
+    let object_id = API_tools.objectid_of_string tag_id in
     let bson_query = Bson.add_element API_tools.id_field object_id Bson.empty
     in
     Mongo.delete_one API_tools.tags_coll bson_query;
