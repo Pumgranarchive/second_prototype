@@ -27,10 +27,13 @@ let unformat_service_return func = function
 
 (** Unformat the API's content return  *)
 let unformat_content = function
-  | `Assoc [(_, `String id);
+ | `Assoc [(_, `String id);
             (_, `String title);
             (_, `String text)]  -> title, text, id
   | _                           -> failwith (failure_string "uf: content")
+
+(** Unformat the API's content return  *)
+let unformat_link = unformat_content
 
 (** Unformat the API's tag return  *)
 let unformat_tag = function
@@ -47,7 +50,7 @@ let unformat_list (func: Yj.json -> 'a) (l: Yj.json) = match l with
 (* Some unformat shorcuts *)
 let unformat_list_tag = unformat_list unformat_tag
 let unformat_list_content = unformat_list unformat_content
-let unformat_list_link = unformat_list unformat_content
+let unformat_list_link = unformat_list unformat_link
 
 }}
 
