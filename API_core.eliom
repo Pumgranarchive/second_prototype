@@ -81,12 +81,18 @@ let get_contents filter tags_id =
 (*** Setters  *)
 
 (* Currently tags_subject is not used *)
-let insert_content title text tags_subject =
+let insert_content title text tags_id =
   let aux () =
     let bson_title = Bson.create_string title in
     let bson_text = Bson.create_string text in
+    let check_tagid id =
+      API_tools.check_exist API_tools.tags_coll id;
+      Bson.create_string id
+    in
+    let bson_tagsid = Bson.create_list (List.map check_tagid tags_id) in
     let content = Bson.add_element API_tools.title_field bson_title
-      (Bson.add_element API_tools.text_field bson_text Bson.empty)
+      (Bson.add_element API_tools.text_field bson_text
+         (Bson.add_element API_tools.tagsid_field bson_tagsid Bson.empty))
     in
   (* ! THE ID NEED TO BE GET BY ANOTHER MANNER ! *)
     let saved_state = API_tools.get_id_state API_tools.contents_coll in
