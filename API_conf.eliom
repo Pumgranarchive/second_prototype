@@ -25,6 +25,7 @@ let return_internal_error = 500
 let errstr_not_found str = "'" ^ str ^ "' is Not Found"
 let errstr_not_objectid str = "'" ^ str ^ "' is not an valid object id."
 let errstr_not_expected str = "'" ^ str ^ "' is not the expected value."
+let errstr_exist str = "'" ^ str ^ "' already exist."
 let errstr_internal_error = "Internal server error"
 
 

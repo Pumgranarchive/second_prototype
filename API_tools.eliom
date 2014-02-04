@@ -34,8 +34,8 @@ let contents_ret_name = "contents"
 let tags_ret_name = "tags"
 let links_ret_name = "links"
 let content_id_ret_name = "content_id"
-let tags_id_ret_name = "tags_id"
-let links_id_ret_name = "links_id"
+let tagsid_ret_name = "tags_id"
+let linksid_ret_name = "links_id"
 let detail_ret_name = "links_id"
 
 (*** DB's collection *)
@@ -70,13 +70,17 @@ let get_id_state coll =
 
 let get_last_created_id coll saved_state =
   let new_state = get_id_state coll in
-  let rec aux = function
-    | []        -> failwith "not any new id found"
+  let rec aux ns = function
+    | []        -> ns
     | h::t      ->
       if (List.exists (fun e -> (String.compare h e) == 0) saved_state)
-      then aux t
-      else h
-  in aux new_state
+      then aux ns t
+      else aux (h::ns) t
+  in
+  let ret = aux [] new_state in
+  if ret = []
+  then failwith "not any new id found"
+  else ret
 
 (*** Cast tools *)
 
@@ -166,6 +170,12 @@ let check_exist coll id =
   let result = MongoReply.get_document_list (Mongo.find_q coll bson_query) in
   if (result = [])
   then raise API_conf.(Pum_exc(return_not_found, API_conf.errstr_not_found id))
+
+let check_not_exist coll field bson original =
+  let bson_query = Bson.add_element field bson Bson.empty in
+  let result = MongoReply.get_document_list (Mongo.find_q coll bson_query) in
+  if (result != [])
+  then raise API_conf.(Pum_exc(return_not_found, API_conf.errstr_exist original))
 
 (*** Manage return tools *)
 

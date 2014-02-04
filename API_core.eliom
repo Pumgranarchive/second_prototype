@@ -97,7 +97,8 @@ let insert_content title text tags_id =
   (* ! THE ID NEED TO BE GET BY ANOTHER MANNER ! *)
     let saved_state = API_tools.get_id_state API_tools.contents_coll in
     Mongo.insert API_tools.contents_coll [content];
-    `String (API_tools.get_last_created_id API_tools.contents_coll saved_state)
+    `String (List.hd (API_tools.get_last_created_id
+                        API_tools.contents_coll saved_state))
   in
   API_tools.check_return
     ~param_name:API_tools.content_id_ret_name
@@ -278,6 +279,74 @@ let get_tags_from_content_link content_id =
     API_tools.yojson_of_mongoreply results
   in
   API_tools.check_return ~param_name:API_tools.tags_ret_name aux
+
+(* Warning: does not return status list, only the id list *)
+let insert_tags type_name id_opt subjects =
+  let aux () =
+    let build_updater coll =
+      let id = match id_opt with
+        | Some x  -> x
+        | None    -> raise API_conf.(Pum_exc (return_not_found, "type_name and id need to be specify"))
+      in
+      let object_id = API_tools.objectid_of_string id in
+      let bson_query = Bson.add_element API_tools.id_field object_id Bson.empty in
+      API_tools.check_exist coll id;
+      (fun bson_subs ->
+        let each = MongoQueryOp.each bson_subs in
+        let elem = Bson.add_element API_tools.subject_field
+          (Bson.create_doc_element each) Bson.empty
+        in
+        let bson_update = MongoQueryOp.addToSet elem in
+        Mongo.update_one coll (bson_query, bson_update)
+      )
+    in
+    let update_fun = match type_name with
+      | None                -> (fun _ -> ())
+      | Some "CONTENT"      -> build_updater API_tools.contents_coll
+      | Some "LINK"         -> build_updater API_tools.links_coll
+      | Some x              ->
+        raise API_conf.(Pum_exc (return_not_found, errstr_not_expected x))
+    in
+    let check_not_exist_sub s =
+      let bson = Bson.create_string s in
+      API_tools.check_not_exist API_tools.tags_coll
+        API_tools.subject_field bson s;
+      Bson.add_element API_tools.subject_field bson Bson.empty
+    in
+    let bson_subjects = List.map check_not_exist_sub subjects in
+    let saved_state = API_tools.get_id_state API_tools.tags_coll in
+    Mongo.insert API_tools.tags_coll bson_subjects;
+    let new_ids =
+      API_tools.get_last_created_id API_tools.tags_coll saved_state
+    in
+    let bson_ids = List.map (fun e -> Bson.create_string e) new_ids in
+    update_fun bson_ids;
+    `List (List.map (fun e -> `Assoc [(API_tools.id_field, `String e)]) new_ids)
+  in
+  API_tools.check_return
+    ~param_name:API_tools.tagsid_ret_name
+    ~default_return:API_conf.return_created
+    aux
+
+let delete_tag tag_id =
+  let aux () =
+    API_tools.check_exist API_tools.tags_coll tag_id;
+    let object_id = API_tools.objectid_of_string content_id in
+    let bson_query = Bson.add_element API_tools.id_field object_id Bson.empty
+    in
+    Mongo.delete_one API_tools.tags_coll bson_query;
+    `Null
+  in
+  API_tools.check_return aux
+
+let delete_tags tags_id =
+  let aux () =
+    let rec deleter ret = function
+      | []      -> ret
+      | id::t   -> deleter ((delete_tag id)::ret) t
+    in `List (deleter [] tags_id)
+  in
+  API_tools.check_return ~param_name:API_tools.detail_ret_name aux
 
 (*
 ** Links
