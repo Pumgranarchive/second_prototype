@@ -177,6 +177,12 @@ let check_not_exist coll field bson original =
   if (result != [])
   then raise API_conf.(Pum_exc(return_not_found, API_conf.errstr_exist original))
 
+(*** Checking and cast tools  *)
+
+let objectid_of_tagstr id =
+  check_exist tags_coll id;
+  objectid_of_string id
+
 (*** Manage return tools *)
 
 (** Removing the value from text field *)

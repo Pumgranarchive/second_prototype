@@ -9,7 +9,6 @@ module Yj = Yojson.Safe
 ** Generic request
 *)
 
-
 let delete_from coll ids =
   let aux () =
     let objectid_of_idstr str =
@@ -103,16 +102,15 @@ let insert_content title text tags_id =
   let aux () =
     let bson_title = Bson.create_string title in
     let bson_text = Bson.create_string text in
-    let check_tagid id =
-      API_tools.check_exist API_tools.tags_coll id;
-      Bson.create_string id
+    let bson_tags_list = match tags_id with
+      | None    -> []
+      | Some x  -> List.map API_tools.objectid_of_tagstr x
     in
-    let bson_tagsid = Bson.create_list (List.map check_tagid tags_id) in
+    let bson_tagsid = Bson.create_list bson_tags_list in
     let content = Bson.add_element API_tools.title_field bson_title
       (Bson.add_element API_tools.text_field bson_text
          (Bson.add_element API_tools.tagsid_field bson_tagsid Bson.empty))
     in
-  (* ! THE ID NEED TO BE GET BY ANOTHER MANNER ! *)
     let saved_state = API_tools.get_id_state API_tools.contents_coll in
     Mongo.insert API_tools.contents_coll [content];
     `String (List.hd (API_tools.get_last_created_id
@@ -122,7 +120,7 @@ let insert_content title text tags_id =
     ~param_name:API_tools.content_id_ret_name
     ~default_return:API_conf.return_created aux
 
-let update_content content_id title text =
+let update_content content_id title text tags_id =
   let aux () =
     API_tools.check_exist API_tools.contents_coll content_id;
     let object_id = API_tools.objectid_of_string content_id in
@@ -139,10 +137,17 @@ let update_content content_id title text =
       | Some x    -> Bson.add_element
         API_tools.text_field (Bson.create_string x) content_1
     in
-    if content = Bson.empty
+    let content_3 = match tags_id with
+      | None      -> content_2
+      | Some x    ->
+        let bson_objid = List.map API_tools.objectid_of_tagstr x in
+        let bson_list = Bson.create_list bson_objid in
+        Bson.add_element API_tools.tagsid_field bson_list content_2
+    in
+    if content_3 = Bson.empty
     then raise API_conf.(Pum_exc (return_not_found,
-                                  "title and text can not be both null"));
-    Mongo.update_one API_tools.contents_coll (bson_query, content_2);
+                                  "title, text and tags_id can not be all null"));
+    Mongo.update_one API_tools.contents_coll (bson_query, content_3);
     `Null
   in
   API_tools.check_return aux
@@ -466,5 +471,20 @@ let insert_links id_from ids_to tags_id =
     `Null
   in
   API_tools.check_return ~default_return:API_conf.return_created aux
+
+let update_link link_id tags_id =
+  let aux () =
+    API_tools.check_exist API_tools.links_coll link_id;
+    let object_id = API_tools.objectid_of_string link_id in
+    let bson_query = Bson.add_element API_tools.id_field object_id Bson.empty in
+    let content =
+        let bson_objid = List.map API_tools.objectid_of_tagstr tags_id in
+        let bson_list = Bson.create_list bson_objid in
+        Bson.add_element API_tools.tagsid_field bson_list Bson.empty
+    in
+    Mongo.update_one API_tools.links_coll (bson_query, content);
+    `Null
+  in
+  API_tools.check_return aux
 
 let delete_links = delete_from API_tools.links_coll
