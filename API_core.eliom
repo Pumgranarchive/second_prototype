@@ -478,9 +478,12 @@ let update_link link_id tags_id =
     let object_id = API_tools.objectid_of_string link_id in
     let bson_query = Bson.add_element API_tools.id_field object_id Bson.empty in
     let content =
-        let bson_objid = List.map API_tools.objectid_of_tagstr tags_id in
-        let bson_list = Bson.create_list bson_objid in
-        Bson.add_element API_tools.tagsid_field bson_list Bson.empty
+      if tags_id = []
+      then raise API_conf.(Pum_exc (return_not_found,
+                                    "All link need to have at least one tag"));
+      let bson_objid = List.map API_tools.objectid_of_tagstr tags_id in
+      let bson_list = Bson.create_list bson_objid in
+      Bson.add_element API_tools.tagsid_field bson_list Bson.empty
     in
     Mongo.update_one API_tools.links_coll (bson_query, content);
     `Null
