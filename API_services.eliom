@@ -82,7 +82,7 @@ let _ =
   Eliom_registration.String.register
     ~service:fallback_insert_content
     (fun () () ->
-      Lwt.return ("test get",
+      Lwt.return (API_tools.bad_request "title and text parameters are mandatory",
                   API_tools.content_type))
 
 let insert_content =
@@ -90,14 +90,72 @@ let insert_content =
     ~fallback:fallback_insert_content
     ~post_params:Eliom_parameter.(string "title" **
                                   string "text" **
-                                  opt (list "tags" (string "subject")))
+                                  opt (list "tags" (string "id")))
     ()
 
 let _ =
   Eliom_registration.String.register
     ~service:insert_content
-    (fun () (title, (text, tags_subject)) ->
-      Lwt.return ("test post",
+    (fun () (title, (text, tags_id)) ->
+      Lwt.return (Yj.to_string (API_core.insert_content title text tags_id),
+                  API_tools.content_type))
+
+(* Update content *)
+let fallback_update_content =
+  Eliom_service.Http.service
+    ~path:["api"; "content"; "update"]
+    ~get_params:Eliom_parameter.unit
+    ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:fallback_update_content
+    (fun () () ->
+      Lwt.return (API_tools.bad_request "content_id parameter is mandatory",
+                  API_tools.content_type))
+
+let update_content =
+  Eliom_service.Http.post_service
+    ~fallback:fallback_update_content
+    ~post_params:Eliom_parameter.(string "content_id" **
+                                  opt (string "title") **
+                                  opt (string "text") **
+                                  opt (list "tags" (string "id")))
+    ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:update_content
+    (fun () (content_id, (title, (text, tags_id))) ->
+      Lwt.return (Yj.to_string
+                    (API_core.update_content content_id title text tags_id),
+                  API_tools.content_type))
+
+(* Delete content *)
+let fallback_delete_contents =
+  Eliom_service.Http.service
+    ~path:["api"; "content"; "delete"]
+    ~get_params:Eliom_parameter.unit
+    ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:fallback_delete_contents
+    (fun () () ->
+      Lwt.return (API_tools.bad_request "contents_id parameter is mandatory",
+                  API_tools.content_type))
+
+let delete_contents =
+  Eliom_service.Http.post_service
+    ~fallback:fallback_delete_contents
+    ~post_params:Eliom_parameter.(list "contents" (string "id"))
+    ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:delete_contents
+    (fun () (contents_id) ->
+      Lwt.return (Yj.to_string (API_core.delete_contents contents_id),
                   API_tools.content_type))
 
 
@@ -164,6 +222,62 @@ let _ =
                   API_tools.content_type))
 
 
+(* Insert tags *)
+let fallback_insert_tags =
+  Eliom_service.Http.service
+    ~path:["api"; "tag"; "insert"]
+    ~get_params:Eliom_parameter.unit
+    ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:fallback_insert_tags
+    (fun () () ->
+      Lwt.return (API_tools.bad_request "tags_subject parameter is mandatory",
+                  API_tools.content_type))
+
+let insert_tags =
+  Eliom_service.Http.post_service
+    ~fallback:fallback_insert_tags
+    ~post_params:Eliom_parameter.(opt (string "type_name") **
+                                  opt (string "id") **
+                                  list "tags" (string "subject"))
+    ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:insert_tags
+    (fun () (type_name, (id, tags_subject)) ->
+      Lwt.return (Yj.to_string (API_core.insert_tags type_name id tags_subject),
+                  API_tools.content_type))
+
+(* Delete tags *)
+let fallback_delete_tags =
+  Eliom_service.Http.service
+    ~path:["api"; "tag"; "delete"]
+    ~get_params:Eliom_parameter.unit
+    ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:fallback_delete_tags
+    (fun () () ->
+      Lwt.return (API_tools.bad_request "tags_id parameter is mandatory",
+                  API_tools.content_type))
+
+let delete_tags =
+  Eliom_service.Http.post_service
+    ~fallback:fallback_delete_tags
+    ~post_params:Eliom_parameter.(list "tags" (string "id"))
+    ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:delete_tags
+    (fun () (tags_id) ->
+      Lwt.return (Yj.to_string (API_core.delete_tags tags_id),
+                  API_tools.content_type))
+
 (*
 ** links
 *)
@@ -203,10 +317,87 @@ let _ =
    ~service:get_links_from_content_tags
    get_links_from_content_tags_handler
 
-(* (\** This service allow a simpler matching url without superfluous slashs, *)
-(*     due by the two optional parameters. *\) *)
-(* let _ = *)
-(*    Eliom_registration.String.register_service *)
-(*     ~path:["api"; "link"; "list_from_content_tags"] *)
-(*     ~get_params:Eliom_parameter.(suffix (string "content_id")) *)
-(*    (fun content_id -> get_links_from_content_tags_handler (content_id, None)) *)
+(* Insert links *)
+let fallback_insert_links =
+  Eliom_service.Http.service
+    ~path:["api"; "link"; "insert"]
+    ~get_params:Eliom_parameter.unit
+    ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:fallback_insert_links
+    (fun () () ->
+      Lwt.return (API_tools.bad_request "All parameters are mandatory",
+                  API_tools.content_type))
+
+let insert_links =
+  Eliom_service.Http.post_service
+    ~fallback:fallback_insert_links
+    ~post_params:Eliom_parameter.(string "id_from" **
+                                  list "ids" (string "to") **
+                                  list "list" (list "tags" (string "id")))
+    ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:insert_links
+    (fun () (id_from, (ids_to, list_tags_id)) ->
+      Lwt.return (Yj.to_string (API_core.insert_links id_from ids_to list_tags_id),
+                  API_tools.content_type))
+
+(* Update links *)
+let fallback_update_link =
+  Eliom_service.Http.service
+    ~path:["api"; "link"; "update"]
+    ~get_params:Eliom_parameter.unit
+    ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:fallback_update_link
+    (fun () () ->
+      Lwt.return (API_tools.bad_request "All parameter are mandatory",
+                  API_tools.content_type))
+
+let update_link =
+  Eliom_service.Http.post_service
+    ~fallback:fallback_update_link
+    ~post_params:Eliom_parameter.(string "link_id" **
+                                  list "tags" (string "id"))
+    ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:update_link
+    (fun () (link_id, tags_id) ->
+      Lwt.return (Yj.to_string
+                    (API_core.update_link link_id tags_id),
+                  API_tools.content_type))
+
+(* Delete links *)
+let fallback_delete_links =
+  Eliom_service.Http.service
+    ~path:["api"; "link"; "delete"]
+    ~get_params:Eliom_parameter.unit
+    ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:fallback_delete_links
+    (fun () () ->
+      Lwt.return (API_tools.bad_request "links_id parameter is mandatory",
+                  API_tools.content_type))
+
+let delete_links =
+  Eliom_service.Http.post_service
+    ~fallback:fallback_delete_links
+    ~post_params:Eliom_parameter.(list "links" (string "id"))
+    ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:delete_links
+    (fun () (links_id) ->
+      Lwt.return (Yj.to_string (API_core.delete_links links_id),
+                  API_tools.content_type))

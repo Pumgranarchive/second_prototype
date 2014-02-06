@@ -249,3 +249,8 @@ let check_return ?(default_return=API_conf.return_ok) ?param_name func =
       print_endline (Printexc.to_string exc);
       error_return API_conf.return_internal_error API_conf.errstr_internal_error
     end
+
+let bad_request str_error =
+  Yj.to_string
+    (check_return (fun () ->
+      raise API_conf.(Pum_exc (return_not_found, str_error))))
