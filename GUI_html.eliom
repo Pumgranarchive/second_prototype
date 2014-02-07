@@ -115,8 +115,15 @@ let handle_refresh_contents html_elt inputs_elt submit_elt =
 
 (** Display the home html service *)
 let home_html (contents, tags) =
-  let submit, tags_inputs, tags_html = build_tags_form tags in
-  let contents_html = D.div (build_contents_list contents) in
+  let submit, tags_inputs, tags_html_list = build_tags_form tags in
+  let contents_html =
+    D.div ~a:[a_class["contents"]]
+    (build_contents_list contents)
+  in
+  let tags_html =
+    div ~a:[a_class["contents_tags"]]
+      ((h4 [pcdata "Tags"])::tags_html_list)
+  in
   ignore {unit{ handle_refresh_contents %contents_html
                 %tags_inputs %submit}};
   Eliom_tools.F.html
@@ -124,21 +131,19 @@ let home_html (contents, tags) =
     ~css:[["css";"pumgrana.css"]]
     Html5.F.(body [
       h2 [pcdata "Pumgrana"];
-      p [pcdata "Content list"];
       contents_html;
-      p [pcdata "Tags list"];
-      div tags_html;
-      br (); br ();
-      post_form
-        ~service:API_services.insert_content
-        (fun (title, (text, tas_subject)) ->
-          [fieldset
-              [string_input ~input_type:`Hidden
-                  ~name:title ~value:"title" ();
-               string_input ~input_type:`Hidden
-                 ~name:text ~value:"text" ();
-               string_input ~input_type:`Submit
-                 ~value:"Sub" ()]]) ()
+      tags_html (* ; *)
+      (* br (); br (); *)
+      (* post_form *)
+      (*   ~service:API_services.insert_content *)
+      (*   (fun (title, (text, tas_subject)) -> *)
+      (*     [fieldset *)
+      (*         [string_input ~input_type:`Hidden *)
+      (*             ~name:title ~value:"title" (); *)
+      (*          string_input ~input_type:`Hidden *)
+      (*            ~name:text ~value:"text" (); *)
+      (*          string_input ~input_type:`Submit *)
+      (*            ~value:"Sub" ()]]) () *)
     ])
 
 (** Display the content detail html service *)
@@ -156,15 +161,18 @@ let content_detail ((c_title, c_text, c_id), tags_id, links, tags_link) =
       ~css:[["css";"pumgrana.css"]]
       Html5.F.(body [
         h2 [pcdata "Pumgrana"];
-        h3 [pcdata "Content detail"];
-        h4 [pcdata c_title];
-        p [pcdata c_text];
-        h5 [pcdata "Tags"];
-        div tags_subjects;
-        h5 [pcdata "Links"];
-        links_html;
-        h5 [pcdata "Link Tags"];
-        div links_tags_html;
+        div ~a:[a_class["detail"]]
+          [h3 [pcdata c_title];
+           p [pcdata c_text];
+           div ~a:[a_class["detail_tags"]]
+             [h5 [pcdata "Tags"];
+              div tags_subjects]];
+        div ~a:[a_class["links"]]
+          [h4 [pcdata "Links"];
+           links_html;
+           div ~a:[a_class["links_tags"]]
+             [h5 [pcdata "Link Tags"];
+              div links_tags_html]]
       ])
   with
   | e -> print_endline (Printexc.to_string e);

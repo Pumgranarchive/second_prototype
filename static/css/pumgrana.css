@@ -1,3 +1,63 @@
 * {
     font-family: sans-serif;
 }
+
+html, body
+{
+    height: calc(98% - 100px);
+    width: 98%;
+}
+
+.contents
+{
+
+}
+
+.detail
+{
+    height: 98%;
+}
+
+.contents_tags
+{
+    position: absolute;
+    bottom: 0;
+    width: 98%;
+    border-style:solid;
+    border-width:2px;
+    padding: 2px;
+}
+
+.detail_tags
+{
+    position: absolute;
+    bottom: 0;
+    width: calc(98% - 310px);
+    border-style:solid;
+    border-width:2px;
+    padding: 2px;
+}
+
+.links
+{
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    width: 310px;
+    height: 98%;
+    border-style:solid;
+    border-width:2px;
+    padding: 2px;
+    margin: 2px;
+}
+
+.links_tags
+{
+    position: absolute;
+    bottom: 0;
+    width: 300px;
+    border-style:solid;
+    border-width:2px;
+    padding: 2px;
+    margin: 2px;
+}
