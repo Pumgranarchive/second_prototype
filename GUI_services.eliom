@@ -10,9 +10,16 @@ let starting_service =
     ~get_params:Eliom_parameter.unit
     ()
 
-(* Home page with parameters *)
+(* Home page without parameters *)
 (* We need to do this because parameters does not allow to match
    to the source url.*)
+let home_service_without =
+  Eliom_service.Http.service
+    ~path:["home"]
+    ~get_params:Eliom_parameter.(suffix (opt (string "filter")))
+    ()
+
+(* Home page with parameters *)
 let home_service =
   Eliom_service.Http.service
     ~path:["home"]

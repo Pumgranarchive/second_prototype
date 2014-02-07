@@ -7,7 +7,16 @@ let _ =
   Pumgrana.App.register
     ~service:GUI_services.starting_service
     (fun () () ->
+      ignore {unit{
+        Eliom_client.change_url
+        ~service:%GUI_services.home_service_without None }};
       Lwt.return (GUI_html.home_html (GUI_core.get_contents None None)))
+
+let _ =
+  Pumgrana.App.register
+    ~service:GUI_services.home_service_without
+    (fun (filter) () ->
+      Lwt.return (GUI_html.home_html (GUI_core.get_contents filter None)))
 
 let _ =
   Pumgrana.App.register
