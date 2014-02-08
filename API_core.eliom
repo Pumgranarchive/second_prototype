@@ -30,8 +30,7 @@ let delete_from coll ids =
 let get_detail content_id =
   let aux () =
     let object_id = API_tools.objectid_of_string content_id in
-    let bson_query = Bson.add_element API_tools.id_field object_id Bson.empty
-    in
+    let bson_query = Bson.add_element API_tools.id_field object_id Bson.empty in
     let result = Mongo.find_q_s_one API_tools.contents_coll bson_query
       API_tools.content_format in
     let ret = API_tools.yojson_of_mongoreply result in
@@ -41,9 +40,7 @@ let get_detail content_id =
 
 let get_content_id_from_link link_id =
   let object_id = API_tools.objectid_of_string link_id in
-  let bson_query =
-    Bson.add_element API_tools.id_field object_id Bson.empty
-  in
+  let bson_query = Bson.add_element API_tools.id_field object_id Bson.empty in
   let result = Mongo.find_q_one API_tools.links_coll bson_query in
   let result_bson =
     List.hd (API_tools.check_empty_ocaml_list
@@ -55,9 +52,7 @@ let get_content_id_from_link link_id =
 let get_detail_by_link link_id =
   let aux () =
     let target_id = get_content_id_from_link link_id in
-    let bson_query =
-      Bson.add_element API_tools.id_field target_id Bson.empty
-    in
+    let bson_query = Bson.add_element API_tools.id_field target_id Bson.empty in
     let result = Mongo.find_q_s_one API_tools.contents_coll bson_query
       API_tools.content_format in
     let ret = API_tools.yojson_of_mongoreply result in
@@ -124,8 +119,7 @@ let update_content content_id title text tags_id =
   let aux () =
     API_tools.check_exist API_tools.contents_coll content_id;
     let object_id = API_tools.objectid_of_string content_id in
-    let bson_query = Bson.add_element API_tools.id_field object_id Bson.empty
-    in
+    let bson_query = Bson.add_element API_tools.id_field object_id Bson.empty in
     let content = Bson.empty in
     let content_1 = match title with
       | None      -> content
@@ -152,7 +146,18 @@ let update_content content_id title text tags_id =
   in
   API_tools.check_return aux
 
-let delete_contents = delete_from API_tools.contents_coll
+let delete_contents content_ids =
+  let aux content_id =
+    let object_id = API_tools.objectid_of_string content_id in
+    [Bson.add_element API_tools.originid_field object_id Bson.empty;
+     Bson.add_element API_tools.targetid_field object_id Bson.empty]
+  in
+  let ret = delete_from API_tools.contents_coll content_ids in
+  let or_list = List.flatten (List.map aux content_ids) in
+  let bson_query = MongoQueryOp.or_op or_list in
+  Mongo.delete_all API_tools.contents_coll bson_query;
+  ret
+
 
 (*
 ** Tags

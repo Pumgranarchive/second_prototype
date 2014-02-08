@@ -24,14 +24,16 @@ let home_html (contents, tags) =
     div ~a:[a_class["contents_tags"]]
       ((h4 [pcdata "Tags"])::tags_html_list)
   in
+  let backb, forwardb, header_elt = GUI_tools.build_contents_header () in
+  ignore {unit{ GUI_client_core.bind_back %backb }};
+  ignore {unit{ GUI_client_core.bind_forward %forwardb }};
   ignore {unit{ GUI_client_core.handle_refresh_contents %contents_html
                 %tags_inputs %submit}};
   Eliom_tools.F.html
     ~title:"Pumgrana"
     ~css:[["css";"pumgrana.css"]]
     Html5.F.(body [
-      div ~a:[a_class["header"]]
-        [h2 [pcdata "Pumgrana"]];
+      header_elt;
       contents_html;
       tags_html (* ; *)
       (* br (); br (); *)
@@ -56,10 +58,12 @@ let content_detail ((c_title, c_text, c_id), tags_id, links, tags_link) =
     let submit, links_tags_inputs, links_tags_html =
       GUI_tools.build_tags_form tags_link
     in
-    let backb, updateb, deleteb, header_elt =
+    let backb, forwardb, updateb, deleteb, header_elt =
       GUI_tools.build_detail_content_header ()
     in
     ignore {unit{ GUI_client_core.bind_back %backb }};
+    ignore {unit{ GUI_client_core.bind_forward %forwardb }};
+    ignore {unit{ GUI_client_core.bind_delete_content %deleteb %c_id }};
     ignore {unit{ GUI_client_core.handle_refresh_links %c_id %links_html
                   %links_tags_inputs %submit }};
     Eliom_tools.F.html

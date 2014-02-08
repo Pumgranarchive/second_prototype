@@ -17,16 +17,26 @@ module Yj = Yojson.Safe
 
 (*** Build tools  *)
 
-let build_detail_content_header () =
+
+let build_header elt_list =
   let back_button = D.raw_input ~input_type:`Submit ~value:"Back" () in
+  let forward_button = D.raw_input ~input_type:`Submit ~value:"Forward" () in
+  let header_elt = div ~a:[a_class["header"]]
+    ([h4 ~a:[a_class["pumgrana"]] [pcdata "Pumgrana"];
+      back_button; forward_button]@elt_list)
+  in
+  back_button, forward_button, header_elt
+
+let build_contents_header () =
+  build_header []
+
+let build_detail_content_header () =
   let update_button = D.raw_input ~input_type:`Submit ~value:"Update" () in
   let delete_button = D.raw_input ~input_type:`Submit ~value:"Delete" () in
-  let header_elt = div ~a:[a_class["header"]]
-    [h4 ~a:[a_class["pumgrana"]] [pcdata "Pumgrana"];
-     back_button; update_button; delete_button]
+  let back_button, forward_button, header_elt =
+    build_header [update_button; delete_button]
   in
-  back_button, update_button, delete_button, header_elt
-
+  back_button, forward_button, update_button, delete_button, header_elt
 
 (** Build the tags html formular from tag list *)
 let build_tags_form tags =

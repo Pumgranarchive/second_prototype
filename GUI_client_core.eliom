@@ -3,7 +3,7 @@
   This module manage the cliento process
 *)
 
-{client{
+{shared{
 
 open Eliom_lib
 open Eliom_content
@@ -12,17 +12,46 @@ open Eliom_content.Html5.F
 
 module Yj = Yojson.Safe
 
+}}
+
+{client{
+
 (** Call back function from browser  *)
 let go_back () =
   Dom_html.window##history##back()
 
-(** [bind_back back_button] bind the back_button
-    to call go_back at each click event *)
-let bind_back back_button =
-  let dom_button = To_dom.of_input back_button in
-  Lwt.async (fun () -> Lwt_js_events.clicks dom_button
-    (fun _ _ -> Lwt.return (go_back ())))
+(** Call back function from browser  *)
+let go_forward () =
+  Dom_html.window##history##forward()
 
+(** [bind_button button_elt func] bind the button
+    on click event to call func each time. *)
+let bind_button button_elt func =
+  let dom_button = To_dom.of_input button_elt in
+  Lwt.async (fun () -> Lwt_js_events.clicks dom_button
+    (fun _ _ -> Lwt.return (func ())))
+
+(** [bind_back button_elt] bind the button
+    on click event to call go_back each time. *)
+let bind_back back_button =
+  bind_button back_button go_back
+
+(** [bind_forward button_elt] bind the button
+    on click event to call go_forward each time. *)
+let bind_forward forward_button =
+  bind_button forward_button go_forward
+
+(** [bind_delete_content button_elt content_id] bind the button
+    on click event to remove the content with the given content_id. *)
+let bind_delete_content button_elt content_id =
+  let action () =
+    lwt _ = Eliom_client.call_service
+    ~service:%API_services.delete_contents () [content_id] in
+    Lwt.return (go_back ())
+  in
+  let dom_button = To_dom.of_input button_elt in
+  Lwt.async (fun () -> Lwt_js_events.clicks dom_button
+    (fun _ _ -> action ()))
 
 (** Remove all child from the given dom element.  *)
 let rec remove_all_child dom =
