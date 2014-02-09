@@ -14,10 +14,15 @@ html, body
     {font-weight:bold;}
 }
 
+.pumgrana_logo
+{
+    height: 40px;
+}
+
 .pumgrana
 {
     display: inline-block;
-    width: 150px;
+    width: 180px;
 }
 
 .contents

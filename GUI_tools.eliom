@@ -19,7 +19,13 @@ module Yj = Yojson.Safe
 
 let build_header elt_list =
   div ~a:[a_class["header"]]
-    ([h4 ~a:[a_class["pumgrana"]] [pcdata "Pumgrana"]]@elt_list)
+    ([span ~a:[a_class["pumgrana"]]
+         [a ~service:%GUI_services.starting_service
+             [img ~a:[a_class ["pumgrana_logo"]]
+                 ~alt:("Pumgrana Logo")
+                 ~src:(make_uri
+                         ~service:(Eliom_service.static_dir ())
+                         ["images"; "LOGO_Pumgrana.png"]) ()] ()]]@elt_list)
 
 let build_header_back_forward elt_list =
   let back_button = D.raw_input ~input_type:`Submit ~value:"Back" () in
@@ -50,7 +56,7 @@ let build_tags_form tags =
     | []                -> inputs, full_html
     | (subject, id)::t  ->
       let input = D.raw_input ~input_type:`Checkbox ~name:id () in
-      let html = div [pcdata subject; input] in
+      let html = div [input; pcdata subject] in
       aux (input::inputs) (html::full_html) t
   in
   let tags_inputs, tags_html = aux [] [] tags in
