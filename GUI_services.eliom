@@ -30,6 +30,13 @@ let home_service =
 (* Content detail *)
 let content_detail_service =
   Eliom_service.Http.service
-    ~path:["content"]
+    ~path:["content"; "detail"]
+    ~get_params:Eliom_parameter.(suffix (string "content_id"))
+    ()
+
+(* Content detail *)
+let content_update_service =
+  Eliom_service.Http.service
+    ~path:["content"; "update"]
     ~get_params:Eliom_parameter.(suffix (string "content_id"))
     ()

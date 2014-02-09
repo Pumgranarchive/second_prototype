@@ -17,26 +17,32 @@ module Yj = Yojson.Safe
 
 (*** Build tools  *)
 
-
 let build_header elt_list =
+  div ~a:[a_class["header"]]
+    ([h4 ~a:[a_class["pumgrana"]] [pcdata "Pumgrana"]]@elt_list)
+
+let build_header_back_forward elt_list =
   let back_button = D.raw_input ~input_type:`Submit ~value:"Back" () in
   let forward_button = D.raw_input ~input_type:`Submit ~value:"Forward" () in
-  let header_elt = div ~a:[a_class["header"]]
-    ([h4 ~a:[a_class["pumgrana"]] [pcdata "Pumgrana"];
-      back_button; forward_button]@elt_list)
-  in
+  let header_elt = build_header ([back_button; forward_button]@elt_list) in
   back_button, forward_button, header_elt
 
 let build_contents_header () =
-  build_header []
+  build_header_back_forward []
 
 let build_detail_content_header () =
   let update_button = D.raw_input ~input_type:`Submit ~value:"Update" () in
   let delete_button = D.raw_input ~input_type:`Submit ~value:"Delete" () in
   let back_button, forward_button, header_elt =
-    build_header [update_button; delete_button]
+    build_header_back_forward [update_button; delete_button]
   in
   back_button, forward_button, update_button, delete_button, header_elt
+
+let build_update_content_header () =
+  let cancel_button = D.raw_input ~input_type:`Submit ~value:"Cancel" () in
+  let save_button = D.raw_input ~input_type:`Submit ~value:"Save" () in
+  let header_elt = build_header [cancel_button; save_button] in
+  cancel_button, save_button, header_elt
 
 (** Build the tags html formular from tag list *)
 let build_tags_form tags =

@@ -30,3 +30,10 @@ let _ =
     (fun content_id () ->
       Lwt.return (GUI_html.content_detail
                     (GUI_core.get_detail_content content_id)))
+
+let _ =
+  Pumgrana.App.register
+    ~service:GUI_services.content_update_service
+    (fun content_id () ->
+      Lwt.return (GUI_html.content_update
+                    (GUI_core.get_detail_content content_id)))

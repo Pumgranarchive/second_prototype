@@ -35,19 +35,7 @@ let home_html (contents, tags) =
     Html5.F.(body [
       header_elt;
       contents_html;
-      tags_html (* ; *)
-      (* br (); br (); *)
-      (* post_form *)
-      (*   ~service:API_services.insert_content *)
-      (*   (fun (title, (text, tas_subject)) -> *)
-      (*     [fieldset *)
-      (*         [string_input ~input_type:`Hidden *)
-      (*             ~name:title ~value:"title" (); *)
-      (*          string_input ~input_type:`Hidden *)
-      (*            ~name:text ~value:"text" (); *)
-      (*          string_input ~input_type:`Submit *)
-      (*            ~value:"Sub" ()]]) () *)
-    ])
+      tags_html])
 
 (** Display the content detail html service *)
 let content_detail ((c_title, c_text, c_id), tags_id, links, tags_link) =
@@ -63,6 +51,7 @@ let content_detail ((c_title, c_text, c_id), tags_id, links, tags_link) =
     in
     ignore {unit{ GUI_client_core.bind_back %backb }};
     ignore {unit{ GUI_client_core.bind_forward %forwardb }};
+    ignore {unit{ GUI_client_core.bind_update_content %updateb %c_id }};
     ignore {unit{ GUI_client_core.bind_delete_content %deleteb %c_id }};
     ignore {unit{ GUI_client_core.handle_refresh_links %c_id %links_html
                   %links_tags_inputs %submit }};
@@ -74,6 +63,54 @@ let content_detail ((c_title, c_text, c_id), tags_id, links, tags_link) =
         div ~a:[a_class["detail"]]
           [h3 [pcdata c_title];
            p [pcdata c_text];
+           div ~a:[a_class["detail_tags"]]
+             [h5 [pcdata "Tags"];
+              div tags_subjects]];
+        div ~a:[a_class["links"]]
+          [h4 [pcdata "Links"];
+           links_html;
+           div ~a:[a_class["links_tags"]]
+             [h5 [pcdata "Link Tags"];
+              div links_tags_html]]
+      ])
+  with
+  | e -> print_endline (Printexc.to_string e);
+    Eliom_tools.F.html
+      ~title:"Pumgrana"
+      ~css:[["css";"pumgrana.css"]]
+      Html5.F.(body [])
+
+
+(** Update content detail html service *)
+let content_update ((c_title, c_text, c_id), tags_id, links, tags_link) =
+  try
+    let aux (subject, id) =  div [pcdata subject] in
+    let tags_subjects = List.map aux tags_id in
+    let links_html = D.div (GUI_tools.build_links_list links) in
+    let submit, links_tags_inputs, links_tags_html =
+      GUI_tools.build_tags_form tags_link
+    in
+    let cancelb, saveb, header_elt =
+      GUI_tools.build_update_content_header ()
+    in
+    let title_elt =
+      D.raw_input ~a:[a_class ["title_update"]]
+        ~input_type:`Text ~name:"title" ~value:c_title ()
+    in
+    let text_elt =
+      D.raw_textarea ~a:[a_class ["text_update"]]
+        ~name:"text" ~value:c_text ()
+    in
+    ignore {unit{ GUI_client_core.bind_cancel_update_content %cancelb %c_id}};
+    ignore {unit{ GUI_client_core.bind_save_update_content %saveb %c_id
+                  %title_elt %text_elt}};
+    Eliom_tools.F.html
+      ~title:"Pumgrana"
+      ~css:[["css";"pumgrana.css"]]
+      Html5.F.(body [
+        header_elt;
+        div ~a:[a_class["detail"]]
+          [title_elt; br (); text_elt;
            div ~a:[a_class["detail_tags"]]
              [h5 [pcdata "Tags"];
               div tags_subjects]];

@@ -24,22 +24,60 @@ let go_back () =
 let go_forward () =
   Dom_html.window##history##forward()
 
+let go_update_content id =
+  Eliom_client.change_page
+    ~service:%GUI_services.content_update_service id ()
+
+let cancel_update_content id =
+  Eliom_client.change_page
+    ~service:%GUI_services.content_detail_service id ()
+
+let save_update_content id title text =
+  lwt _ = Eliom_client.call_service
+    ~service:%API_services.update_content ()
+    (id, (Some title, (Some text, None)))
+  in
+  Eliom_client.change_page
+    ~service:%GUI_services.content_detail_service id ()
+
 (** [bind_button button_elt func] bind the button
     on click event to call func each time. *)
 let bind_button button_elt func =
   let dom_button = To_dom.of_input button_elt in
   Lwt.async (fun () -> Lwt_js_events.clicks dom_button
-    (fun _ _ -> Lwt.return (func ())))
+    (fun _ _ -> func ()))
 
 (** [bind_back button_elt] bind the button
     on click event to call go_back each time. *)
 let bind_back back_button =
-  bind_button back_button go_back
+  bind_button back_button (fun () -> Lwt.return (go_back ()))
 
 (** [bind_forward button_elt] bind the button
     on click event to call go_forward each time. *)
 let bind_forward forward_button =
-  bind_button forward_button go_forward
+  bind_button forward_button (fun () -> Lwt.return (go_forward ()))
+
+(** [bind_update button_elt] bind the button
+    on click event to call go_update_content each time. *)
+let bind_update_content update_button content_id =
+  bind_button update_button (fun () -> go_update_content content_id)
+
+(** [bind_save_update button_elt] bind the button
+    on click event to call save_update_content each time. *)
+let bind_save_update_content save_update_button content_id title_elt text_elt =
+  let dom_title = To_dom.of_input title_elt in
+  let dom_text = To_dom.of_textarea text_elt in
+  bind_button save_update_button
+    (fun () ->
+      let title = Js.to_string dom_title##value in
+      let text = Js.to_string dom_text##value in
+      save_update_content content_id title text)
+
+(** [bind_cancel_update button_elt] bind the button
+    on click event to call cancel_update_content each time. *)
+let bind_cancel_update_content cancel_update_button content_id =
+  bind_button cancel_update_button
+    (fun () -> cancel_update_content content_id)
 
 (** [bind_delete_content button_elt content_id] bind the button
     on click event to remove the content with the given content_id. *)
@@ -49,9 +87,7 @@ let bind_delete_content button_elt content_id =
     ~service:%API_services.delete_contents () [content_id] in
     Lwt.return (go_back ())
   in
-  let dom_button = To_dom.of_input button_elt in
-  Lwt.async (fun () -> Lwt_js_events.clicks dom_button
-    (fun _ _ -> action ()))
+  bind_button button_elt action
 
 (** Remove all child from the given dom element.  *)
 let rec remove_all_child dom =

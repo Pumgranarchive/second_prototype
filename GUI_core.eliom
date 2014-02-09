@@ -28,8 +28,8 @@ let unformat_service_return func = function
 (** Unformat the API's content return  *)
 let unformat_content = function
  | `Assoc [(_, `String id);
-            (_, `String title);
-            (_, `String text)]  -> title, text, id
+            (_, `String text);
+            (_, `String title)]  -> title, text, id
   | _                           -> failwith (failure_string "uf: content")
 
 (** Unformat the API's content return  *)
