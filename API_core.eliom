@@ -227,8 +227,8 @@ let get_tags_from_content content_id =
     let document_of_tag_id_list tag_id_list =
       (Bson.add_element API_tools.id_field tag_id_list Bson.empty)
     in
-    let _ = API_tools.check_empty_ocaml_list tag_id_list content_id
-    in
+    if (tag_id_list = [])
+    then raise API_conf.(Pum_exc(return_not_found, "This content has no tags"));
     let tag_bson_query =
       (MongoQueryOp.or_op
       	 (List.map document_of_tag_id_list tag_id_list))
