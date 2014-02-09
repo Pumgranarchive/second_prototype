@@ -50,20 +50,40 @@ let build_update_content_header () =
   let header_elt = build_header [cancel_button; save_button] in
   cancel_button, save_button, header_elt
 
-(** Build the tags html formular from tag list *)
-let build_tags_form tags =
+(** Build tags list with checkbox *)
+let build_ck_tags_list tags =
   let rec aux inputs full_html = function
-    | []                -> inputs, full_html
+    | []                -> inputs, List.rev full_html
     | (subject, id)::t  ->
       let input = D.raw_input ~input_type:`Checkbox ~name:id () in
       let html = div [input; pcdata subject] in
       aux (input::inputs) (html::full_html) t
   in
-  let tags_inputs, tags_html = aux [] [] tags in
-  let submit = D.raw_input ~input_type:`Submit ~value:"Submit" () in
-  submit, tags_inputs, List.rev ((div [submit])::tags_html)
+  aux [] [] tags
 
-(** Build the links html display link list *)
+(** Build the tags html formular from tag list *)
+let build_tags_form tags =
+  let tags_inputs, tags_html_0 = build_ck_tags_list tags in
+  let submit = D.raw_input ~input_type:`Submit ~value:"Submit" () in
+  submit, tags_inputs, List.rev ((div [submit])::(List.rev tags_html_0))
+
+(** Build a simple tags list html *)
+let build_tags_list tags =
+  let aux (subject, _) = div [pcdata subject] in
+  List.map aux tags
+
+(** Build the links list with checkbox *)
+let build_ck_links_list links =
+  let rec aux inputs full_html = function
+    | []                -> inputs, List.rev full_html
+    | (title, _, id)::t ->
+      let input = D.raw_input ~input_type:`Checkbox ~name:id () in
+      let html = div [input; pcdata title] in
+      aux (input::inputs) (html::full_html) t
+  in
+  aux [] [] links
+
+(** Build a links list html *)
 let build_links_list links =
   let aux (title, _, id) =
     div [a ~service:%GUI_services.content_detail_service
@@ -73,9 +93,10 @@ let build_links_list links =
 
 let build_contents_list contents =
   let aux (title, text, id) =
-    div [a ~service:%GUI_services.content_detail_service [pcdata title] id;
-        br ();
-        span [pcdata text]]
+    div ~a:[a_class ["content"]]
+      [a ~service:%GUI_services.content_detail_service [pcdata title] id;
+       br ();
+       span [pcdata text]]
   in
   List.map aux contents
 

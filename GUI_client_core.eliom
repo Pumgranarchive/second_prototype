@@ -16,6 +16,32 @@ module Yj = Yojson.Safe
 
 {client{
 
+(** Get all name of checked dom_inputs and return them in a list. *)
+let get_checked_inputs dom_inputs =
+  let rec aux n = function
+    | []      -> n
+    | e::t    ->
+      let new_n =
+        if e##checked == Js._true
+        then (Js.to_string e##name)::n
+        else n
+      in
+      aux new_n t
+  in aux [] dom_inputs
+
+(** Get all name of no checked dom_inputs and return them in a list. *)
+let get_no_checked_inputs dom_inputs =
+  let rec aux n = function
+    | []      -> n
+    | e::t    ->
+      let new_n =
+        if e##checked == Js._false
+        then (Js.to_string e##name)::n
+        else n
+      in
+      aux new_n t
+  in aux [] dom_inputs
+
 (** Call back function from browser  *)
 let go_back () =
   Dom_html.window##history##back()
@@ -32,10 +58,13 @@ let cancel_update_content id =
   Eliom_client.change_page
     ~service:%GUI_services.content_detail_service id ()
 
-let save_update_content id title text =
+let save_update_content id title text tags remove_links =
   lwt _ = Eliom_client.call_service
     ~service:%API_services.update_content ()
-    (id, (Some title, (Some text, None)))
+    (id, (Some title, (Some text, Some tags)))
+  in
+  lwt _ = Eliom_client.call_service
+      ~service:%API_services.delete_links_from_to () (id, remove_links)
   in
   Eliom_client.change_page
     ~service:%GUI_services.content_detail_service id ()
@@ -64,14 +93,19 @@ let bind_update_content update_button content_id =
 
 (** [bind_save_update button_elt] bind the button
     on click event to call save_update_content each time. *)
-let bind_save_update_content save_update_button content_id title_elt text_elt =
+let bind_save_update_content save_update_button content_id
+    title_elt text_elt tags_inputs links_inputs =
   let dom_title = To_dom.of_input title_elt in
   let dom_text = To_dom.of_textarea text_elt in
+  let dom_tagsi = List.map To_dom.of_input tags_inputs in
+  let dom_linksi = List.map To_dom.of_input links_inputs in
   bind_button save_update_button
     (fun () ->
       let title = Js.to_string dom_title##value in
       let text = Js.to_string dom_text##value in
-      save_update_content content_id title text)
+      let newlist_tags = get_no_checked_inputs dom_tagsi in
+      let removelist_links = get_checked_inputs dom_linksi in
+      save_update_content content_id title text newlist_tags removelist_links)
 
 (** [bind_cancel_update button_elt] bind the button
     on click event to call cancel_update_content each time. *)
@@ -104,19 +138,6 @@ let rec append_all dom = function
     let dom_block = To_dom.of_div block in
     Dom.appendChild dom dom_block; append_all dom tail
 
-(** Get all name of checked dom_inputs and return them in a list. *)
-let get_checked_tags dom_inputs =
-  let rec aux n = function
-    | []      -> n
-    | e::t    ->
-      let new_n =
-        if e##checked == Js._true
-        then (Js.to_string e##name)::n
-        else n
-      in
-      aux new_n t
-  in aux [] dom_inputs
-
 (** Manage html list refreshing by getting data from API's serice. *)
 let handle_refresh_list html_elt submit_elt div_of_yojson fun_request =
   let dom_html = To_dom.of_div html_elt in
@@ -142,7 +163,7 @@ let handle_refresh_links content_id html_elt inputs_elt submit_elt =
          GUI_core.unformat_list_link r))
     (fun () -> Eliom_client.call_service
       ~service:%API_services.get_links_from_content_tags
-      (content_id, get_checked_tags dom_inputs) ())
+      (content_id, get_checked_inputs dom_inputs) ())
 
 (** Manage content's refreshing by getting data from API's serice. *)
 let handle_refresh_contents html_elt inputs_elt submit_elt =
@@ -153,6 +174,6 @@ let handle_refresh_contents html_elt inputs_elt submit_elt =
          GUI_core.unformat_list_content r))
     (fun () -> Eliom_client.call_service
       ~service:%API_services.get_contents
-      (None, Some (get_checked_tags dom_inputs)) ())
+      (None, Some (get_checked_inputs dom_inputs)) ())
 
 }}

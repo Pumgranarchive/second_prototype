@@ -82,17 +82,12 @@ let content_detail ((c_title, c_text, c_id), tags_id, links, tags_link) =
 
 
 (** Update content detail html service *)
-let content_update ((c_title, c_text, c_id), tags_id, links, tags_link) =
+let content_update ((c_title, c_text, c_id), tags, links, tags_link) =
   try
-    let aux (subject, id) =  div [pcdata subject] in
-    let tags_subjects = List.map aux tags_id in
-    let links_html = D.div (GUI_tools.build_links_list links) in
-    let submit, links_tags_inputs, links_tags_html =
-      GUI_tools.build_tags_form tags_link
-    in
-    let cancelb, saveb, header_elt =
-      GUI_tools.build_update_content_header ()
-    in
+    let tags_inputs, tags_html = GUI_tools.build_ck_tags_list tags in
+    let links_inputs, links_html = GUI_tools.build_ck_links_list links in
+    let links_tags_html = GUI_tools.build_tags_list tags_link in
+    let cancelb, saveb, header_elt = GUI_tools.build_update_content_header () in
     let title_elt =
       D.raw_input ~a:[a_class ["title_update"]]
         ~input_type:`Text ~name:"title" ~value:c_title ()
@@ -103,7 +98,7 @@ let content_update ((c_title, c_text, c_id), tags_id, links, tags_link) =
     in
     ignore {unit{ GUI_client_core.bind_cancel_update_content %cancelb %c_id}};
     ignore {unit{ GUI_client_core.bind_save_update_content %saveb %c_id
-                  %title_elt %text_elt}};
+                  %title_elt %text_elt %tags_inputs %links_inputs}};
     Eliom_tools.F.html
       ~title:"Pumgrana"
       ~css:[["css";"pumgrana.css"]]
@@ -113,10 +108,12 @@ let content_update ((c_title, c_text, c_id), tags_id, links, tags_link) =
           [title_elt; br (); text_elt;
            div ~a:[a_class["detail_tags"]]
              [h5 [pcdata "Tags"];
-              div tags_subjects]];
+              span [pcdata "Select to remove"];
+              div tags_html]];
         div ~a:[a_class["links"]]
           [h4 [pcdata "Links"];
-           links_html;
+           span [pcdata "Select to remove"];
+           div links_html;
            div ~a:[a_class["links_tags"]]
              [h5 [pcdata "Link Tags"];
               div links_tags_html]]

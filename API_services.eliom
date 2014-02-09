@@ -401,3 +401,18 @@ let _ =
     (fun () (links_id) ->
       Lwt.return (Yj.to_string (API_core.delete_links links_id),
                   API_tools.content_type))
+
+(* Temporary delete links with from to parameters *)
+let delete_links_from_to =
+  Eliom_service.Http.post_service
+    ~fallback:fallback_delete_links
+    ~post_params:Eliom_parameter.(string "origin_id" **
+                                  list "targets" (string "id"))
+    ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:delete_links_from_to
+    (fun () (origin_id, targets_id) ->
+      Lwt.return (Yj.to_string (API_core.delete_links_from_to origin_id targets_id),
+                  API_tools.content_type))

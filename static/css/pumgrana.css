@@ -30,6 +30,11 @@ html, body
 
 }
 
+.content
+{
+    margin-bottom: 6px;
+}
+
 .detail
 {
     height: calc(100% - 70px);
@@ -89,5 +94,5 @@ html, body
 .text_update
 {
     width: 100%;
-    height: 100%;
+    height: calc(100% - 50px);
 }

@@ -498,3 +498,20 @@ let update_link link_id tags_id =
   API_tools.check_return aux
 
 let delete_links = delete_from API_tools.links_coll
+
+let delete_links_from_to origin_id targets_id =
+  let object_id = API_tools.objectid_of_string origin_id in
+  API_tools.check_exist API_tools.contents_coll origin_id;
+  let query = Bson.add_element API_tools.originid_field object_id Bson.empty in
+  let aux () =
+    let objectid_of_idstr str =
+      let object_id = API_tools.objectid_of_string str in
+      API_tools.check_exist API_tools.contents_coll str;
+      Bson.add_element API_tools.targetid_field object_id query
+    in
+    let bson_query = MongoQueryOp.or_op (List.map objectid_of_idstr targets_id)
+    in
+    Mongo.delete_all API_tools.links_coll bson_query;
+    `Null
+  in
+  API_tools.check_return aux

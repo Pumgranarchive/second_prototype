@@ -27,19 +27,22 @@ let unformat_service_return func = function
 
 (** Unformat the API's content return  *)
 let unformat_content = function
- | `Assoc [(_, `String id);
-            (_, `String text);
-            (_, `String title)]  -> title, text, id
-  | _                           -> failwith (failure_string "uf: content")
+  | `Assoc [("_id", `String id);
+            ("text", `String text);
+            ("title", `String title)]   -> title, text, id
+  | `Assoc [("_id", `String id);
+            ("title", `String title);
+            ("text", `String text)]     -> title, text, id
+  | _                                   -> failwith (failure_string "uf: content")
 
 (** Unformat the API's content return  *)
 let unformat_link = unformat_content
 
 (** Unformat the API's tag return  *)
 let unformat_tag = function
-  | `Assoc [(_, `String id);
-            (_, `String subject)]       -> subject, id
-  | _                                   -> failwith (failure_string "uf: tag")
+  | `Assoc [("_id", `String id);
+            ("subject", `String subject)]       -> subject, id
+  | _                                           -> failwith (failure_string "uf: tag")
 
 (** Unformat the API's list return  *)
 let unformat_list (func: Yj.json -> 'a) (l: Yj.json) = match l with
