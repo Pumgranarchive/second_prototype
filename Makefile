@@ -38,7 +38,7 @@ endif
 ##----------------------------------------------------------------------
 ## General
 
-.PHONY: all byte opt
+.PHONY: all byte opt doc
 all: byte opt
 byte opt:: $(TEST_PREFIX)$(ELIOMSTATICDIR)/${PROJECT_NAME}.js
 byte opt:: $(TEST_PREFIX)$(ETCDIR)/$(PROJECT_NAME).conf
@@ -226,6 +226,26 @@ $(DEPSDIR)/%.client: % | $(DEPSDIR)
 
 $(DEPSDIR):
 	mkdir $@
+
+##----------------------------------------------------------------------
+## Documentation
+
+COMMON_OPTIONS := -colorize-code -stars -sort
+
+eliomdoc_wiki = ODOC_WIKI_SUBPROJECT="$(1)" eliomdoc -$(1) -intro doc/indexdoc.$(1) $(COMMON_OPTIONS) -i $(shell ocamlfind query wikidoc) -g odoc_wiki.cma  -d doc/$(1)/wiki $(2)
+eliomdoc_html = ODOC_WIKI_SUBPROJECT="$(1)" eliomdoc -$(1) -intro doc/indexdoc.$(1) $(COMMON_OPTIONS) -html -d doc/$(1)/html $(2)
+
+doc:
+	rm -rf doc/client
+	rm -rf doc/server
+	mkdir -p doc/client/html
+	mkdir -p doc/client/wiki
+	mkdir -p doc/server/html
+	mkdir -p doc/server/wiki
+	$(call eliomdoc_html,client, $(CLIENT_INC) $(CLIENT_INC_DIRS) $(CLIENT_FILES_DOC))
+	$(call eliomdoc_wiki,client, $(CLIENT_INC) $(CLIENT_INC_DIRS) $(CLIENT_FILES_DOC))
+	$(call eliomdoc_html,server, $(SERVER_INC) $(SERVER_INC_DIRS) $(SERVER_FILES_DOC))
+	$(call eliomdoc_wiki,server, $(SERVER_INC) $(SERVER_INC_DIRS) $(SERVER_FILES_DOC))
 
 ##----------------------------------------------------------------------
 ## Clean up
