@@ -100,4 +100,9 @@ let build_contents_list contents =
   in
   List.map aux contents
 
+let build_add_tag () =
+  let input = D.raw_input ~input_type:`Text () in
+  let add = D.raw_input ~input_type:`Submit ~value:"Add" () in
+  input, add, ref [], [input; add]
+
 }}

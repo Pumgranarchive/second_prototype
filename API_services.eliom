@@ -239,7 +239,7 @@ let _ =
 let insert_tags =
   Eliom_service.Http.post_service
     ~fallback:fallback_insert_tags
-    ~post_params:Eliom_parameter.(opt (string "type_name") **
+    ~post_params:Eliom_parameter.(string "type_name" **
                                   opt (string "id") **
                                   list "tags" (string "subject"))
     ()

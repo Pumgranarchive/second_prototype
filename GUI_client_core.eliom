@@ -58,16 +58,48 @@ let cancel_update_content id =
   Eliom_client.change_page
     ~service:%GUI_services.content_detail_service id ()
 
-let save_update_content id title text tags remove_links =
-  lwt _ = Eliom_client.call_service
-    ~service:%API_services.update_content ()
-    (id, (Some title, (Some text, Some tags)))
+let save_update_content id title text tags remove_links new_tags =
+  lwt res = Eliom_client.call_service ~service:%API_services.get_tags_by_type
+    %API_conf.content_tag ()
   in
-  lwt _ = Eliom_client.call_service
-      ~service:%API_services.delete_links_from_to () (id, remove_links)
+  let all_tags =
+    GUI_core.unformat_service_return GUI_core.unformat_list_tag
+      (Yj.from_string res)
+  in
+  let rec get_id_of name = function
+    | []                -> raise Not_found
+    | (sub, id)::t      -> if String.compare sub name == 0
+      then id
+      else get_id_of name t
+  in
+  let rec build_tags_list nl not_found_list = function
+    | []                -> nl, not_found_list
+    | subject::t        ->
+      let new_list, nf_list =
+        try (get_id_of subject all_tags)::nl, not_found_list
+        with | Not_found        -> nl, subject::not_found_list
+      in
+      build_tags_list new_list nf_list t
+  in
+  let full_tags_list, not_found_list = build_tags_list tags [] new_tags in
+  lwt _ = Eliom_client.call_service ~service:%API_services.update_content ()
+      (id, (Some title, (Some text, Some full_tags_list)))
+  in
+  lwt res = Eliom_client.call_service ~service:%API_services.insert_tags ()
+      (%API_conf.content_tag, (Some id, not_found_list))
+  in
+  lwt _ = Eliom_client.call_service ~service:%API_services.delete_links_from_to
+      () (id, remove_links)
   in
   Eliom_client.change_page
     ~service:%GUI_services.content_detail_service id ()
+
+let submit_tag_content dom_tags_html tag input_list =
+  let input = D.raw_input ~input_type:`Checkbox ~name:tag () in
+  input_list := input::!input_list;
+  let elt = div [input; pcdata tag] in
+  let dom_elt = To_dom.of_div elt in
+  Dom.appendChild dom_tags_html dom_elt
 
 (** [bind_button button_elt func] bind the button
     on click event to call func each time. *)
@@ -94,7 +126,7 @@ let bind_update_content update_button content_id =
 (** [bind_save_update button_elt] bind the button
     on click event to call save_update_content each time. *)
 let bind_save_update_content save_update_button content_id
-    title_elt text_elt tags_inputs links_inputs =
+    title_elt text_elt tags_inputs links_inputs tags_input_list =
   let dom_title = To_dom.of_input title_elt in
   let dom_text = To_dom.of_textarea text_elt in
   let dom_tagsi = List.map To_dom.of_input tags_inputs in
@@ -103,15 +135,28 @@ let bind_save_update_content save_update_button content_id
     (fun () ->
       let title = Js.to_string dom_title##value in
       let text = Js.to_string dom_text##value in
-      let newlist_tags = get_no_checked_inputs dom_tagsi in
+      let tags_list = get_no_checked_inputs dom_tagsi in
       let removelist_links = get_checked_inputs dom_linksi in
-      save_update_content content_id title text newlist_tags removelist_links)
+      let dom_new_tagsi = List.map To_dom.of_input !tags_input_list in
+      let newlist_tags = get_no_checked_inputs dom_new_tagsi in
+      save_update_content content_id title text tags_list
+        removelist_links newlist_tags)
 
 (** [bind_cancel_update button_elt] bind the button
     on click event to call cancel_update_content each time. *)
 let bind_cancel_update_content cancel_update_button content_id =
   bind_button cancel_update_button
     (fun () -> cancel_update_content content_id)
+
+(** [bind_add_tag button_elt] bind the button
+    on click event to call go_update_content each time. *)
+let bind_add_tag_content submit_tag div_tags_html add_tag_input input_list =
+  let dom_tags = To_dom.of_div div_tags_html in
+  let dom_input = To_dom.of_input add_tag_input in
+  bind_button submit_tag (fun () ->
+    let value = Js.to_string dom_input##value in
+    dom_input##value <- Js.string "";
+    Lwt.return (submit_tag_content dom_tags value input_list))
 
 (** [bind_delete_content button_elt content_id] bind the button
     on click event to remove the content with the given content_id. *)

@@ -297,44 +297,44 @@ let insert_tags type_name id_opt subjects =
   let aux () =
     let build_updater coll =
 
-      (* Check existing of the id parameter *)
-      let id = match id_opt with
-        | Some x  -> x
-        | None    ->
-          raise API_conf.(Pum_exc (return_not_found,
-                                   "type_name and id need to be specify"))
-      in
+    (* Check existing of the id parameter *)
+      match id_opt with
+      | Some id  ->
 
-      (* Check existing of content *)
-      let object_id = API_tools.objectid_of_string id in
-      let bson_query = Bson.add_element API_tools.id_field object_id Bson.empty in
-      API_tools.check_exist coll id;
+        (* Check existing of content *)
+        let object_id = API_tools.objectid_of_string id in
+        let bson_query = Bson.add_element API_tools.id_field object_id Bson.empty in
+        API_tools.check_exist coll id;
 
-      (* Update tags in list of content tags *)
-      (fun bson_ids ->
-        let each = MongoQueryOp.each bson_ids in
-        let elem = Bson.add_element API_tools.tagsid_field
-          (Bson.create_doc_element each) Bson.empty
-        in
-        let bson_update = MongoQueryOp.addToSet elem in
-        Mongo.update_one coll (bson_query, bson_update)
-      )
+        (* Update tags in list of content tags *)
+        (fun bson_ids ->
+          let each = MongoQueryOp.each bson_ids in
+          let elem = Bson.add_element API_tools.tagsid_field
+            (Bson.create_doc_element each) Bson.empty
+          in
+          let bson_update = MongoQueryOp.addToSet elem in
+          Mongo.update_one coll (bson_query, bson_update))
+
+      | None    -> (fun _ -> ())
     in
 
     (* Check and select the collection *)
-    let update_fun = match type_name with
-      | None                -> (fun _ -> ())
-      | Some "CONTENT"      -> build_updater API_tools.contents_coll
-      | Some "LINK"         -> build_updater API_tools.links_coll
-      | Some x              ->
+    let type_n, update_fun = match type_name with
+      | "CONTENT"      -> API_conf.content_tag_str,
+        build_updater API_tools.contents_coll
+      | "LINK"         -> API_conf.link_tag_str,
+        build_updater API_tools.links_coll
+      | x              ->
         raise API_conf.(Pum_exc (return_not_found, errstr_not_expected x))
     in
 
     (* Checking the not existing of the subjects *)
     let bson_of_str s =
       let bson = Bson.create_string s in
+      let bson_type_n = Bson.create_string type_n in
       API_tools.check_not_exist API_tools.tags_coll API_tools.subject_field bson s;
-      Bson.add_element API_tools.subject_field bson Bson.empty
+      Bson.add_element API_tools.subject_field bson
+        (Bson.add_element API_tools.type_field bson_type_n Bson.empty)
     in
     let bson_subjects = List.map bson_of_str subjects in
 
@@ -344,7 +344,7 @@ let insert_tags type_name id_opt subjects =
     let new_ids =
       API_tools.get_last_created_id API_tools.tags_coll saved_state
     in
-    let bson_ids = List.map (fun e -> Bson.create_string e) new_ids in
+    let bson_ids = List.map (fun e -> API_tools.objectid_of_string e) new_ids in
 
     (* Call the updating part *)
     update_fun bson_ids;

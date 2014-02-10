@@ -34,9 +34,13 @@ let most_recent = 0
 let most_used = 1
 let most_view = 2
 
+{shared{
+
 (* Tag types *)
 let link_tag = "LINK"
 let content_tag = "CONTENT"
 
 let link_tag_str = "Link"
 let content_tag_str = "Content"
+
+}}
