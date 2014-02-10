@@ -54,6 +54,10 @@ let go_update_content id =
   Eliom_client.change_page
     ~service:%GUI_services.content_update_service id ()
 
+let go_insert_content () =
+  Eliom_client.change_page
+    ~service:%GUI_services.content_insert_service () ()
+
 let cancel_update_content id =
   Eliom_client.change_page
     ~service:%GUI_services.content_detail_service id ()
@@ -94,6 +98,40 @@ let save_update_content id title text tags remove_links new_tags =
   Eliom_client.change_page
     ~service:%GUI_services.content_detail_service id ()
 
+let save_insert_content title text new_tags =
+  lwt res = Eliom_client.call_service ~service:%API_services.get_tags_by_type
+    %API_conf.content_tag ()
+  in
+  let all_tags =
+    GUI_core.unformat_service_return GUI_core.unformat_list_tag
+      (Yj.from_string res)
+  in
+  let rec get_id_of name = function
+    | []                -> raise Not_found
+    | (sub, id)::t      -> if String.compare sub name == 0
+      then id
+      else get_id_of name t
+  in
+  let rec build_tags_list nl not_found_list = function
+    | []                -> nl, not_found_list
+    | subject::t        ->
+      let new_list, nf_list =
+        try (get_id_of subject all_tags)::nl, not_found_list
+        with | Not_found        -> nl, subject::not_found_list
+      in
+      build_tags_list new_list nf_list t
+  in
+  let tags_list, not_found_list = build_tags_list [] [] new_tags in
+  lwt res = Eliom_client.call_service ~service:%API_services.insert_content ()
+      (title, (text, Some tags_list))
+  in
+  let id = GUI_core.unformat_content_id_return (Yj.from_string res) in
+  lwt _ = Eliom_client.call_service ~service:%API_services.insert_tags ()
+      (%API_conf.content_tag, (Some id, not_found_list))
+  in
+  Eliom_client.change_page
+    ~service:%GUI_services.content_detail_service id ()
+
 let submit_tag_content dom_tags_html tag input_list =
   let input = D.raw_input ~input_type:`Checkbox ~name:tag () in
   input_list := input::!input_list;
@@ -122,6 +160,11 @@ let bind_forward forward_button =
     on click event to call go_update_content each time. *)
 let bind_update_content update_button content_id =
   bind_button update_button (fun () -> go_update_content content_id)
+
+(** [bind_insert_content button_elt] bind the button
+    on click event to call go_insert_content each time. *)
+let bind_insert_content button_elt =
+  bind_button button_elt (fun () -> go_insert_content ())
 
 (** [bind_save_update button_elt] bind the button
     on click event to call save_update_content each time. *)
@@ -167,6 +210,20 @@ let bind_delete_content button_elt content_id =
     Lwt.return (go_back ())
   in
   bind_button button_elt action
+
+(** [bind_save_insert button_elt] bind the button
+    on click event to call save_update_content each time. *)
+let bind_save_insert_content save_insert_button title_elt
+    text_elt tags_input_list =
+  let dom_title = To_dom.of_input title_elt in
+  let dom_text = To_dom.of_textarea text_elt in
+  bind_button save_insert_button
+    (fun () ->
+      let title = Js.to_string dom_title##value in
+      let text = Js.to_string dom_text##value in
+      let dom_new_tagsi = List.map To_dom.of_input !tags_input_list in
+      let newlist_tags = get_no_checked_inputs dom_new_tagsi in
+      save_insert_content title text newlist_tags)
 
 (** Remove all child from the given dom element.  *)
 let rec remove_all_child dom =

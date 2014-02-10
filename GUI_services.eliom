@@ -34,9 +34,16 @@ let content_detail_service =
     ~get_params:Eliom_parameter.(suffix (string "content_id"))
     ()
 
-(* Content detail *)
+(* Update content detail *)
 let content_update_service =
   Eliom_service.Http.service
     ~path:["content"; "update"]
     ~get_params:Eliom_parameter.(suffix (string "content_id"))
+    ()
+
+(* Insert content detail *)
+let content_insert_service =
+  Eliom_service.Http.service
+    ~path:["content"; "insert"]
+    ~get_params:Eliom_parameter.unit
     ()
