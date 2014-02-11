@@ -268,7 +268,7 @@ let get_tags_from_content_link content_id =
     in
     let rec create_tag_list list =
       let get_tags current_link = Bson.get_list
-        (Bson.get_element API_tools.tags_field current_link)
+        (Bson.get_element API_tools.tagsid_field current_link)
       in
       let rec aux new_list = function
         | []	-> new_list
@@ -398,9 +398,8 @@ let get_links_from_content_tags content_id opt_tags_id =
   let aux tags_id () =
     (* getting every link with 'content_id' as origin *)
     let content_objectId = API_tools.objectid_of_string content_id in
-
     let document_of_tag tag_id =
-      Bson.add_element API_tools.tags_field
+      Bson.add_element API_tools.tagsid_field
         (API_tools.objectid_of_string tag_id) Bson.empty
     in
     let bson_tags_id_list = List.map document_of_tag tags_id in
@@ -409,6 +408,7 @@ let get_links_from_content_tags content_id opt_tags_id =
       Mongo.find_q API_tools.links_coll
         (Bson.add_element API_tools.originid_field content_objectId bson_tags_condition)
     in
+
     let content_bson_list = MongoReply.get_document_list result_content in
     if content_bson_list = [] then
       raise API_conf.(Pum_exc (return_no_content, "This content has no link."));
@@ -417,7 +417,6 @@ let get_links_from_content_tags content_id opt_tags_id =
       Bson.add_element API_tools.id_field (Bson.get_element API_tools.targetid_field content_bson) Bson.empty in
 
     let link_id_list = List.map make_link_id_list content_bson_list in
-
     (* getting content to return *)
     let link_query    = (MongoQueryOp.or_op link_id_list)
     in
