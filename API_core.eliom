@@ -92,7 +92,6 @@ let get_contents filter tags_id =
 
 (*** Setters  *)
 
-(* Currently tags_subject is not used *)
 let insert_content title text tags_id =
   let aux () =
     let bson_title = Bson.create_string title in
