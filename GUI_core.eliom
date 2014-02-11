@@ -25,6 +25,12 @@ let unformat_service_return func = function
   | _                                   ->
     failwith (failure_string "uf: service return")
 
+(** Unformat the API's content_id return  *)
+let unformat_content_id_return = function
+  | `Assoc [(_, _); ("content_id", `List [`String id])] -> id
+  | _                                                   ->
+    failwith (failure_string "uf: content_id return")
+
 (** Unformat the API's content return  *)
 let unformat_content = function
   | `Assoc [("_id", `String id);

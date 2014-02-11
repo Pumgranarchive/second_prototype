@@ -92,7 +92,6 @@ let get_contents filter tags_id =
 
 (*** Setters  *)
 
-(* Currently tags_subject is not used *)
 let insert_content title text tags_id =
   let aux () =
     let bson_title = Bson.create_string title in
@@ -108,8 +107,9 @@ let insert_content title text tags_id =
     in
     let saved_state = API_tools.get_id_state API_tools.contents_coll in
     Mongo.insert API_tools.contents_coll [content];
-    `String (List.hd (API_tools.get_last_created_id
-                        API_tools.contents_coll saved_state))
+    `String (API_tools.string_of_id
+               (List.hd (API_tools.get_last_created_id
+                           API_tools.contents_coll saved_state)))
   in
   API_tools.check_return
     ~param_name:API_tools.content_id_ret_name

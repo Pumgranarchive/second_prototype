@@ -24,9 +24,12 @@ let home_html (contents, tags) =
     div ~a:[a_class["contents_tags"]]
       ((h4 [pcdata "Tags"])::tags_html_list)
   in
-  let backb, forwardb, header_elt = GUI_tools.build_contents_header () in
+  let insertb, backb, forwardb, header_elt =
+    GUI_tools.build_contents_header ()
+  in
   ignore {unit{ GUI_client_core.bind_back %backb }};
   ignore {unit{ GUI_client_core.bind_forward %forwardb }};
+  ignore {unit{ GUI_client_core.bind_insert_content %insertb }};
   ignore {unit{ GUI_client_core.handle_refresh_contents %contents_html
                 %tags_inputs %submit}};
   Eliom_tools.F.html
@@ -80,7 +83,6 @@ let content_detail ((c_title, c_text, c_id), tags_id, links, tags_link) =
       ~css:[["css";"pumgrana.css"]]
       Html5.F.(body [])
 
-
 (** Update content detail html service *)
 let content_update ((c_title, c_text, c_id), tags, links, tags_link) =
   try
@@ -126,6 +128,47 @@ let content_update ((c_title, c_text, c_id), tags, links, tags_link) =
              [h5 [pcdata "Link Tags"];
               div links_tags_html]]
       ])
+  with
+  | e -> print_endline (Printexc.to_string e);
+    Eliom_tools.F.html
+      ~title:"Pumgrana"
+      ~css:[["css";"pumgrana.css"]]
+      Html5.F.(body [])
+
+(** Insert content html service *)
+let content_insert () =
+  try
+    let _, tags_html = GUI_tools.build_ck_tags_list [] in
+    let cancelb, saveb, header_elt = GUI_tools.build_update_content_header () in
+    let div_tags_html = D.div tags_html in
+    let add_tag_input, submit_tag, tags_input_list, add_tag_html =
+      GUI_tools.build_add_tag ()
+    in
+    let title_elt =
+      D.raw_input ~a:[a_class ["title_update"]]
+        ~input_type:`Text ~name:"title" ()
+    in
+    let text_elt =
+      D.raw_textarea ~a:[a_class ["text_update"]]
+        ~name:"text" ()
+    in
+    ignore {unit{ GUI_client_core.bind_back %cancelb}};
+    ignore {unit{ GUI_client_core.bind_add_tag_content %submit_tag
+                    %div_tags_html %add_tag_input %tags_input_list}};
+    ignore {unit{ GUI_client_core.bind_save_insert_content %saveb
+                    %title_elt %text_elt %tags_input_list}};
+    Eliom_tools.F.html
+      ~title:"Pumgrana"
+      ~css:[["css";"pumgrana.css"]]
+      Html5.F.(body [
+        header_elt;
+        div ~a:[a_class["detail"]]
+          [title_elt; br (); text_elt;
+           div ~a:[a_class["detail_tags"]]
+             [h5 [pcdata "Tags"];
+              span [pcdata "Select to unadd"];
+              div_tags_html;
+              div add_tag_html]]])
   with
   | e -> print_endline (Printexc.to_string e);
     Eliom_tools.F.html

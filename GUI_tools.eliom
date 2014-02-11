@@ -34,7 +34,13 @@ let build_header_back_forward elt_list =
   back_button, forward_button, header_elt
 
 let build_contents_header () =
-  build_header_back_forward []
+  let insert_button =
+    D.raw_input ~input_type:`Submit ~value:"Add new content" ()
+  in
+  let back_button, forward_button, header_elt =
+    build_header_back_forward [insert_button]
+  in
+  insert_button, back_button, forward_button, header_elt
 
 let build_detail_content_header () =
   let update_button = D.raw_input ~input_type:`Submit ~value:"Update" () in
