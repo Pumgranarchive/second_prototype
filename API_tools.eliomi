@@ -18,9 +18,6 @@ val id_field: string
 (** Value of the tags_id field in the database *)
 val tagsid_field: string
 
-(* (\** Value of the tags field in the database *\) *)
-(* val tags_field: string *)
-
 (** Value of the targetid field in the database *)
 val targetid_field: string
 

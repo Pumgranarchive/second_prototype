@@ -22,7 +22,6 @@ let content_type = "application/json"
 
 let id_field = "_id"
 let tagsid_field = "tags_id"
-(* let tags_field = "tags" *)
 let targetid_field = "target_id"
 let originid_field = "origin_id"
 let title_field = "title"
