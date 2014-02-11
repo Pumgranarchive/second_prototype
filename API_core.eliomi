@@ -64,7 +64,7 @@ val delete_tags: string list -> Yojson.Safe.json
 val get_links_from_content: string -> Yojson.Safe.json
 
 (** [get_links_from_content_tags content_id tags_id]  *)
-val get_links_from_content_tags: string -> string list -> Yojson.Safe.json
+val get_links_from_content_tags: string -> string list option -> Yojson.Safe.json
 
 (** [insert_links id_from ids_to tags_id]  *)
 val insert_links: string -> string list -> string list list -> Yojson.Safe.json
