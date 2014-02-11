@@ -302,7 +302,7 @@ let get_links_from_content_tags =
      Eliom_service.Http.service
        ~path:["api"; "link"; "list_from_content_tags"]
        ~get_params:Eliom_parameter.(suffix ((string "content_id") **
-          (list "tags" (string "id"))))
+          (opt (list "tags" (string "id")))))
        ()
 
 (** This function manage the computation

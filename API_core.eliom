@@ -394,8 +394,8 @@ let get_links_from_content content_id =
   in
   API_tools.check_return ~param_name:API_tools.links_ret_name aux
 
-let get_links_from_content_tags content_id tags_id =
-  let aux () =
+let get_links_from_content_tags content_id opt_tags_id =
+  let aux tags_id () =
     (* getting every link with 'content_id' as origin *)
     let content_objectId = API_tools.objectid_of_string content_id in
 
@@ -427,8 +427,9 @@ let get_links_from_content_tags content_id tags_id =
     API_tools.removing_text_field
       (API_tools.yojson_of_mongoreply result_query)
   in
-  API_tools.check_return ~param_name:API_tools.links_ret_name aux
-
+  match opt_tags_id with
+  | Some x      -> API_tools.check_return ~param_name:API_tools.links_ret_name (aux x)
+  | None        -> get_links_from_content content_id
 
 let insert_links id_from ids_to tags_id =
   let aux () =

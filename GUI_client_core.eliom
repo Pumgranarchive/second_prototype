@@ -206,9 +206,11 @@ let handle_refresh_links content_id html_elt inputs_elt submit_elt =
     (fun r -> GUI_tools.build_links_list
       (GUI_core.unformat_service_return
          GUI_core.unformat_list_link r))
-    (fun () -> Eliom_client.call_service
+    (fun () ->
+      let list = get_checked_inputs dom_inputs in
+      Eliom_client.call_service
       ~service:%API_services.get_links_from_content_tags
-      (content_id, get_checked_inputs dom_inputs) ())
+      (content_id, Some list) ())
 
 (** Manage content's refreshing by getting data from API's serice. *)
 let handle_refresh_contents html_elt inputs_elt submit_elt =
