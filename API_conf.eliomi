@@ -1,9 +1,12 @@
-{server{
+{shared{
 
 (**
    {b API Configuration file}
 *)
 
+}}
+
+{server{
 
 (** {6 Basic data} *)
 
@@ -68,28 +71,9 @@ val errstr_exist: string -> string
 (** Generic internal error message *)
 val errstr_internal_error: string
 
-
-(** {6  Tag types} *)
-
-(** The value of parameter to select tags on link *)
-val link_tag: string
-
-(** The value of parameter to select tags on content *)
-val content_tag: string
-
-(** The value to set in database tags on link *)
-val link_tag_str: string
-
-(** The value to set in database tags on content *)
-val content_tag_str: string
-
 }}
 
-{client{
-
-(**
-   {b API Configuration file}
-*)
+{shared{
 
 (** {6  Tag types} *)
 
