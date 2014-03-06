@@ -219,7 +219,7 @@ let link_format_ret link_ids json_l =
     | [], []                                    -> nl
   in
   match json_l with
-  | `List assocs        -> `List (scanner [] (assocs, link_ids))
+  | `List assocs        -> `List (scanner [] (assocs, List.rev link_ids))
   | yl                  -> yl
 
 (** Format the returned value *)
