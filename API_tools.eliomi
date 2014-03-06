@@ -51,8 +51,20 @@ val tags_ret_name: string
 (** Links field name in the API json return *)
 val links_ret_name: string
 
+(** Link_id field name in the API json return *)
+val link_id_ret_name: string
+
+(** Content_ field name in the API json return *)
+val content_ud_ret_name: string
+
 (** Content_id field name in the API json return *)
 val content_id_ret_name: string
+
+(** Content_title field name in the API json return *)
+val content_title_ret_name: string
+
+(** Content_summary field name in the API json return *)
+val content_summary_ret_name: string
 
 (** Tags_id field name in the API json return *)
 val tagsid_ret_name: string
@@ -109,6 +121,10 @@ val objectid_of_string: string -> Bson.element
     into string in hex 24 char format *)
 val string_of_id: string -> string
 
+(** Convert string objectID from mongo in Hexa 12 char format
+    into string in hex 24 char format *)
+val string_of_objectid: Bson.element -> string
+
 (** Cast single bson document to yojson *)
 val yojson_of_bson: Bson.t -> Yojson.Safe.json
 
@@ -152,7 +168,7 @@ val objectid_of_tagstr: string -> Bson.element
 (** {6 Manage return tools } *)
 
 (** Removing the value from text field *)
-val removing_text_field: Yojson.Safe.json -> Yojson.Safe.json
+val link_format_ret: string list -> Yojson.Safe.json -> Yojson.Safe.json
 
 (** Format the returned value *)
 val format_ret: ?param_name:string -> int -> ?error_str:string -> Yojson.Safe.json -> Yojson.Safe.json

@@ -34,17 +34,19 @@ let unformat_content_id_return = function
 (** Unformat the API's content return  *)
 let unformat_content = function
   | `Assoc [("_id", `String id);
-            ("text", `String text);
-            ("summary", `String _);
-            ("title", `String title)]   -> title, text, id
-  | `Assoc [("_id", `String id);
             ("title", `String title);
             ("summary", `String _);
             ("text", `String text)]     -> title, text, id
   | _                                   -> failwith (failure_string "uf: content")
 
-(** Unformat the API's content return  *)
-let unformat_link = unformat_content
+(** Unformat the API's link return  *)
+let unformat_link = function
+  | `Assoc [("link_id", `String _);
+            ("content_id", `String id);
+            ("content_title", `String title);
+            ("content_summary", `String summary)]       -> title, summary, id
+  | _                                                   -> failwith (failure_string "uf: link")
+
 
 (** Unformat the API's tag return  *)
 let unformat_tag = function

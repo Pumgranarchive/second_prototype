@@ -33,7 +33,11 @@ let type_field = "type"
 let contents_ret_name = "contents"
 let tags_ret_name = "tags"
 let links_ret_name = "links"
+let link_id_ret_name = "link_id"
+let content_ud_ret_name = "content_"
 let content_id_ret_name = "content_id"
+let content_title_ret_name = "content_title"
+let content_summary_ret_name = "content_summary"
 let tagsid_ret_name = "tags_id"
 let linksid_ret_name = "links_id"
 let detail_ret_name = "links_id"
@@ -61,7 +65,11 @@ let tag_format =
   Bson.add_element id_field yes_value
     (Bson.add_element subject_field yes_value Bson.empty)
 
-let link_format = content_format
+let link_format =
+  Bson.add_element id_field yes_value
+    (Bson.add_element title_field yes_value
+       (Bson.add_element summary_field yes_value Bson.empty))
+
 
 (*** Getter tools  *)
 
@@ -118,6 +126,8 @@ let string_of_id str_id =
     Buffer.contents buf
   with
   | e -> print_endline (Printexc.to_string e); "0"
+
+let string_of_objectid id = string_of_id (Bson.get_objectId id)
 
 (** Cast single bson document to yojson *)
 let yojson_of_bson bson =
@@ -187,19 +197,30 @@ let objectid_of_tagstr id =
 (*** Manage return tools *)
 
 (** Removing the value from text field *)
-let removing_text_field = function
-  | `List l     ->
-    let rec scanner nl = function
-      | (`Assoc list)::tail     ->
-        let rec remover nl = function
-          | []                -> List.rev nl
-          | ("text", _)::tail -> remover (("text", `String "")::nl) tail
-          | head::tail        -> remover (head::nl) tail
-        in scanner ((`Assoc (remover [] list))::nl) tail
-      | head::tail              -> scanner (head::nl) tail
-      | []                      -> nl
-    in `List (scanner [] l)
-  | yl  -> yl
+let link_format_ret link_ids json_l =
+  let rec formater id nl = function
+    | []                -> (link_id_ret_name, `String id)::(List.rev nl)
+    | (name, v)::tail   ->
+      let new_name = if (String.compare name id_field == 0)
+        then content_id_ret_name
+        else content_ud_ret_name ^ name
+      in
+      formater id ((new_name, v)::nl) tail
+  in
+  let rec scanner nl = function
+    | (`Assoc link)::assoc_t, id_h::id_t        ->
+      scanner ((`Assoc (formater id_h [] link))::nl) (assoc_t, id_t)
+    | assocs_h::assocs_t, _::id_t               ->
+      scanner (assocs_h::nl) (assocs_t, id_t)
+    | _::_, []                                  ->
+      raise API_conf.(Pum_exc (return_not_found, "link_formater: no enought ids."))
+    | [], _::_                                  ->
+      raise API_conf.(Pum_exc (return_not_found, "link_formater: too many enought ids."))
+    | [], []                                    -> nl
+  in
+  match json_l with
+  | `List assocs        -> `List (scanner [] (assocs, link_ids))
+  | yl                  -> yl
 
 (** Format the returned value *)
 let format_ret ?param_name status ?error_str (param_value:Yj.json) =
