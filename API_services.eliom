@@ -89,6 +89,7 @@ let insert_content =
   Eliom_service.Http.post_service
     ~fallback:fallback_insert_content
     ~post_params:Eliom_parameter.(string "title" **
+                                  string "summary" **
                                   string "text" **
                                   opt (list "tags" (string "id")))
     ()
@@ -96,8 +97,9 @@ let insert_content =
 let _ =
   Eliom_registration.String.register
     ~service:insert_content
-    (fun () (title, (text, tags_id)) ->
-      Lwt.return (Yj.to_string (API_core.insert_content title text tags_id),
+    (fun () (title, (summary, (text, tags_id))) ->
+      Lwt.return (Yj.to_string
+                    (API_core.insert_content title summary text tags_id),
                   API_tools.content_type))
 
 (* Update content *)
@@ -119,6 +121,7 @@ let update_content =
     ~fallback:fallback_update_content
     ~post_params:Eliom_parameter.(string "content_id" **
                                   opt (string "title") **
+                                  opt (string "summary") **
                                   opt (string "text") **
                                   opt (list "tags" (string "id")))
     ()
@@ -126,9 +129,10 @@ let update_content =
 let _ =
   Eliom_registration.String.register
     ~service:update_content
-    (fun () (content_id, (title, (text, tags_id))) ->
+    (fun () (content_id, (title, (summary, (text, tags_id)))) ->
       Lwt.return (Yj.to_string
-                    (API_core.update_content content_id title text tags_id),
+                    (API_core.update_content content_id
+                       title summary text tags_id),
                   API_tools.content_type))
 
 (* Delete content *)

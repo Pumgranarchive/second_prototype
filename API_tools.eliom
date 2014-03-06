@@ -25,6 +25,7 @@ let tagsid_field = "tags_id"
 let targetid_field = "target_id"
 let originid_field = "origin_id"
 let title_field = "title"
+let summary_field = "summary"
 let text_field = "text"
 let subject_field = "subject"
 let type_field = "type"
@@ -53,7 +54,8 @@ let yes_value = Bson.create_boolean true
 let content_format =
   Bson.add_element id_field yes_value
     (Bson.add_element title_field yes_value
-       (Bson.add_element text_field yes_value Bson.empty))
+       (Bson.add_element summary_field yes_value
+          (Bson.add_element text_field yes_value Bson.empty)))
 
 let tag_format =
   Bson.add_element id_field yes_value

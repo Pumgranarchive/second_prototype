@@ -27,6 +27,9 @@ val originid_field: string
 (** Value of the title field in the database *)
 val title_field: string
 
+(** Value of the summary field in the database *)
+val summary_field: string
+
 (** Value of the text field in the database *)
 val text_field: string
 

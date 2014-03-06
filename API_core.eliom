@@ -92,9 +92,10 @@ let get_contents filter tags_id =
 
 (*** Setters  *)
 
-let insert_content title text tags_id =
+let insert_content title summary text tags_id =
   let aux () =
     let bson_title = Bson.create_string title in
+    let bson_summary = Bson.create_string summary in
     let bson_text = Bson.create_string text in
     let bson_tags_list = match tags_id with
       | None    -> []
@@ -102,8 +103,9 @@ let insert_content title text tags_id =
     in
     let bson_tagsid = Bson.create_list bson_tags_list in
     let content = Bson.add_element API_tools.title_field bson_title
-      (Bson.add_element API_tools.text_field bson_text
-         (Bson.add_element API_tools.tagsid_field bson_tagsid Bson.empty))
+      (Bson.add_element API_tools.summary_field bson_summary
+         (Bson.add_element API_tools.text_field bson_text
+            (Bson.add_element API_tools.tagsid_field bson_tagsid Bson.empty)))
     in
     let saved_state = API_tools.get_id_state API_tools.contents_coll in
     Mongo.insert API_tools.contents_coll [content];
@@ -115,7 +117,7 @@ let insert_content title text tags_id =
     ~param_name:API_tools.content_id_ret_name
     ~default_return:API_conf.return_created aux
 
-let update_content content_id title text tags_id =
+let update_content content_id title summary text tags_id =
   let aux () =
     API_tools.check_exist API_tools.contents_coll content_id;
     let object_id = API_tools.objectid_of_string content_id in
@@ -126,22 +128,26 @@ let update_content content_id title text tags_id =
       | Some x    -> Bson.add_element
         API_tools.title_field (Bson.create_string x) content
     in
-    let content_2 = match text with
+    let content_2 = match summary with
       | None      -> content_1
       | Some x    -> Bson.add_element
-        API_tools.text_field (Bson.create_string x) content_1
+        API_tools.summary_field (Bson.create_string x) content_1
     in
-    let content_3 = match tags_id with
+    let content_3 = match text with
       | None      -> content_2
+      | Some x    -> Bson.add_element
+        API_tools.text_field (Bson.create_string x) content_2
+    in
+    let content_4 = match tags_id with
+      | None      -> content_3
       | Some x    ->
         let bson_objid = List.map API_tools.objectid_of_tagstr x in
         let bson_list = Bson.create_list bson_objid in
-        Bson.add_element API_tools.tagsid_field bson_list content_2
+        Bson.add_element API_tools.tagsid_field bson_list content_3
     in
-    if content_3 = Bson.empty
-    then raise API_conf.(Pum_exc (return_not_found,
-                                  "title, text and tags_id can not be all null"));
-    Mongo.update_one API_tools.contents_coll (bson_query, content_3);
+    if content_4 = Bson.empty
+    then raise API_conf.(Pum_exc (return_not_found, "title, summary, text and tags_id can not be all null"));
+    Mongo.update_one API_tools.contents_coll (bson_query, content_4);
     `Null
   in
   API_tools.check_return aux

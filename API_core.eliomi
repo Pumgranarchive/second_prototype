@@ -24,10 +24,10 @@ val get_detail_by_link: string -> Yojson.Safe.json
 val get_contents: string option -> string list option -> Yojson.Safe.json
 
 (** [insert_content title text tags_id]  *)
-val  insert_content: string -> string -> string list option -> Yojson.Safe.json
+val insert_content: string -> string -> string -> string list option -> Yojson.Safe.json
 
 (** [update_content content_id title text tags_id]  *)
-val update_content: string -> string option -> string option -> string list option -> Yojson.Safe.json
+val update_content: string -> string option -> string option -> string option -> string list option -> Yojson.Safe.json
 
 (** [delete_contents content_ids]  *)
 val delete_contents: string list -> Yojson.Safe.json

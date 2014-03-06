@@ -87,7 +87,7 @@ let save_update_content id title text tags remove_links new_tags =
   in
   let full_tags_list, not_found_list = build_tags_list tags [] new_tags in
   lwt _ = Eliom_client.call_service ~service:%API_services.update_content ()
-      (id, (Some title, (Some text, Some full_tags_list)))
+      (id, (Some title, (None, (Some text, Some full_tags_list))))
   in
   lwt res = Eliom_client.call_service ~service:%API_services.insert_tags ()
       (%API_conf.content_tag, (Some id, not_found_list))
@@ -123,7 +123,7 @@ let save_insert_content title text new_tags =
   in
   let tags_list, not_found_list = build_tags_list [] [] new_tags in
   lwt res = Eliom_client.call_service ~service:%API_services.insert_content ()
-      (title, (text, Some tags_list))
+      (title, ("", (text, Some tags_list)))
   in
   let id = GUI_core.unformat_content_id_return (Yj.from_string res) in
   lwt _ = Eliom_client.call_service ~service:%API_services.insert_tags ()

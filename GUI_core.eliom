@@ -35,9 +35,11 @@ let unformat_content_id_return = function
 let unformat_content = function
   | `Assoc [("_id", `String id);
             ("text", `String text);
+            ("summary", `String _);
             ("title", `String title)]   -> title, text, id
   | `Assoc [("_id", `String id);
             ("title", `String title);
+            ("summary", `String _);
             ("text", `String text)]     -> title, text, id
   | _                                   -> failwith (failure_string "uf: content")
 
