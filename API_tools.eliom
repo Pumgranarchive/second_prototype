@@ -91,6 +91,7 @@ let get_last_created_id coll saved_state =
   then failwith "not any new id found"
   else ret
 
+
 (*** Cast tools *)
 
 let objectid_of_string str =
@@ -157,6 +158,19 @@ let yojson_of_bson_list bson_l =
 (** Cast mongreply document list to yojson list *)
 let yojson_of_mongoreply mrd =
     yojson_of_bson_list (MongoReply.get_document_list mrd)
+
+let json_of_ocsigen_string_stream input_type_opt ostream_opt =
+  let _ = match input_type_opt with
+    | None                                -> raise API_conf.(Pum_exc(return_not_found, "The content_type have to not be None."))
+    | Some (("application", "json"), _)   -> ()
+    | Some _                              -> raise API_conf.(Pum_exc(return_not_found, "The content_type have to be application/json."))
+  in
+  match ostream_opt with
+  | None                -> raise API_conf.(Pum_exc(return_not_found, "The ocsigen stream have to not be None."))
+  | Some ostream        ->
+    let stream = Ocsigen_stream.get ostream in
+    lwt str_json = Ocsigen_stream.string_of_stream 100000 stream in
+    Lwt.return (Yj.from_string str_json)
 
 (*** Checking tools  *)
 
@@ -272,7 +286,17 @@ let check_return ?(default_return=API_conf.return_ok) ?param_name func =
       error_return API_conf.return_internal_error API_conf.errstr_internal_error
     end
 
-let bad_request str_error =
-  Yj.to_string
-    (check_return (fun () ->
-      raise API_conf.(Pum_exc (return_not_found, str_error))))
+let bad_request ?(error_value=API_conf.return_not_found) error_str =
+  print_endline ((string_of_int error_value) ^ ": " ^ error_str);
+  Yj.to_string (format_ret error_value ~error_str `Null)
+
+let manage_bad_request aux =
+  try_lwt
+    aux ()
+  with
+  | API_conf.Pum_exc (_, str)   ->
+    Lwt.return (bad_request str, content_type)
+  | exc                         ->
+    print_endline (Printexc.to_string exc);
+    Lwt.return (bad_request ~error_value:API_conf.return_internal_error
+                  API_conf.errstr_internal_error, content_type)

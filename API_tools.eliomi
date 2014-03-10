@@ -134,6 +134,10 @@ val yojson_of_bson_list: Bson.t list -> Yojson.Safe.json
 (** Cast mongreply document list to yojson *)
 val yojson_of_mongoreply: MongoReply.t -> Yojson.Safe.json
 
+val json_of_ocsigen_string_stream:
+  ((string * string) * (string * string) list) option->
+  string Ocsigen_stream.t option ->
+  Yojson.Safe.json Lwt.t
 
 (** {6 Checking tools  } *)
 
@@ -184,6 +188,10 @@ val format_ret: ?param_name:string -> int -> ?error_str:string -> Yojson.Safe.js
 val check_return: ?default_return:int -> ?param_name:string -> (unit -> Yojson.Safe.json) -> Yojson.Safe.json
 
 (** Use to directly return bad request in json string in register layout / unit *)
-val bad_request: string -> string
+val bad_request: ?error_value:int -> string -> string
+
+(** [manage_bad_request fun]
+    call the [fun], catch the exception and write it in the returned string *)
+val manage_bad_request: (unit -> (string * string) Lwt.t) -> (string * string) Lwt.t
 
 }}

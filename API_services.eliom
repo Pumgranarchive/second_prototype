@@ -74,7 +74,8 @@ let _ =
 (* Insert content *)
 let fallback_insert_content =
   Eliom_service.Http.service
-    ~path:["api"; "content"; "insert"]
+    (* ~path:["api"; "content"; "insert"] *)
+    ~path:[]
     ~get_params:Eliom_parameter.unit
     ()
 
@@ -82,8 +83,14 @@ let _ =
   Eliom_registration.String.register
     ~service:fallback_insert_content
     (fun () () ->
-      Lwt.return (API_tools.bad_request "title and text parameters are mandatory",
+      Lwt.return (API_tools.bad_request "title, summary and text parameters are mandatory",
                   API_tools.content_type))
+
+let insert_content_json =
+  Eliom_service.Http.post_service
+    ~fallback:fallback_insert_content
+    ~post_params:Eliom_parameter.raw_post_data
+    ()
 
 let insert_content =
   Eliom_service.Http.post_service
@@ -96,11 +103,27 @@ let insert_content =
 
 let _ =
   Eliom_registration.String.register
+    ~service:insert_content_json
+    (fun () (input_type, ostream) ->
+      let aux () =
+        lwt yojson = API_tools.json_of_ocsigen_string_stream input_type ostream in
+        let title, summary, text, tags_id =
+          Yojson_tools.get_insert_content_data yojson
+        in
+        Lwt.return (Yj.to_string
+                      (API_core.insert_content title summary text tags_id),
+                    API_tools.content_type)
+      in
+      API_tools.manage_bad_request aux)
+
+let _ =
+  Eliom_registration.String.register
     ~service:insert_content
     (fun () (title, (summary, (text, tags_id))) ->
       Lwt.return (Yj.to_string
                     (API_core.insert_content title summary text tags_id),
-                  API_tools.content_type))
+                  API_tools.content_type)
+  )
 
 (* Update content *)
 let fallback_update_content =
@@ -116,6 +139,12 @@ let _ =
       Lwt.return (API_tools.bad_request "content_id parameter is mandatory",
                   API_tools.content_type))
 
+let update_content_json =
+  Eliom_service.Http.post_service
+    ~fallback:fallback_update_content
+    ~post_params:Eliom_parameter.raw_post_data
+    ()
+
 let update_content =
   Eliom_service.Http.post_service
     ~fallback:fallback_update_content
@@ -128,11 +157,25 @@ let update_content =
 
 let _ =
   Eliom_registration.String.register
+    ~service:update_content_json
+    (fun () (input_type, ostream) ->
+      let aux () =
+        lwt yojson = API_tools.json_of_ocsigen_string_stream input_type ostream in
+        let content_id, title, summary, text, tags_id =
+          Yojson_tools.get_update_content_data yojson
+        in
+        Lwt.return (Yj.to_string (API_core.update_content content_id
+                                    title summary text tags_id),
+                    API_tools.content_type)
+      in
+      API_tools.manage_bad_request aux)
+
+let _ =
+  Eliom_registration.String.register
     ~service:update_content
     (fun () (content_id, (title, (summary, (text, tags_id)))) ->
-      Lwt.return (Yj.to_string
-                    (API_core.update_content content_id
-                       title summary text tags_id),
+      Lwt.return (Yj.to_string (API_core.update_content content_id
+                                  title summary text tags_id),
                   API_tools.content_type))
 
 (* Delete content *)
@@ -149,11 +192,29 @@ let _ =
       Lwt.return (API_tools.bad_request "contents_id parameter is mandatory",
                   API_tools.content_type))
 
+let delete_contents_json =
+  Eliom_service.Http.post_service
+    ~fallback:fallback_delete_contents
+    ~post_params:Eliom_parameter.raw_post_data
+    ()
+
 let delete_contents =
   Eliom_service.Http.post_service
     ~fallback:fallback_delete_contents
     ~post_params:Eliom_parameter.(list "contents" (string "id"))
     ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:delete_contents_json
+    (fun () (input_type, ostream) ->
+      let aux () =
+        lwt yojson = API_tools.json_of_ocsigen_string_stream input_type ostream in
+        let contents_id = Yojson_tools.get_delete_contents_data yojson in
+        Lwt.return (Yj.to_string (API_core.delete_contents contents_id),
+                    API_tools.content_type)
+      in
+      API_tools.manage_bad_request aux)
 
 let _ =
   Eliom_registration.String.register
@@ -240,6 +301,12 @@ let _ =
       Lwt.return (API_tools.bad_request "tags_subject parameter is mandatory",
                   API_tools.content_type))
 
+let insert_tags_json =
+  Eliom_service.Http.post_service
+    ~fallback:fallback_insert_tags
+    ~post_params:Eliom_parameter.raw_post_data
+    ()
+
 let insert_tags =
   Eliom_service.Http.post_service
     ~fallback:fallback_insert_tags
@@ -247,6 +314,20 @@ let insert_tags =
                                   opt (string "id") **
                                   list "tags" (string "subject"))
     ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:insert_tags_json
+    (fun () (input_type, ostream) ->
+      let aux () =
+        lwt yojson = API_tools.json_of_ocsigen_string_stream input_type ostream in
+        let type_name, id, tags_subject =
+          Yojson_tools.get_insert_tags_data yojson
+        in
+        Lwt.return (Yj.to_string (API_core.insert_tags type_name id tags_subject),
+                    API_tools.content_type)
+      in
+      API_tools.manage_bad_request aux)
 
 let _ =
   Eliom_registration.String.register
@@ -269,11 +350,29 @@ let _ =
       Lwt.return (API_tools.bad_request "tags_id parameter is mandatory",
                   API_tools.content_type))
 
+let delete_tags_json =
+  Eliom_service.Http.post_service
+    ~fallback:fallback_delete_tags
+    ~post_params:Eliom_parameter.raw_post_data
+    ()
+
 let delete_tags =
   Eliom_service.Http.post_service
     ~fallback:fallback_delete_tags
     ~post_params:Eliom_parameter.(list "tags" (string "id"))
     ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:delete_tags_json
+    (fun () (input_type, ostream) ->
+      let aux () =
+        lwt yojson = API_tools.json_of_ocsigen_string_stream input_type ostream in
+        let tags_id = Yojson_tools.get_delete_tags_data yojson in
+        Lwt.return (Yj.to_string (API_core.delete_tags tags_id),
+                    API_tools.content_type)
+      in
+      API_tools.manage_bad_request aux)
 
 let _ =
   Eliom_registration.String.register
@@ -335,6 +434,12 @@ let _ =
       Lwt.return (API_tools.bad_request "All parameters are mandatory",
                   API_tools.content_type))
 
+let insert_links_json =
+  Eliom_service.Http.post_service
+    ~fallback:fallback_insert_links
+    ~post_params:Eliom_parameter.raw_post_data
+    ()
+
 let insert_links =
   Eliom_service.Http.post_service
     ~fallback:fallback_insert_links
@@ -342,6 +447,20 @@ let insert_links =
                                   list "ids" (string "to") **
                                   list "list" (list "tags" (string "id")))
     ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:insert_links_json
+    (fun () (input_type, ostream) ->
+      let aux () =
+        lwt yojson = API_tools.json_of_ocsigen_string_stream input_type ostream in
+        let id_from, ids_to, list_tags_id =
+          Yojson_tools.get_insert_links_data yojson
+        in
+        Lwt.return (Yj.to_string (API_core.insert_links id_from ids_to list_tags_id),
+                    API_tools.content_type)
+      in
+      API_tools.manage_bad_request aux)
 
 let _ =
   Eliom_registration.String.register
@@ -364,12 +483,32 @@ let _ =
       Lwt.return (API_tools.bad_request "All parameter are mandatory",
                   API_tools.content_type))
 
+let update_link_json =
+  Eliom_service.Http.post_service
+    ~fallback:fallback_update_link
+    ~post_params:Eliom_parameter.raw_post_data
+    ()
+
 let update_link =
   Eliom_service.Http.post_service
     ~fallback:fallback_update_link
     ~post_params:Eliom_parameter.(string "link_id" **
                                   list "tags" (string "id"))
     ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:update_link_json
+    (fun () (input_type, ostream) ->
+      let aux () =
+        lwt yojson = API_tools.json_of_ocsigen_string_stream input_type ostream in
+        let link_id, tags_id =
+          Yojson_tools.get_update_link_data yojson in
+        Lwt.return (Yj.to_string
+                      (API_core.update_link link_id tags_id),
+                    API_tools.content_type)
+      in
+      API_tools.manage_bad_request aux)
 
 let _ =
   Eliom_registration.String.register
@@ -393,11 +532,29 @@ let _ =
       Lwt.return (API_tools.bad_request "links_id parameter is mandatory",
                   API_tools.content_type))
 
+let delete_links_json =
+  Eliom_service.Http.post_service
+    ~fallback:fallback_delete_links
+    ~post_params:Eliom_parameter.raw_post_data
+    ()
+
 let delete_links =
   Eliom_service.Http.post_service
     ~fallback:fallback_delete_links
     ~post_params:Eliom_parameter.(list "links" (string "id"))
     ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:delete_links_json
+    (fun () (input_type, ostream) ->
+      let aux () =
+        lwt yojson = API_tools.json_of_ocsigen_string_stream input_type ostream in
+        let links_id = Yojson_tools.get_delete_links_data yojson in
+        Lwt.return (Yj.to_string (API_core.delete_links links_id),
+                    API_tools.content_type)
+      in
+      API_tools.manage_bad_request aux)
 
 let _ =
   Eliom_registration.String.register
