@@ -1,1 +1,0 @@
-{ "options" : { "create" : "contents" }, "indexes" : [ { "v" : 1, "key" : { "_id" : 1 }, "ns" : "pumgrana.contents", "name" : "_id_" } ] }
