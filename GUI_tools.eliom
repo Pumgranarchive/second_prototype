@@ -20,13 +20,12 @@ module Yj = Yojson.Safe
 let build_header elt_list =
   div ~a:[a_class["header"]]
     ([span ~a:[a_class["pumgrana"]]
-         (* [a ~service:%GUI_services.starting_service *)
-         [a ~service:%GUI_services.home_service_without
+         [a ~service:%GUI_services.starting_service
              [img ~a:[a_class ["pumgrana_logo"]]
                  ~alt:("Pumgrana Logo")
                  ~src:(make_uri
                          ~service:(Eliom_service.static_dir ())
-                         ["images"; "LOGO_Pumgrana.png"]) ()] (None)]]@elt_list)
+                         ["images"; "LOGO_Pumgrana.png"]) ()] ()]]@elt_list)
 
 let build_header_back_forward elt_list =
   let back_button = D.raw_input ~input_type:`Submit ~value:"Back" () in

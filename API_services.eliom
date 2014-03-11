@@ -74,8 +74,7 @@ let _ =
 (* Insert content *)
 let fallback_insert_content =
   Eliom_service.Http.service
-    (* ~path:["api"; "content"; "insert"] *)
-    ~path:[]
+    ~path:["api"; "content"; "insert"]
     ~get_params:Eliom_parameter.unit
     ()
 

@@ -3,12 +3,12 @@
   This module implement services of GUI
 *)
 
-(* (\* Starting page *\) *)
-(* let starting_service = *)
-(*   Eliom_service.App.service *)
-(*     ~path:[] *)
-(*     ~get_params:Eliom_parameter.unit *)
-(*     () *)
+(* Starting page *)
+let starting_service =
+  Eliom_service.App.service
+    ~path:[]
+    ~get_params:Eliom_parameter.unit
+    ()
 
 (* Home page without parameters *)
 (* We need to do this because parameters does not allow to match
