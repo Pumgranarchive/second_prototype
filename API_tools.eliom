@@ -71,27 +71,6 @@ let link_format =
        (Bson.add_element summary_field yes_value Bson.empty))
 
 
-(*** Getter tools  *)
-
-let get_id_state coll =
-  List.map (fun e -> Bson.get_objectId (Bson.get_element id_field e))
-    (MongoReply.get_document_list (Mongo.find coll))
-
-let get_last_created_id coll saved_state =
-  let new_state = get_id_state coll in
-  let rec aux ns = function
-    | []        -> ns
-    | h::t      ->
-      if (List.exists (fun e -> (String.compare h e) == 0) saved_state)
-      then aux ns t
-      else aux (h::ns) t
-  in
-  let ret = aux [] new_state in
-  if ret = []
-  then failwith "not any new id found"
-  else ret
-
-
 (*** Cast tools *)
 
 let objectid_of_string str =
@@ -171,6 +150,27 @@ let json_of_ocsigen_string_stream input_type_opt ostream_opt =
     let stream = Ocsigen_stream.get ostream in
     lwt str_json = Ocsigen_stream.string_of_stream 100000 stream in
     Lwt.return (Yj.from_string str_json)
+
+(*** Getter tools  *)
+
+let get_id_state coll =
+  List.map (fun e -> string_of_id
+    (Bson.get_objectId (Bson.get_element id_field e)))
+    (MongoReply.get_document_list (Mongo.find coll))
+
+let get_last_created_id coll saved_state =
+  let new_state = get_id_state coll in
+  let rec aux ns = function
+    | []        -> ns
+    | h::t      ->
+      if (List.exists (fun e -> (String.compare h e) == 0) saved_state)
+      then aux ns t
+      else aux (h::ns) t
+  in
+  let ret = aux [] new_state in
+  if ret = []
+  then failwith "not any new id found"
+  else ret
 
 (*** Checking tools  *)
 
