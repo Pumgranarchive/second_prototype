@@ -107,7 +107,7 @@ let _ =
       let aux () =
         lwt yojson = API_tools.json_of_ocsigen_string_stream input_type ostream in
         let title, summary, text, tags_id =
-          Yojson_tools.get_insert_content_data yojson
+          API_deserialize.get_insert_content_data yojson
         in
         Lwt.return (Yj.to_string
                       (API_core.insert_content title summary text tags_id),
@@ -161,7 +161,7 @@ let _ =
       let aux () =
         lwt yojson = API_tools.json_of_ocsigen_string_stream input_type ostream in
         let content_id, title, summary, text, tags_id =
-          Yojson_tools.get_update_content_data yojson
+          API_deserialize.get_update_content_data yojson
         in
         Lwt.return (Yj.to_string (API_core.update_content content_id
                                     title summary text tags_id),
@@ -209,7 +209,7 @@ let _ =
     (fun () (input_type, ostream) ->
       let aux () =
         lwt yojson = API_tools.json_of_ocsigen_string_stream input_type ostream in
-        let contents_id = Yojson_tools.get_delete_contents_data yojson in
+        let contents_id = API_deserialize.get_delete_contents_data yojson in
         Lwt.return (Yj.to_string (API_core.delete_contents contents_id),
                     API_tools.content_type)
       in
@@ -321,7 +321,7 @@ let _ =
       let aux () =
         lwt yojson = API_tools.json_of_ocsigen_string_stream input_type ostream in
         let type_name, id, tags_subject =
-          Yojson_tools.get_insert_tags_data yojson
+          API_deserialize.get_insert_tags_data yojson
         in
         Lwt.return (Yj.to_string (API_core.insert_tags type_name id tags_subject),
                     API_tools.content_type)
@@ -367,7 +367,7 @@ let _ =
     (fun () (input_type, ostream) ->
       let aux () =
         lwt yojson = API_tools.json_of_ocsigen_string_stream input_type ostream in
-        let tags_id = Yojson_tools.get_delete_tags_data yojson in
+        let tags_id = API_deserialize.get_delete_tags_data yojson in
         Lwt.return (Yj.to_string (API_core.delete_tags tags_id),
                     API_tools.content_type)
       in
@@ -454,7 +454,7 @@ let _ =
       let aux () =
         lwt yojson = API_tools.json_of_ocsigen_string_stream input_type ostream in
         let id_from, ids_to, list_tags_id =
-          Yojson_tools.get_insert_links_data yojson
+          API_deserialize.get_insert_links_data yojson
         in
         Lwt.return (Yj.to_string (API_core.insert_links id_from ids_to list_tags_id),
                     API_tools.content_type)
@@ -502,7 +502,7 @@ let _ =
       let aux () =
         lwt yojson = API_tools.json_of_ocsigen_string_stream input_type ostream in
         let link_id, tags_id =
-          Yojson_tools.get_update_link_data yojson in
+          API_deserialize.get_update_link_data yojson in
         Lwt.return (Yj.to_string
                       (API_core.update_link link_id tags_id),
                     API_tools.content_type)
@@ -549,7 +549,7 @@ let _ =
     (fun () (input_type, ostream) ->
       let aux () =
         lwt yojson = API_tools.json_of_ocsigen_string_stream input_type ostream in
-        let links_id = Yojson_tools.get_delete_links_data yojson in
+        let links_id = API_deserialize.get_delete_links_data yojson in
         Lwt.return (Yj.to_string (API_core.delete_links links_id),
                     API_tools.content_type)
       in
