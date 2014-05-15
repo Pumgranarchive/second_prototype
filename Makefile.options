@@ -16,7 +16,7 @@ SERVER_FILES_DOC := $(wildcard *.eliomi)
 CLIENT_FILES_DOC := $(wildcard *.eliomi)
 
 # OCamlfind packages for the server
-SERVER_PACKAGES := yojson bson mongo
+SERVER_PACKAGES := yojson bson mongo cohttp cohttp.lwt rdf rdf.lwt
 # OCamlfind packages for the client
 CLIENT_PACKAGES := yojson
 
