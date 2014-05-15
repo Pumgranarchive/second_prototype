@@ -72,6 +72,7 @@ let get_result = function
 
 let is_ok = function
   | Ok  -> true
+  | Error e -> print_endline (string_of_error e); false
   | _   -> false
 
 let build_tags_query content_uri tags =
@@ -98,44 +99,59 @@ let get_links_from_content_tags content_id tags =
 let get_links_from_content content_id =
   get_links_from_content_tags content_id []
 
+let _ =
+  let print_link (id, target, tags) =
+    let tags_string =
+      if List.length tags == 0 then "" else
+        List.fold_left (fun s tag -> s ^ " | " ^ tag) (List.hd tags) (List.tl tags)
+    in
+    print_endline ("ID: " ^ id ^ " ,Target: " ^ target ^ " ,Tags: " ^ tags_string)
+  in
+  (* let content_id = "52780cbdc21477f7aa5b9107" in *)
+  let content_id = "http://pumgrana.com" in
+  Lwt.async (fun () ->
+    lwt links = get_links_from_content_tags content_id [] in
+    if links == [] then print_endline "Nothing !";
+    List.iter print_link links;
+    Lwt.return ())
+
+let insert_links origin_id targets_id tags =
+  let origin_uri = uri_of_content_id origin_id in
+  let base_query = "INSERT DATA { " in
+  let concat q1 q2 = q1 ^ " . " ^ q2 in
+  let query_of_tag tag = "\""^tag^"\"" in
+  let query_of_target target_id tags =
+    let target_uri = uri_of_content_id target_id in
+    if List.length tags == 0 then failwith "Empty tag list are not allowed";
+    let tags_query = List.map query_of_tag tags in
+    let queries = List.map
+      (fun tag_query -> "<"^origin_uri^"> <"^target_uri^"> " ^ tag_query)
+      tags_query
+    in
+    List.fold_left concat (List.hd queries) (List.tl queries)
+  in
+  let rec queries_of_targets queries = function
+    | h_tar::t_tar, h_tags::t_tags ->
+      queries_of_targets ((query_of_target h_tar h_tags)::queries) (t_tar, t_tags)
+    | [], []                       -> queries
+    | [], _                        -> failwith "too many tags"
+    | _, []                        -> failwith "not enough tags"
+  in
+  let queries = queries_of_targets [] (targets_id, tags) in
+  let half_query = if List.length queries == 0
+    then failwith "Empty target list are not allowed"
+    else List.fold_left concat (base_query ^ (List.hd queries)) (List.tl queries)
+  in
+  let query = half_query ^ " }" in
+  let fake_base = Rdf_iri.iri ~check:false "" in
+  let msg = {in_query = query; in_dataset = empty_dataset} in
+  lwt res = Rdf_4s_lwt.post_update ~base:fake_base update_url msg in
+  Lwt.return (is_ok res)
+
 (* let _ = *)
-(*   let print_link (id, target, tags) = *)
-(*     let tags_string = *)
-(*       if List.length tags == 0 then "" else *)
-(*         List.fold_left (fun s tag -> s ^ " | " ^ tag) (List.hd tags) (List.tl tags) *)
-(*     in *)
-(*     print_endline ("ID: " ^ id ^ " ,Target: " ^ target ^ " ,Tags: " ^ tags_string) *)
-(*   in *)
-(*   let content_id = "52780cbdc21477f7aa5b9107" in *)
-(*   Lwt.async (fun () -> *)
-(*     print_endline "Launch"; *)
-(*     lwt links = get_links_from_content_tags content_id [] in *)
-(*     print_endline "End"; *)
-(*     if links == [] then print_endline "Nothing !"; *)
-(*     List.iter print_link links; *)
-(*     Lwt.return ()) *)
-
-(* let insert_link origin_id target_id tag = *)
-(*   let sub = Rdf_term.Iri (iri_of_strid origin_id) in *)
-(*   let pred = iri_of_strid target_id in *)
-(*   let obj = Rdf_term.Iri (iri_of_strid tag) in *)
-(*   let _ = g.Rdf_graph.add_triple ~sub ~pred ~obj in *)
-(*   origin_id ^ separator ^ target_id ^ separator ^ tag *)
-
-(* let insert_links origin_id target_ids tags = *)
-(*   let rec manage_tags result target_id = function *)
-(*     | h_tag::t_tag      -> manage_tags *)
-(*       ((insert_link origin_id target_id h_tag)::result) target_id t_tag *)
-(*     | []                -> result *)
-(*   in *)
-(*   let rec manage_target result = function *)
-(*     | h_tar::t_tar, h_tag::t_tag  -> *)
-(*       manage_target ((manage_tags result h_tar h_tag)@result) (t_tar, t_tag) *)
-(*     | [], []                      -> result *)
-(*     | [], _                       -> failwith "too many tags" *)
-(*     | _, []                       -> failwith "not enough tags" *)
-(*   in *)
-(*   manage_target [] (target_ids, tags) *)
+(*   lwt res = insert_links "http://pumgrana.com" ["http://patate.com";"http://test02.com"] [["Bidon01";"Bindon02"];["T01"]] in *)
+(*   if res then print_endline "Ok" else print_endline "Nop"; *)
+(*   Lwt.return () *)
 
 (* let delete_links strids = *)
 (*   let aux strid = *)
