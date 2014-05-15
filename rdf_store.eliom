@@ -1,5 +1,7 @@
 open Rdf_sparql_protocol
 
+module SMap = Map.Make(String)
+
 let base_content_url = "http://pumgrana.com/content/detail/"
 let base_url = Rdf_uri.uri "http://127.0.0.1:8000"
 let get_url = Rdf_uri.append base_url "/sparql/"
@@ -14,8 +16,8 @@ let uri_of_content_id str =
 
 (* let print_solutions = List.iter (fun s -> print_endline ""; print_solution s) *)
 
-let link_id_of_triple origin_id target_id tag =
-  origin_id ^ "@" ^ target_id ^ "@" ^ tag
+let link_id_of_triple origin_uri target_uri =
+  origin_uri ^ "@" ^ target_uri
 
 let content_id_of_uri str =
   let regexp = Str.regexp base_content_url in
@@ -27,7 +29,7 @@ let string_of_term = function
   | Rdf_term.Blank       -> "_"
   | Rdf_term.Blank_ id   ->  "_:" ^ (Rdf_term.string_of_blank_id id)
 
-let link_of_solution origin_uri solution =
+let data_from_solution origin_uri solution =
   let p = ref None in
   let o = ref None in
   let get n t = match n with
@@ -41,11 +43,23 @@ let link_of_solution origin_uri solution =
     | _, None        -> failwith "Object not found"
     | Some p, Some o -> string_of_term p, string_of_term o
   in
-  let link_id = link_id_of_triple origin_uri target_uri link_tag in
-  link_id, content_id_of_uri target_uri, link_tag
+  target_uri, link_tag
 
-let links_of_solutions content_uri solutions =
-  List.map (link_of_solution content_uri) solutions
+let links_of_solutions origin_uri solutions =
+  let build_tag_list map solution =
+    let target_uri, link_tag = data_from_solution origin_uri solution in
+    let tags =
+      try SMap.find target_uri map
+      with Not_found -> []
+    in
+    SMap.add target_uri (link_tag::tags) map
+  in
+  let tags = List.fold_left build_tag_list SMap.empty solutions in
+  let build_links target_uri tags links =
+    let link_id = link_id_of_triple origin_uri target_uri in
+    (link_id, content_id_of_uri target_uri, tags)::links
+  in
+  SMap.fold build_links tags []
 
 let get_solutions = function
   | Rdf_sparql.Solutions s -> s
@@ -62,7 +76,7 @@ let is_ok = function
 
 let build_tags_query content_uri tags =
   let base_query = "SELECT ?p ?o WHERE { <"^content_uri^"> ?p ?o" in
-  let half_query = if tags == [] then base_query else
+  let half_query = if (List.length tags) == 0 then base_query else
       let regex_of_tag tag = "(" ^ tag ^ ")" in
       let regexs = List.map regex_of_tag tags in
       let concat r1 r2 = r1 ^ "|" ^ r2 in
@@ -85,13 +99,17 @@ let get_links_from_content content_id =
   get_links_from_content_tags content_id []
 
 (* let _ = *)
-(*   let print_link (id, target, tag) = *)
-(*     print_endline ("ID: " ^ id ^ " ,Target: " ^ target ^ " ,Tag: " ^ tag) *)
+(*   let print_link (id, target, tags) = *)
+(*     let tags_string = *)
+(*       if List.length tags == 0 then "" else *)
+(*         List.fold_left (fun s tag -> s ^ " | " ^ tag) (List.hd tags) (List.tl tags) *)
+(*     in *)
+(*     print_endline ("ID: " ^ id ^ " ,Target: " ^ target ^ " ,Tags: " ^ tags_string) *)
 (*   in *)
 (*   let content_id = "52780cbdc21477f7aa5b9107" in *)
 (*   Lwt.async (fun () -> *)
 (*     print_endline "Launch"; *)
-(*     lwt links = get_links_from_content_tags content_id ["Part of"] in *)
+(*     lwt links = get_links_from_content_tags content_id [] in *)
 (*     print_endline "End"; *)
 (*     if links == [] then print_endline "Nothing !"; *)
 (*     List.iter print_link links; *)
