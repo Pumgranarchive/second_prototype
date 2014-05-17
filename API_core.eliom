@@ -418,41 +418,29 @@ let insert_links id_from ids_to tags_id =
   in
   API_tools.check_return
     ~default_return:API_conf.return_created
-    ~param_name:API_tools.linksid_ret_name aux
+    ~param_name:API_tools.linksid_ret_name
+    aux
 
-let update_link link_id tags_id =
+let update_link str_link_id tags_id =
   let aux () =
-    API_tools.check_exist API_tools.links_coll link_id;
-    let object_id = API_tools.objectid_of_string link_id in
-    let bson_query = Bson.add_element API_tools.id_field object_id Bson.empty in
-    let content =
-      if tags_id = []
-      then raise API_conf.(Pum_exc (return_not_found,
-                                    "All link need to have at least one tag"));
-      let bson_objid = List.map API_tools.objectid_of_tagstr tags_id in
-      let bson_list = Bson.create_list bson_objid in
-      Bson.add_element API_tools.tagsid_field bson_list Bson.empty
-    in
-    Mongo.update_one API_tools.links_coll (bson_query, content);
+    let link_id = Rdf_store.link_id_of_string str_link_id in
+    lwt res = Rdf_store.update_link link_id tags_id in
+    if not res then failwith "Fail updating";
     Lwt.return (`Null)
   in
   API_tools.check_return aux
 
-let delete_links = delete_from API_tools.links_coll
+let delete_links str_links_id =
+  let aux () =
+    let links_id = List.map Rdf_store.link_id_of_string str_links_id in
+    lwt res = Rdf_store.delete_links links_id [] in
+    if not res then failwith "Fail deleting";
+    Lwt.return (`Null)
+  in
+  API_tools.check_return aux
 
+(*** Warning: badly transform to link_id  *)
 let delete_links_from_to origin_id targets_id =
-  let object_id = API_tools.objectid_of_string origin_id in
-  API_tools.check_exist API_tools.contents_coll origin_id;
-  let query = Bson.add_element API_tools.originid_field object_id Bson.empty in
-  let aux () =
-    let objectid_of_idstr str =
-      let object_id = API_tools.objectid_of_string str in
-      API_tools.check_exist API_tools.contents_coll str;
-      Bson.add_element API_tools.targetid_field object_id query
-    in
-    let bson_query = MongoQueryOp.or_op (List.map objectid_of_idstr targets_id)
-    in
-    Mongo.delete_all API_tools.links_coll bson_query;
-    Lwt.return (`Null)
-  in
-  API_tools.check_return aux
+  let link_id_of_string target_id = origin_id ^ "@" ^ target_id in
+  let links_id = List.map link_id_of_string targets_id in
+  delete_links links_id
