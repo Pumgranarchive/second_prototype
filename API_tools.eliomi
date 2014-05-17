@@ -10,7 +10,7 @@
 
 
 (** content type return by API' services *)
-val content_type: string
+(* val content_type: string *)
 
 (** Value of the id field in the database *)
 val id_field: string
@@ -169,13 +169,20 @@ val check_not_exist: Mongo.t -> string -> Bson.element -> string -> unit
 val objectid_of_tagstr: string -> Bson.element
 
 
+(** {6 Http tools } *)
+
+val return_of_json : Yojson.Safe.json Lwt.t -> (string * string) Lwt.t
+
+val return_of_error : string Lwt.t -> (string * string) Lwt.t
+
 (** {6 Manage return tools } *)
 
 (** Removing the value from text field *)
 val link_format_ret: string list -> Yojson.Safe.json -> Yojson.Safe.json
 
 (** Format the returned value *)
-val format_ret: ?param_name:string -> int -> ?error_str:string -> Yojson.Safe.json -> Yojson.Safe.json
+val format_ret: ?param_name:string -> int -> ?error_str:string ->
+  Yojson.Safe.json -> Yojson.Safe.json
 
 (** [check_return ?default_return ?param_name func]
     default_return: specify the default return, It is return_ok by default.
@@ -185,13 +192,15 @@ val format_ret: ?param_name:string -> int -> ?error_str:string -> Yojson.Safe.js
     If the exception API_conf.Pum_exc (error_value, error_str) is raised,
     the exception's data are use to build the return.
     For any others exceptions, internal server error (500) is returned *)
-val check_return: ?default_return:int -> ?param_name:string -> (unit -> Yojson.Safe.json) -> Yojson.Safe.json
+val check_return: ?default_return:int -> ?param_name:string ->
+  (unit -> Yojson.Safe.json Lwt.t) -> Yojson.Safe.json Lwt.t
 
 (** Use to directly return bad request in json string in register layout / unit *)
-val bad_request: ?error_value:int -> string -> string
+val bad_request: ?error_value:int -> string -> string Lwt.t
 
 (** [manage_bad_request fun]
     call the [fun], catch the exception and write it in the returned string *)
-val manage_bad_request: (unit -> (string * string) Lwt.t) -> (string * string) Lwt.t
+val manage_bad_request: (unit -> (string * string) Lwt.t) ->
+  (string * string) Lwt.t
 
 }}

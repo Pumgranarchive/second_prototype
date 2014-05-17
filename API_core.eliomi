@@ -9,10 +9,10 @@
 (** {6 Content} *)
 
 (** [get_detail content_id]  *)
-val get_detail: string -> Yojson.Safe.json
+val get_detail: string -> Yojson.Safe.json Lwt.t
 
 (** [get_detail_by_link link_id]  *)
-val get_detail_by_link: string -> Yojson.Safe.json
+val get_detail_by_link: string -> Yojson.Safe.json Lwt.t
 
 (** [get_contents filter tags_id]
     Currently, filter is not used,
@@ -21,63 +21,68 @@ val get_detail_by_link: string -> Yojson.Safe.json
     Warning: if one tag_id does not exist, no error will be returned,
     but no content neither.
 *)
-val get_contents: string option -> string list option -> Yojson.Safe.json
+val get_contents: string option -> string list option -> Yojson.Safe.json Lwt.t
 
 (** [insert_content title text tags_id]  *)
-val insert_content: string -> string -> string -> string list option -> Yojson.Safe.json
+val insert_content: string -> string -> string -> string list option ->
+  Yojson.Safe.json Lwt.t
 
 (** [update_content content_id title text tags_id]  *)
-val update_content: string -> string option -> string option -> string option -> string list option -> Yojson.Safe.json
+val update_content: string -> string option -> string option -> string option ->
+  string list option -> Yojson.Safe.json Lwt.t
 
 (** [delete_contents content_ids]  *)
-val delete_contents: string list -> Yojson.Safe.json
+val delete_contents: string list -> Yojson.Safe.json Lwt.t
 
 
 (** {6 Tag} *)
 
 (** [get_tags tags_id]
     Warning: if one tag_id does not exist, no error will be fire. *)
-val get_tags: string list -> Yojson.Safe.json
+val get_tags: string list -> Yojson.Safe.json Lwt.t
 
 (** [get_tags_by_type tag_type]  *)
-val get_tags_by_type: string -> Yojson.Safe.json
+val get_tags_by_type: string -> Yojson.Safe.json Lwt.t
 
 (** [get_tags_from_content content_id]
     Warning: if one tag_id does not exist, no error will be fire. *)
-val get_tags_from_content: string -> Yojson.Safe.json
+val get_tags_from_content: string -> Yojson.Safe.json Lwt.t
 
 (** [get_tags_from_content_link content_id]
     Warning: if a tag_id does not exist no error will be fire. *)
-val get_tags_from_content_link: string -> Yojson.Safe.json
+val get_tags_from_content_link: string -> Yojson.Safe.json Lwt.t
 
 (** [insert_tags type_name id_opt subjects]
     Warning: does not return status list, only the id list *)
-val insert_tags: string -> string option -> string list -> Yojson.Safe.json
+val insert_tags: string -> string option -> string list ->
+  Yojson.Safe.json Lwt.t
 
 (** [delete_tags tags_id]  *)
-val delete_tags: string list -> Yojson.Safe.json
+val delete_tags: string list -> Yojson.Safe.json Lwt.t
 
 
 (** {6 Link} *)
 
 (** [get_links_from_content content_id]  *)
-val get_links_from_content: string -> Yojson.Safe.json
+val get_links_from_content: string -> Yojson.Safe.json Lwt.t
 
 (** [get_links_from_content_tags content_id tags_id]  *)
-val get_links_from_content_tags: string -> string list option -> Yojson.Safe.json
+val get_links_from_content_tags: string -> string list option ->
+  Yojson.Safe.json Lwt.t
 
 (** [insert_links id_from ids_to tags_id]  *)
-val insert_links: string -> string list -> string list list -> Yojson.Safe.json
+val insert_links: string -> string list -> string list list ->
+  Yojson.Safe.json Lwt.t
 
 (** [update_link link_id tags_id]  *)
-val update_link: string -> string list -> Yojson.Safe.json
+val update_link: string -> string list -> Yojson.Safe.json Lwt.t
 
 (** [delete_links links_id]  *)
-val delete_links: string list -> Yojson.Safe.json
+val delete_links: string list -> Yojson.Safe.json Lwt.t
 
 (** [delete_links_from_to origin_id targets_id]
     Temporary service to solve the issue than we have no access to link_id
     in the client side. *)
-val delete_links_from_to: string -> string list -> Yojson.Safe.json
+val delete_links_from_to: string -> string list -> Yojson.Safe.json Lwt.t
 
 }}

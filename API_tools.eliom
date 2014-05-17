@@ -3,6 +3,8 @@
 ** This module provides some tools to help API implementation
 *)
 
+open Lwt
+
 module Yj = Yojson.Safe
 
 (*** Generation tools  *)
@@ -18,7 +20,7 @@ let new_id () = process_rand +. new_rand () +. Unix.time ()
 (*** Static string for configuration / selection *)
 
 (** content type return by API' services *)
-let content_type = "application/json"
+(* let content_type = "application/json" *)
 
 let id_field = "_id"
 let tagsid_field = "tags_id"
@@ -208,6 +210,14 @@ let objectid_of_tagstr id =
   check_exist tags_coll id;
   objectid_of_string id
 
+(*** Http tools  *)
+
+let return_of_json yojson =
+  yojson >>= (fun yj -> Lwt.return (Yj.to_string yj, "application/json"))
+
+let return_of_error str =
+  str >>= (fun s -> Lwt.return (s, "application/json"))
+
 (*** Manage return tools *)
 
 (** Removing the value from text field *)
@@ -260,16 +270,17 @@ let format_ret ?param_name status ?error_str (param_value:Yj.json) =
     For any others exceptions, internal server error (500) is returned *)
 let check_return ?(default_return=API_conf.return_ok) ?param_name func =
   let null_return () =
-    format_ret ?param_name API_conf.return_no_content `Null
+    Lwt.return (format_ret ?param_name API_conf.return_no_content `Null)
   in
   let error_return status error_str =
-    format_ret ?param_name status ~error_str `Null
+    Lwt.return (format_ret ?param_name status ~error_str `Null)
   in
   let valided_return ret =
-    format_ret ?param_name default_return (`List ret)
+    Lwt.return (format_ret ?param_name default_return (`List ret))
   in
-  try
-    match func (), param_name with
+  try_lwt
+    lwt res = func () in
+    match_lwt Lwt.return (res, param_name) with
     | `Null, Some _     -> null_return ()
     | `List [], _       -> null_return ()
     | `List ret, _      -> valided_return ret
@@ -288,15 +299,15 @@ let check_return ?(default_return=API_conf.return_ok) ?param_name func =
 
 let bad_request ?(error_value=API_conf.return_not_found) error_str =
   print_endline ((string_of_int error_value) ^ ": " ^ error_str);
-  Yj.to_string (format_ret error_value ~error_str `Null)
+  Lwt.return (Yj.to_string (format_ret error_value ~error_str `Null))
 
 let manage_bad_request aux =
   try_lwt
     aux ()
   with
   | API_conf.Pum_exc (_, str)   ->
-    Lwt.return (bad_request str, content_type)
+    return_of_error (bad_request str)
   | exc                         ->
     print_endline (Printexc.to_string exc);
-    Lwt.return (bad_request ~error_value:API_conf.return_internal_error
-                  API_conf.errstr_internal_error, content_type)
+    return_of_error (bad_request ~error_value:API_conf.return_internal_error
+                       API_conf.errstr_internal_error)

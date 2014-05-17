@@ -18,7 +18,7 @@ let delete_from coll ids =
     in
     let bson_query = MongoQueryOp.or_op (List.map objectid_of_idstr ids) in
     Mongo.delete_all coll bson_query;
-    `Null
+    Lwt.return (`Null)
   in
   API_tools.check_return aux
 
@@ -34,7 +34,7 @@ let get_detail content_id =
     let result = Mongo.find_q_s_one API_tools.contents_coll bson_query
       API_tools.content_format in
     let ret = API_tools.yojson_of_mongoreply result in
-    API_tools.check_empty_yojson ret content_id
+    Lwt.return (API_tools.check_empty_yojson ret content_id)
   in
   API_tools.check_return ~param_name:API_tools.contents_ret_name aux
 
@@ -56,7 +56,7 @@ let get_detail_by_link link_id =
     let result = Mongo.find_q_s_one API_tools.contents_coll bson_query
       API_tools.content_format in
     let ret = API_tools.yojson_of_mongoreply result in
-    API_tools.check_empty_yojson ret link_id
+    Lwt.return (API_tools.check_empty_yojson ret link_id)
   in
   API_tools.check_return ~param_name:API_tools.contents_ret_name aux
 
@@ -86,7 +86,7 @@ let get_contents filter tags_id =
     in
     let results = Mongo.find_q_s API_tools.contents_coll bson_query
       API_tools.content_format in
-    API_tools.yojson_of_mongoreply results
+    Lwt.return (API_tools.yojson_of_mongoreply results)
   in
   API_tools.check_return ~param_name:API_tools.contents_ret_name aux
 
@@ -109,9 +109,9 @@ let insert_content title summary text tags_id =
     in
     let saved_state = API_tools.get_id_state API_tools.contents_coll in
     Mongo.insert API_tools.contents_coll [content];
-    `String (API_tools.string_of_id
-               (List.hd (API_tools.get_last_created_id
-                           API_tools.contents_coll saved_state)))
+    Lwt.return (`String (API_tools.string_of_id
+                           (List.hd (API_tools.get_last_created_id
+                                       API_tools.contents_coll saved_state))))
   in
   API_tools.check_return
     ~param_name:API_tools.content_id_ret_name
@@ -148,7 +148,7 @@ let update_content content_id title summary text tags_id =
     if content_4 = Bson.empty
     then raise API_conf.(Pum_exc (return_not_found, "title, summary, text and tags_id can not be all null"));
     Mongo.update_one API_tools.contents_coll (bson_query, content_4);
-    `Null
+    Lwt.return (`Null)
   in
   API_tools.check_return aux
 
@@ -186,7 +186,7 @@ let get_tags tags_id =
     in
     let results = Mongo.find_q_s API_tools.tags_coll bson_query
       API_tools.tag_format in
-    API_tools.yojson_of_mongoreply results
+    Lwt.return (API_tools.yojson_of_mongoreply results)
   in
   API_tools.check_return ~param_name:API_tools.tags_ret_name aux
 
@@ -205,7 +205,7 @@ let get_tags_by_type tag_type =
     in
     let result = Mongo.find_q_s API_tools.tags_coll bson_query
       API_tools.tag_format in
-    API_tools.yojson_of_mongoreply result
+    Lwt.return (API_tools.yojson_of_mongoreply result)
   in
   API_tools.check_return ~param_name:API_tools.tags_ret_name aux
 
@@ -241,7 +241,7 @@ let get_tags_from_content content_id =
     in
     let results_tag = Mongo.find_q_s API_tools.tags_coll tag_bson_query
       API_tools.tag_format in
-    API_tools.yojson_of_mongoreply results_tag
+    Lwt.return (API_tools.yojson_of_mongoreply results_tag)
   in
   API_tools.check_return ~param_name:API_tools.tags_ret_name aux
 
@@ -294,7 +294,7 @@ let get_tags_from_content_link content_id =
     let bson_query = MongoQueryOp.or_op bson_tags_id_list in
     let results = Mongo.find_q_s API_tools.tags_coll bson_query
       API_tools.tag_format in
-    API_tools.yojson_of_mongoreply results
+    Lwt.return (API_tools.yojson_of_mongoreply results)
   in
   API_tools.check_return ~param_name:API_tools.tags_ret_name aux
 
@@ -356,7 +356,8 @@ let insert_tags type_name id_opt subjects =
     update_fun bson_ids;
 
     (* Building the return *)
-    `List (List.map (fun e -> `Assoc [(API_tools.id_field, `String e)]) new_ids)
+    Lwt.return (`List (List.map (fun e ->
+      `Assoc [(API_tools.id_field, `String e)]) new_ids))
 
   in
   API_tools.check_return
@@ -374,37 +375,28 @@ let delete_tags = delete_from API_tools.tags_coll
 let get_links_from_content content_id =
   let aux () =
     (* getting every link with 'content_id' as origin *)
-    let content_objectId = API_tools.objectid_of_string content_id in
-
-    let result_link =
-      Mongo.find_q API_tools.links_coll
-        (Bson.add_element API_tools.originid_field content_objectId Bson.empty)
-    in
-    let link_bson_list = MongoReply.get_document_list result_link in
-    if link_bson_list = [] then
+    lwt link_list = Rdf_store.get_links_from_content content_id in
+    if link_list = [] then
       raise API_conf.(Pum_exc (return_no_content, "This content has no link."));
 
-    let make_target_id_bson_list link_bson =
-      Bson.add_element API_tools.id_field
-        (Bson.get_element API_tools.targetid_field link_bson) Bson.empty
-    in
-    let make_link_id_list link_bson =
-      API_tools.string_of_id
-        (Bson.get_objectId (Bson.get_element API_tools.id_field link_bson))
-    in
-
-    let target_id_bson_list = List.map make_target_id_bson_list link_bson_list
-    in
-    let link_id_list = List.map make_link_id_list link_bson_list in
-
     (* getting content to return *)
-    let target_query    = (MongoQueryOp.or_op target_id_bson_list)
+    let make_target_id_bson (link_id, target_id, tags_id) =
+      Bson.add_element API_tools.id_field
+        (Bson.create_string target_id) Bson.empty
     in
-    let result_query  = Mongo.find_q_s API_tools.contents_coll target_query
-      API_tools.link_format
+    let make_link_id (link_id, target_id, tags_id) =
+      Rdf_store.string_of_link_id link_id
     in
-    API_tools.link_format_ret link_id_list
-      (API_tools.yojson_of_mongoreply result_query)
+    let target_id_bson_list = List.map make_target_id_bson link_list in
+    let link_id_list = List.map make_link_id link_list in
+
+    let target_query = (MongoQueryOp.or_op target_id_bson_list) in
+    let result_query = Mongo.find_q_s API_tools.contents_coll
+      target_query API_tools.link_format
+    in
+    Lwt.return
+      (API_tools.link_format_ret link_id_list
+         (API_tools.yojson_of_mongoreply result_query))
   in
   API_tools.check_return ~param_name:API_tools.links_ret_name aux
 
@@ -446,8 +438,8 @@ let get_links_from_content_tags content_id opt_tags_id =
     let result_query  = Mongo.find_q_s API_tools.contents_coll target_query
       API_tools.link_format
     in
-    API_tools.link_format_ret link_id_list
-      (API_tools.yojson_of_mongoreply result_query)
+    Lwt.return (API_tools.link_format_ret link_id_list
+                  (API_tools.yojson_of_mongoreply result_query))
   in
   match opt_tags_id with
   | Some x      -> API_tools.check_return ~param_name:API_tools.links_ret_name (aux x)
@@ -498,7 +490,7 @@ let insert_links id_from ids_to tags_id =
     List.iter check_not_exist_link bson_fromtos;
     let docs = build_docs [] (bson_fromtos,tags_id) in
     Mongo.insert API_tools.links_coll docs;
-    `Null
+    Lwt.return (`Null)
   in
   API_tools.check_return ~default_return:API_conf.return_created aux
 
@@ -516,7 +508,7 @@ let update_link link_id tags_id =
       Bson.add_element API_tools.tagsid_field bson_list Bson.empty
     in
     Mongo.update_one API_tools.links_coll (bson_query, content);
-    `Null
+    Lwt.return (`Null)
   in
   API_tools.check_return aux
 
@@ -535,6 +527,6 @@ let delete_links_from_to origin_id targets_id =
     let bson_query = MongoQueryOp.or_op (List.map objectid_of_idstr targets_id)
     in
     Mongo.delete_all API_tools.links_coll bson_query;
-    `Null
+    Lwt.return (`Null)
   in
   API_tools.check_return aux
