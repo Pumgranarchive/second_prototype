@@ -1,21 +1,24 @@
+open Lwt
 open Rdf_sparql_protocol
 
 module SMap = Map.Make(String)
 
-let (>>=) = Lwt.bind
+type link_id = string * string
+type link = link_id * string * string list
 
 let base_content_url = "http://pumgrana.com/content/detail/"
 let base_url = Rdf_uri.uri "http://127.0.0.1:8000"
 let get_url = Rdf_uri.append base_url "/sparql/"
 let update_url = Rdf_uri.append base_url "/update/"
 
-let uri_of_content_id str =
-  base_content_url ^ str
-
-let link_id origin_uri target_uri =
+let string_of_link_id (origin_uri, target_uri) =
   origin_uri ^ "@" ^ target_uri
 
-let data_of_link_id link_id =
+let uri_of_content_id str = base_content_url ^ str
+
+let link_id origin_uri target_uri = origin_uri, target_uri
+
+let link_id_of_string link_id =
   let regexp = Str.regexp "@" in
   try
     let strings = Str.split regexp link_id in
@@ -111,6 +114,7 @@ let get_links_from_content_tags content_id tags =
 let get_links_from_content content_id =
   get_links_from_content_tags content_id []
 
+(*** Not protected if link already exist ! *)
 let insert_links origin_id targets_id tags =
   let origin_uri = uri_of_content_id origin_id in
   let targets_uri = List.map uri_of_content_id targets_id in
@@ -140,7 +144,7 @@ let build_delete_query_tag links_id tags =
     q ^ "<" ^ o_uri ^ "> <" ^ t_uri ^ "> \"" ^ tag ^ "\""
   in
   let manager query link_id tags =
-    let o_uri, t_uri = data_of_link_id link_id in
+    let o_uri, t_uri = link_id in
     if List.length tags == 0 then failwith "Empty tag list are not allowed";
     List.fold_left (build_query o_uri t_uri) query tags
   in
@@ -149,13 +153,14 @@ let build_delete_query_tag links_id tags =
 
 let build_delete_query links_id =
   let build_query query link_id =
-    let o_uri, t_uri = data_of_link_id link_id in
+    let o_uri, t_uri = link_id in
     let q = if String.length query == 0 then query else query ^ " UNION " in
     q ^ "{ <" ^ o_uri ^ "> <" ^ t_uri ^ "> ?o . {?s ?p ?o.} UNION {?x ?y ?z} }"
   in
   let half_query = List.fold_left build_query "" links_id in
   "DELETE {?s ?p ?o.} WHERE { " ^ half_query ^ " }"
 
+(*** Not protected if link does not exist ! *)
 let delete_links links_id tags =
   let query = if List.length tags == 0
     then build_delete_query links_id
@@ -167,8 +172,9 @@ let delete_links links_id tags =
   lwt res = Rdf_4s_lwt.post_update ~base:fake_base update_url msg in
   Lwt.return (is_ok res)
 
+(*** Not protected if link_id does not exist ! *)
 let update_link link_id new_tags =
-  let o_uri, t_uri = data_of_link_id link_id in
+  let o_uri, t_uri = link_id in
   let query = "SELECT ?o WHERE { <" ^ o_uri ^ "> <" ^ t_uri ^ "> ?o }" in
   let base = Rdf_iri.iri "http://pumgrana.com" in
   let msg = {in_query = query; in_dataset = empty_dataset} in
