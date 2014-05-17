@@ -19,6 +19,13 @@ let uri_of_content_id str =
 let link_id origin_uri target_uri =
   origin_uri ^ "@" ^ target_uri
 
+let data_of_link_id link_id =
+  let regexp = Str.regexp "@" in
+  try
+    let strings = Str.split regexp link_id in
+    List.hd strings, List.hd (List.tl strings)
+  with e -> failwith "Invalid Link ID"
+
 let content_id_of_uri str =
   let regexp = Str.regexp base_content_url in
   Str.replace_first regexp "" str
@@ -99,22 +106,6 @@ let get_links_from_content_tags content_id tags =
 let get_links_from_content content_id =
   get_links_from_content_tags content_id []
 
-(* let _ = *)
-(*   let print_link (id, target, tags) = *)
-(*     let tags_string = *)
-(*       if List.length tags == 0 then "" else *)
-(*         List.fold_left (fun s tag -> s ^ " | " ^ tag) (List.hd tags) (List.tl tags) *)
-(*     in *)
-(*     print_endline ("ID: " ^ id ^ " ,Target: " ^ target ^ " ,Tags: " ^ tags_string) *)
-(*   in *)
-(*   (\* let content_id = "52780cbdc21477f7aa5b9107" in *\) *)
-(*   let content_id = "http://pumgrana.com" in *)
-(*   Lwt.async (fun () -> *)
-(*     lwt links = get_links_from_content_tags content_id ["T01"; "Bidon01"] in *)
-(*     if links == [] then print_endline "Nothing !"; *)
-(*     List.iter print_link links; *)
-(*     Lwt.return ()) *)
-
 let rec double_fold_left func var = function
   | h1::t1, h2::t2 -> double_fold_left func (func var h1 h2) (t1, t2)
   | [], []         -> var
@@ -143,17 +134,42 @@ let insert_links origin_id targets_id tags =
   then Lwt.return (List.map (link_id origin_uri) targets_uri)
   else Lwt.return ([])
 
+let delete_links links_id =
+  let build_query query link_id =
+    let o_uri, t_uri = data_of_link_id link_id in
+    let q = if String.length query == 0 then query else query ^ " UNION " in
+    q ^ "{ <" ^ o_uri ^ "> <" ^ t_uri ^ "> ?o . {?s ?p ?o.} UNION {?x ?y ?z} }"
+  in
+  let half_query = List.fold_left build_query "" links_id in
+  let query = "DELETE {?s ?p ?o.} WHERE { " ^ half_query ^ " }" in
+  let fake_base = Rdf_iri.iri ~check:false "" in
+  let msg = {in_query = query; in_dataset = empty_dataset} in
+  lwt res = Rdf_4s_lwt.post_update ~base:fake_base update_url msg in
+  Lwt.return (is_ok res)
+
 (* let _ = *)
-(*   lwt res = insert_links "http://pumgrana.com" ["http://patate.com";"http://test02.com"] [["Bidon01";"Bindon02"];["T01"]] in *)
+(*   lwt res = insert_links "http://pumgrana.com" ["http://patate.com";"http://test02.com"] [["Bidon01";"Bindon02"];["T01";"T02"]] in *)
 (*   if res != [] then print_endline "Ok" else print_endline "Nop"; *)
 (*   Lwt.return () *)
 
-(* let delete_links strids = *)
-(*   let aux strid = *)
-(*     let tmp = Str.split regex_sep strid in *)
-(*     let sub = Rdf_term.Iri (iri_of_strid (List.nth tmp 0)) in *)
-(*     let pred = iri_of_strid (List.nth tmp 1) in *)
-(*     let obj = Rdf_term.Iri (iri_of_strid (List.nth tmp 2)) in *)
-(*     g.Rdf_graph.rem_triple ~sub ~pred ~obj *)
+(* let _ = *)
+(*   Lwt.async (fun () -> *)
+(*     lwt res = delete_links ["http://pumgrana.com/content/detail/http://pumgrana.com@http://pumgrana.com/content/detail/http://patate.com"; "http://pumgrana.com/content/detail/http://pumgrana.com@http://pumgrana.com/content/detail/http://test02.com"] in *)
+(*     if res then print_endline "Ok" else print_endline "Nop"; *)
+(*     Lwt.return ()) *)
+
+(* let _ = *)
+(*   let print_link (id, target, tags) = *)
+(*     let tags_string = *)
+(*       if List.length tags == 0 then "" else *)
+(*         List.fold_left (fun s tag -> s ^ " | " ^ tag) (List.hd tags) (List.tl tags) *)
+(*     in *)
+(*     print_endline ("ID: " ^ id ^ " ,Target: " ^ target ^ " ,Tags: " ^ tags_string) *)
 (*   in *)
-(*   List.iter aux strids *)
+(*   (\* let content_id = "52780cbdc21477f7aa5b9107" in *\) *)
+(*   let content_id = "http://pumgrana.com" in *)
+(*   Lwt.async (fun () -> *)
+(*     lwt links = get_links_from_content_tags content_id [] in *)
+(*     if links == [] then print_endline "Nothing !"; *)
+(*     List.iter print_link links; *)
+(*     Lwt.return ()) *)
