@@ -372,17 +372,18 @@ let delete_tags = delete_from API_tools.tags_coll
 *)
 
 (*** Getters *)
-let get_links_from_content content_id =
-  let aux () =
+let get_links_from_content_tags content_id opt_tags_id =
+  let aux tags_id () =
     (* getting every link with 'content_id' as origin *)
-    lwt link_list = Rdf_store.get_links_from_content content_id in
+    lwt link_list = Rdf_store.get_links_from_content_tags content_id tags_id in
     if link_list = [] then
-      raise API_conf.(Pum_exc (return_no_content, "This content has no link."));
+      raise API_conf.(Pum_exc (return_no_content,
+                               "This content has no link on the given tags"));
 
     (* getting content to return *)
     let make_target_id_bson (link_id, target_id, tags_id) =
       Bson.add_element API_tools.id_field
-        (Bson.create_string target_id) Bson.empty
+        (Bson.create_objectId target_id) Bson.empty
     in
     let make_link_id (link_id, target_id, tags_id) =
       Rdf_store.string_of_link_id link_id
@@ -394,105 +395,30 @@ let get_links_from_content content_id =
     let result_query = Mongo.find_q_s API_tools.contents_coll
       target_query API_tools.link_format
     in
-    Lwt.return
-      (API_tools.link_format_ret link_id_list
-         (API_tools.yojson_of_mongoreply result_query))
-  in
-  API_tools.check_return ~param_name:API_tools.links_ret_name aux
-
-let get_links_from_content_tags content_id opt_tags_id =
-  let aux tags_id () =
-    (* getting every link with 'content_id' as origin *)
-    let content_objectId = API_tools.objectid_of_string content_id in
-    let document_of_tag tag_id =
-      Bson.add_element API_tools.tagsid_field
-        (API_tools.objectid_of_string tag_id) Bson.empty
-    in
-    let bson_tags_id_list = List.map document_of_tag tags_id in
-    let bson_tags_query = MongoQueryOp.and_op bson_tags_id_list in
-    let result_link =
-      Mongo.find_q API_tools.links_coll
-        (Bson.add_element API_tools.originid_field content_objectId bson_tags_query)
-    in
-
-    let link_bson_list = MongoReply.get_document_list result_link in
-    if link_bson_list = [] then
-      raise API_conf.(Pum_exc (return_no_content,
-                               "This content has no link on the given tags"));
-
-    let make_target_id_bson_list link_bson =
-      Bson.add_element API_tools.id_field
-        (Bson.get_element API_tools.targetid_field link_bson) Bson.empty
-    in
-    let make_link_id_list link_bson =
-      API_tools.string_of_id
-        (Bson.get_objectId (Bson.get_element API_tools.id_field link_bson))
-    in
-
-    let target_id_bson_list = List.map make_target_id_bson_list link_bson_list
-    in
-    let link_id_list = List.map make_link_id_list link_bson_list in
-    (* getting content to return *)
-    let target_query    = (MongoQueryOp.or_op target_id_bson_list)
-    in
-    let result_query  = Mongo.find_q_s API_tools.contents_coll target_query
-      API_tools.link_format
-    in
     Lwt.return (API_tools.link_format_ret link_id_list
                   (API_tools.yojson_of_mongoreply result_query))
   in
-  match opt_tags_id with
-  | Some x      -> API_tools.check_return ~param_name:API_tools.links_ret_name (aux x)
-  | None        -> get_links_from_content content_id
+  let tags_id = match opt_tags_id with
+    | Some x -> x
+    | None   -> []
+  in
+  API_tools.check_return ~param_name:API_tools.links_ret_name (aux tags_id)
+
+let get_links_from_content content_id =
+  get_links_from_content_tags content_id None
 
 let insert_links id_from ids_to tags_id =
   let aux () =
-    let objectid_of_strid coll field doc str =
-      let object_id = API_tools.objectid_of_string str in
-      API_tools.check_exist coll str;
-      Bson.add_element field object_id doc
+    lwt links_id = Rdf_store.insert_links id_from ids_to tags_id in
+    let json_of_link_id link_id =
+      `String (Rdf_store.string_of_link_id link_id)
     in
-    let check_not_exist_link bson_query =
-      let result = MongoReply.get_document_list
-        (Mongo.find_q API_tools.links_coll bson_query)
-      in
-      let str = Bson.to_simple_json bson_query in
-      if (result != [])
-      then raise API_conf.(Pum_exc(return_not_found, API_conf.errstr_exist str))
-    in
-    let bson_of_tag tag =
-      let bson = API_tools.objectid_of_string tag in
-      API_tools.check_not_exist API_tools.tags_coll
-        API_tools.tagsid_field bson tag;
-      bson
-    in
-    let rec build_docs docs = function
-      | [], []            -> docs
-      |  _, []            ->
-        raise API_conf.(Pum_exc (return_not_found, "Not enought tags_id"));
-      | [], _             ->
-        raise API_conf.(Pum_exc (return_not_found, "Too many tags_id"));
-      | fth::ftt, th::tt  ->
-        if th = []
-        then raise API_conf.(Pum_exc (return_not_found,
-                                      "All link need to have at least one tag"));
-        let bson_tags = List.map bson_of_tag th in
-        let bson_ltags = Bson.create_list bson_tags in
-        let bson_doc = Bson.add_element API_tools.tagsid_field bson_ltags fth in
-        build_docs (bson_doc::docs) (ftt,tt)
-    in
-    let bson_from = objectid_of_strid API_tools.contents_coll
-      API_tools.originid_field Bson.empty id_from
-    in
-    let bson_fromtos = List.map (objectid_of_strid API_tools.contents_coll
-                                   API_tools.targetid_field bson_from) ids_to
-    in
-    List.iter check_not_exist_link bson_fromtos;
-    let docs = build_docs [] (bson_fromtos,tags_id) in
-    Mongo.insert API_tools.links_coll docs;
-    Lwt.return (`Null)
+    let json_link_id = List.map json_of_link_id links_id in
+    Lwt.return (`List json_link_id)
   in
-  API_tools.check_return ~default_return:API_conf.return_created aux
+  API_tools.check_return
+    ~default_return:API_conf.return_created
+    ~param_name:API_tools.linksid_ret_name aux
 
 let update_link link_id tags_id =
   let aux () =
