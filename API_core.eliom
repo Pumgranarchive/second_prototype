@@ -412,6 +412,8 @@ let delete_links str_links_id =
 
 (*** Warning: badly transform to link_id  *)
 let delete_links_from_to origin_id targets_id =
-  let link_id_of_string target_id = origin_id ^ "@" ^ target_id in
+  let uri_of_id id = "http://pumgrana.com/content/detail/" ^  id in
+  let origin_uri = uri_of_id origin_id in
+  let link_id_of_string target_id = origin_uri ^ "@" ^ (uri_of_id target_id) in
   let links_id = List.map link_id_of_string targets_id in
   delete_links links_id
