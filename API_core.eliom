@@ -349,9 +349,9 @@ let get_links_from_content_tags content_id opt_tags_id =
   let aux tags_id () =
     (* getting every link with 'content_id' as origin *)
     lwt link_list = Rdf_store.links_from_content_tags content_id tags_id in
-    if link_list = [] then
+    if List.length link_list == 0 then
       raise API_conf.(Pum_exc (return_no_content,
-                               "This content has no link on the given tags"));
+                               "This content has no link on given tags"));
 
     (* getting content to return *)
     let make_target_id_bson (link_id, target_id, tags_id) =
@@ -397,8 +397,7 @@ let insert_links id_from ids_to tags_id =
 let update_link str_link_id tags_id =
   let aux () =
     let link_id = Rdf_store.link_id_of_string str_link_id in
-    lwt res = Rdf_store.update_link link_id tags_id in
-    if not res then failwith "Fail updating";
+    lwt () = Rdf_store.update_link link_id tags_id in
     Lwt.return (`Null)
   in
   API_tools.check_return aux
@@ -406,8 +405,7 @@ let update_link str_link_id tags_id =
 let delete_links str_links_id =
   let aux () =
     let links_id = List.map Rdf_store.link_id_of_string str_links_id in
-    lwt res = Rdf_store.delete_links links_id [] in
-    if not res then failwith "Fail deleting";
+    lwt () = Rdf_store.delete_links links_id [] in
     Lwt.return (`Null)
   in
   API_tools.check_return aux

@@ -27,8 +27,8 @@ val insert_links : string -> string list -> string list list ->
   link_id list Lwt.t
 
 (** [update_link link_id new_tags]  *)
-val update_link : link_id -> string list -> bool Lwt.t
+val update_link : link_id -> string list -> unit Lwt.t
 
 (** [delete_links links_id tags_id]
     [tags_id] could be empty *)
-val delete_links : link_id list -> string list list -> bool Lwt.t
+val delete_links : link_id list -> string list list -> unit Lwt.t

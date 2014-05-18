@@ -23,7 +23,8 @@ let link_id_of_string link_id =
   try
     let strings = Str.split regexp link_id in
     List.hd strings, List.hd (List.tl strings)
-  with e -> failwith "Invalid Link ID"
+  with e ->
+    raise API_conf.(Pum_exc(return_not_found, "Invalid Link ID"))
 
 let content_id_of_uri str =
   let regexp = Str.regexp base_content_url in
@@ -85,10 +86,10 @@ let get_result = function
   | Result r    -> r
   | Error e     -> failwith (string_of_error e)
 
-let is_ok = function
-  | Ok          -> true
+let check_ok = function
+  | Ok          -> ()
   | Error e     -> failwith (string_of_error e)
-  | _           -> false
+  | Result _    -> failwith "Unexpected result return"
 
 let target_id_from_link_id (origin_uri, target_uri) =
   Lwt.return (content_id_of_uri target_uri)
@@ -110,7 +111,6 @@ let build_tags_query content_uri tags =
 let links_from_content_tags content_id tags =
   let content_uri = uri_of_content_id content_id in
   let query = build_tags_query content_uri tags in
-  print_endline query;
   let base = Rdf_iri.iri "http://pumgrana.com" in
   let msg = {in_query = query; in_dataset = empty_dataset} in
   lwt results = Rdf_4s_lwt.get ~base get_url msg in
@@ -129,20 +129,21 @@ let insert_links origin_id targets_id tags =
     query' ^ "<" ^ origin_uri ^ "> <" ^ target_uri ^ "> \"" ^ tag ^ "\""
   in
   let query_of_target query target_uri tags =
-    if List.length tags == 0 then failwith "Empty tag list are not allowed";
+    if List.length tags == 0 then
+      raise API_conf.(Pum_exc(return_not_found,
+                              "Empty tag list are not allowed"));
     List.fold_left (build_query origin_uri target_uri) query tags
   in
-  if List.length targets_uri == 0
-  then failwith "Empty target list are not allowed";
+  if List.length targets_uri == 0 then
+      raise API_conf.(Pum_exc(return_not_found,
+                              "Empty target list are not allowed"));
   let half_query = List.fold_left2 query_of_target "" targets_uri tags in
   let query = "INSERT DATA { " ^ half_query ^ " }" in
-  print_endline query;
   let fake_base = Rdf_iri.iri ~check:false "" in
   let msg = {in_query = query; in_dataset = empty_dataset} in
   lwt res = Rdf_4s_lwt.post_update ~base:fake_base update_url msg in
-  if is_ok res
-  then Lwt.return (List.map (link_id origin_uri) targets_uri)
-  else Lwt.return ([])
+  check_ok res;
+  Lwt.return (List.map (link_id origin_uri) targets_uri)
 
 let build_delete_query_tag links_id tags =
   let build_query o_uri t_uri query tag =
@@ -151,7 +152,9 @@ let build_delete_query_tag links_id tags =
   in
   let manager query link_id tags =
     let o_uri, t_uri = link_id in
-    if List.length tags == 0 then failwith "Empty tag list are not allowed";
+    if List.length tags == 0 then
+      raise API_conf.(Pum_exc(return_not_found,
+                              "Empty tag list are not allowed"));
     List.fold_left (build_query o_uri t_uri) query tags
   in
   let half_query = List.fold_left2 manager "" links_id tags in
@@ -172,11 +175,10 @@ let delete_links links_id tags =
     then build_delete_query links_id
     else build_delete_query_tag links_id tags
   in
-  print_endline query;
   let fake_base = Rdf_iri.iri ~check:false "" in
   let msg = {in_query = query; in_dataset = empty_dataset} in
   lwt res = Rdf_4s_lwt.post_update ~base:fake_base update_url msg in
-  Lwt.return (is_ok res)
+  Lwt.return (check_ok res)
 
 (*** Not protected if link_id does not exist ! *)
 let update_link link_id new_tags =
@@ -196,48 +198,13 @@ let update_link link_id new_tags =
   let origin_id = content_id_of_uri o_uri in
   let target_id = content_id_of_uri t_uri in
   let update list update_func =
-    if list != [] then update_func list else Lwt.return (true)
+    if List.length list != 0 then update_func list else Lwt.return ()
   in
-  let is_not_empty res =
-    res >>= fun result -> Lwt.return (result != [])
+  lwt () = update deleting_list (fun l -> delete_links [link_id] [l]) in
+  lwt () = update adding_list (fun l ->
+    lwt res = (insert_links origin_id [target_id] [l]) in
+    if List.length l != 0 && List.length res == 0
+    then raise API_conf.(Pum_exc(return_internal_error, "Updating failed"));
+    Lwt.return ())
   in
-  lwt deleting_ok = update deleting_list (fun l ->
-    delete_links [link_id] [l])
-  in
-  lwt adding_ok = update adding_list (fun l ->
-    is_not_empty (insert_links origin_id [target_id] [l]))
-  in
-  Lwt.return (deleting_ok && adding_ok)
-
-(* let _ = *)
-(*   lwt res = insert_links "http://pumgrana.com" ["http://patate.com";"http://test02.com"] [["Bidon01";"Bindon02"];["T01";"T02"]] in *)
-(*   if res != [] then print_endline "Ok" else print_endline "Nop"; *)
-(*   Lwt.return () *)
-
-(* let _ = *)
-(*   lwt res = update_link "http://pumgrana.com/content/detail/http://pumgrana.com@http://pumgrana.com/content/detail/http://patate.com" ["Chou";"Patate"] in *)
-(*   if res then print_endline "Ok" else print_endline "Nop"; *)
-(*   Lwt.return () *)
-
-
-(* let _ = *)
-(*   Lwt.async (fun () -> *)
-(*     lwt res = delete_links ["http://pumgrana.com/content/detail/http://pumgrana.com@http://pumgrana.com/content/detail/http://patate.com"; "http://pumgrana.com/content/detail/http://pumgrana.com@http://pumgrana.com/content/detail/http://test02.com"] in *)
-(*     if res then print_endline "Ok" else print_endline "Nop"; *)
-(*     Lwt.return ()) *)
-
-(* let _ = *)
-(*   let print_link (id, target, tags) = *)
-(*     let tags_string = *)
-(*       if List.length tags == 0 then "" else *)
-(*         List.fold_left (fun s tag -> s ^ " | " ^ tag) (List.hd tags) (List.tl tags) *)
-(*     in *)
-(*     print_endline ("ID: " ^ id ^ " ,Target: " ^ target ^ " ,Tags: " ^ tags_string) *)
-(*   in *)
-(*   (\* let content_id = "52780cbdc21477f7aa5b9107" in *\) *)
-(*   let content_id = "http://pumgrana.com" in *)
-(*   Lwt.async (fun () -> *)
-(*     lwt links = get_links_from_content_tags content_id [] in *)
-(*     if links == [] then print_endline "Nothing !"; *)
-(*     List.iter print_link links; *)
-(*     Lwt.return ()) *)
+  Lwt.return ()
