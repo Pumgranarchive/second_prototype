@@ -13,11 +13,14 @@ type link = link_id * string * string list
 val string_of_link_id : link_id -> string
 val link_id_of_string : string -> link_id
 
+val target_id_from_link_id : link_id -> string Lwt.t
+val origin_id_from_link_id : link_id -> string Lwt.t
+
 (** [get_links_from_content content_id]  *)
-val get_links_from_content : string -> link list Lwt.t
+val links_from_content : string -> link list Lwt.t
 
 (** [get_links_from_content_tags content_id tags_id]  *)
-val get_links_from_content_tags : string -> string list -> link list Lwt.t
+val links_from_content_tags : string -> string list -> link list Lwt.t
 
 (** [insert_links origin_id targets_id tags_id]  *)
 val insert_links : string -> string list -> string list list ->

@@ -38,25 +38,16 @@ let get_detail content_id =
   in
   API_tools.check_return ~param_name:API_tools.contents_ret_name aux
 
-let get_content_id_from_link link_id =
-  let object_id = API_tools.objectid_of_string link_id in
-  let bson_query = Bson.add_element API_tools.id_field object_id Bson.empty in
-  let result = Mongo.find_q_one API_tools.links_coll bson_query in
-  let result_bson =
-    List.hd (API_tools.check_empty_ocaml_list
-               (MongoReply.get_document_list result)
-               link_id)
-  in
-  Bson.get_element API_tools.targetid_field result_bson
-
-let get_detail_by_link link_id =
+let get_detail_by_link str_link_id =
   let aux () =
-    let target_id = get_content_id_from_link link_id in
-    let bson_query = Bson.add_element API_tools.id_field target_id Bson.empty in
+    let link_id = Rdf_store.link_id_of_string str_link_id in
+    lwt target_id = Rdf_store.target_id_from_link_id link_id in
+    let btarget_id = Bson.create_objectId target_id in
+    let bson_query = Bson.add_element API_tools.id_field btarget_id Bson.empty in
     let result = Mongo.find_q_s_one API_tools.contents_coll bson_query
       API_tools.content_format in
     let ret = API_tools.yojson_of_mongoreply result in
-    Lwt.return (API_tools.check_empty_yojson ret link_id)
+    Lwt.return (API_tools.check_empty_yojson ret str_link_id)
   in
   API_tools.check_return ~param_name:API_tools.contents_ret_name aux
 
@@ -250,41 +241,23 @@ let get_tags_from_content_link content_id =
   let aux () =
 
     (* step 1: get links related to the content*)
-    let content_object_id = API_tools.objectid_of_string content_id in
-    let originid_bson_query =
-      Bson.add_element API_tools.originid_field content_object_id Bson.empty
-    in
-    let result_links = Mongo.find_q API_tools.links_coll originid_bson_query
-    in
-    let links_bson = MongoReply.get_document_list result_links in
-    if links_bson = [] then
+    lwt links = Rdf_store.links_from_content content_id in
+    if List.length links == 0 then
       raise API_conf.(Pum_exc (return_no_content, "This content has no link."));
 
     (* step 2: request the related tags *)
-    let rec remove_duplicate list =
-      let rec aux new_list = function
-        | []      -> new_list
-        | e::t    ->
-          if (List.exists (fun c -> (String.compare c e) = 0) new_list)
-          then aux new_list t
-          else aux (e::new_list) t
+    let objects_id_of_tags_id tags_id =
+      let cleaned_tags_id =
+        List.fold_left (fun new_list e ->
+          if (List.exists (fun c -> (String.compare c e) == 0) new_list)
+          then new_list else e::new_list)
+          [] tags_id
       in
-      List.map API_tools.objectid_of_string
-        (aux [] (List.map Bson.get_objectId list))
+      List.map API_tools.objectid_of_string cleaned_tags_id
     in
-    let rec create_tag_list list =
-      let get_tags current_link = Bson.get_list
-        (Bson.get_element API_tools.tagsid_field current_link)
-      in
-      let rec aux new_list = function
-        | []	-> new_list
-        | l::t	-> aux ((get_tags l)@new_list) t
-      in
-      aux [] list
-
-    in
-    let tags_id = remove_duplicate (create_tag_list links_bson) in
-    if tags_id = [] then
+    let get_tags new_list (link_id, target_id, tags_id) = tags_id@new_list in
+    let tags_id = objects_id_of_tags_id (List.fold_left get_tags [] links) in
+    if List.length tags_id == 0 then
       raise API_conf.(Pum_exc (return_no_content, "These links has no tag."));
 
     let document_of_tag tag_id =
@@ -375,7 +348,7 @@ let delete_tags = delete_from API_tools.tags_coll
 let get_links_from_content_tags content_id opt_tags_id =
   let aux tags_id () =
     (* getting every link with 'content_id' as origin *)
-    lwt link_list = Rdf_store.get_links_from_content_tags content_id tags_id in
+    lwt link_list = Rdf_store.links_from_content_tags content_id tags_id in
     if link_list = [] then
       raise API_conf.(Pum_exc (return_no_content,
                                "This content has no link on the given tags"));

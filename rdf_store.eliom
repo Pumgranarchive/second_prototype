@@ -90,6 +90,12 @@ let is_ok = function
   | Error e     -> failwith (string_of_error e)
   | _           -> false
 
+let target_id_from_link_id (origin_uri, target_uri) =
+  Lwt.return (content_id_of_uri target_uri)
+
+let origin_id_from_link_id (origin_uri, target_uri) =
+  Lwt.return (content_id_of_uri origin_uri)
+
 let build_tags_query content_uri tags =
   let filter_query = if List.length tags == 0 then "" else
       let build_rgx rgx tag =
@@ -101,7 +107,7 @@ let build_tags_query content_uri tags =
   in
   "SELECT ?p ?o WHERE { <"^content_uri^"> ?p ?o" ^ filter_query ^ " }"
 
-let get_links_from_content_tags content_id tags =
+let links_from_content_tags content_id tags =
   let content_uri = uri_of_content_id content_id in
   let query = build_tags_query content_uri tags in
   print_endline query;
@@ -111,8 +117,8 @@ let get_links_from_content_tags content_id tags =
   let solutions = get_solutions (get_result results) in
   Lwt.return (links_of_solutions content_uri solutions)
 
-let get_links_from_content content_id =
-  get_links_from_content_tags content_id []
+let links_from_content content_id =
+  links_from_content_tags content_id []
 
 (*** Not protected if link already exist ! *)
 let insert_links origin_id targets_id tags =
