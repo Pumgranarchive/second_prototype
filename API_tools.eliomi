@@ -126,24 +126,24 @@ val string_of_id: string -> string
 val string_of_objectid: Bson.element -> string
 
 (** Cast single bson document to yojson *)
-val yojson_of_bson: Bson.t -> Yojson.Safe.json
+val yojson_of_bson: Bson.t -> Yojson.Basic.json
 
 (** Cast list of bson document to yojson *)
-val yojson_of_bson_list: Bson.t list -> Yojson.Safe.json
+val yojson_of_bson_list: Bson.t list -> Yojson.Basic.json
 
 (** Cast mongreply document list to yojson *)
-val yojson_of_mongoreply: MongoReply.t -> Yojson.Safe.json
+val yojson_of_mongoreply: MongoReply.t -> Yojson.Basic.json
 
 val json_of_ocsigen_string_stream:
   ((string * string) * (string * string) list) option->
   string Ocsigen_stream.t option ->
-  Yojson.Safe.json Lwt.t
+  Yojson.Basic.json Lwt.t
 
 (** {6 Checking tools  } *)
 
 (** If the yojson is empty, raise an not_found excepetion with the given value,
     else, return the given yosjon. *)
-val check_empty_yojson: Yojson.Safe.json -> string -> Yojson.Safe.json
+val check_empty_yojson: Yojson.Basic.json -> string -> Yojson.Basic.json
 
 (** If the list is empty, raise an not_found excepetion with the given value,
     else return the given list. *)
@@ -171,18 +171,18 @@ val objectid_of_tagstr: string -> Bson.element
 
 (** {6 Http tools } *)
 
-val return_of_json : Yojson.Safe.json Lwt.t -> (string * string) Lwt.t
+val return_of_json : Yojson.Basic.json Lwt.t -> (string * string) Lwt.t
 
 val return_of_error : string Lwt.t -> (string * string) Lwt.t
 
 (** {6 Manage return tools } *)
 
 (** Removing the value from text field *)
-val link_format_ret: string list -> Yojson.Safe.json -> Yojson.Safe.json
+val link_format_ret: string list -> Yojson.Basic.json -> Yojson.Basic.json
 
 (** Format the returned value *)
 val format_ret: ?param_name:string -> int -> ?error_str:string ->
-  Yojson.Safe.json -> Yojson.Safe.json
+  Yojson.Basic.json -> Yojson.Basic.json
 
 (** [check_return ?default_return ?param_name func]
     default_return: specify the default return, It is return_ok by default.
@@ -193,7 +193,7 @@ val format_ret: ?param_name:string -> int -> ?error_str:string ->
     the exception's data are use to build the return.
     For any others exceptions, internal server error (500) is returned *)
 val check_return: ?default_return:int -> ?param_name:string ->
-  (unit -> Yojson.Safe.json Lwt.t) -> Yojson.Safe.json Lwt.t
+  (unit -> Yojson.Basic.json Lwt.t) -> Yojson.Basic.json Lwt.t
 
 (** Use to directly return bad request in json string in register layout / unit *)
 val bad_request: ?error_value:int -> string -> string Lwt.t

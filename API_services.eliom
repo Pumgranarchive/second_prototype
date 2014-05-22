@@ -5,7 +5,7 @@
 
 open API_tools
 
-module Yj = Yojson.Safe
+module Yojson = Yojson.Basic
 
 (*** Services
      All services are registrer in twice step to allow the GUI

@@ -3,8 +3,6 @@
   This Module do request to data base and format well to return it in service
  *)
 
-module Yj = Yojson.Safe
-
 (*
 ** Generic request
 *)

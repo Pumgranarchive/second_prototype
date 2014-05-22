@@ -10,7 +10,7 @@ open Eliom_content
 open Eliom_content.Html5
 open Eliom_content.Html5.F
 
-module Yj = Yojson.Safe
+module Yojson = Yojson.Basic
 
 }}
 

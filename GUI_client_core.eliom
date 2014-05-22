@@ -10,7 +10,7 @@ open Eliom_content
 open Eliom_content.Html5
 open Eliom_content.Html5.F
 
-module Yj = Yojson.Safe
+module Yojson = Yojson.Basic
 
 }}
 
@@ -68,7 +68,7 @@ let save_update_content id title text tags remove_links new_tags =
   in
   let all_tags =
     Yojson_tools.get_service_return Yojson_tools.get_tag_list
-      (Yj.from_string res)
+      (Yojson.from_string res)
   in
   let rec get_id_of name = function
     | []                -> raise Not_found
@@ -103,7 +103,7 @@ let save_insert_content title text new_tags =
     %API_conf.content_tag ()
   in
   let all_tags =
-    Yojson_tools.(get_service_return get_tag_list (Yj.from_string res))
+    Yojson_tools.(get_service_return get_tag_list (Yojson.from_string res))
   in
   let rec get_id_of name = function
     | []                -> raise Not_found
@@ -124,7 +124,7 @@ let save_insert_content title text new_tags =
   lwt res = Eliom_client.call_service ~service:%API_services.insert_content ()
       (title, ("", (text, Some tags_list)))
   in
-  let id = Yojson_tools.get_content_id_return (Yj.from_string res) in
+  let id = Yojson_tools.get_content_id_return (Yojson.from_string res) in
   lwt _ = Eliom_client.call_service ~service:%API_services.insert_tags ()
       (%API_conf.content_tag, (Some id, not_found_list))
   in
@@ -245,7 +245,7 @@ let handle_refresh_list html_elt submit_elt div_of_yojson fun_request =
   let dom_submit = To_dom.of_input submit_elt in
   let refresh_html () =
     let display str_results =
-      let div_res_list = div_of_yojson (Yj.from_string str_results) in
+      let div_res_list = div_of_yojson (Yojson.from_string str_results) in
       remove_all_child dom_html;
       append_all dom_html div_res_list
     in

@@ -5,7 +5,7 @@
 
 open Lwt
 
-module Yj = Yojson.Safe
+module Yojson = Yojson.Basic
 
 (*** Generation tools  *)
 
@@ -113,7 +113,7 @@ let string_of_objectid id = string_of_id (Bson.get_objectId id)
 
 (** Cast single bson document to yojson *)
 let yojson_of_bson bson =
-  let tmp = Yj.from_string (Bson.to_simple_json bson) in
+  let tmp = Yojson.from_string (Bson.to_simple_json bson) in
   let rec check_id_format newlist = function
     | []                        -> newlist
     | ("_id", `String id)::tail ->
@@ -151,7 +151,7 @@ let json_of_ocsigen_string_stream input_type_opt ostream_opt =
   | Some ostream        ->
     let stream = Ocsigen_stream.get ostream in
     lwt str_json = Ocsigen_stream.string_of_stream 100000 stream in
-    Lwt.return (Yj.from_string str_json)
+    Lwt.return (Yojson.from_string str_json)
 
 (*** Getter tools  *)
 
@@ -213,7 +213,7 @@ let objectid_of_tagstr id =
 (*** Http tools  *)
 
 let return_of_json yojson =
-  yojson >>= (fun yj -> Lwt.return (Yj.to_string yj, "application/json"))
+  yojson >>= (fun yj -> Lwt.return (Yojson.to_string yj, "application/json"))
 
 let return_of_error str =
   str >>= (fun s -> Lwt.return (s, "application/json"))
@@ -247,7 +247,7 @@ let link_format_ret link_ids json_l =
   | yl                  -> yl
 
 (** Format the returned value *)
-let format_ret ?param_name status ?error_str (param_value:Yj.json) =
+let format_ret ?param_name status ?error_str (param_value:Yojson.json) =
   let assoc_list = [] in
   let assoc_list_1 =
     match param_name with
@@ -299,7 +299,7 @@ let check_return ?(default_return=API_conf.return_ok) ?param_name func =
 
 let bad_request ?(error_value=API_conf.return_not_found) error_str =
   print_endline ((string_of_int error_value) ^ ": " ^ error_str);
-  Lwt.return (Yj.to_string (format_ret error_value ~error_str `Null))
+  Lwt.return (Yojson.to_string (format_ret error_value ~error_str `Null))
 
 let manage_bad_request aux =
   try_lwt

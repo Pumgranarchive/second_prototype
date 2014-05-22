@@ -6,7 +6,7 @@
 
 {shared{
 
-module Yj = Yojson.Safe
+module Yosjon = Yojson.Basic
 
 (* let power num pow = *)
 (*   let rec aux nb = function *)
