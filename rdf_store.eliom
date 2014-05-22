@@ -36,25 +36,20 @@ let string_of_term = function
   | Rdf_term.Blank       -> "_"
   | Rdf_term.Blank_ id   ->  "_:" ^ (Rdf_term.string_of_blank_id id)
 
-let data_from_solution origin_uri solution =
-  let p = ref None in
-  let o = ref None in
-  let get n t = match n with
-    | "p"       -> p := Some t
-    | "o"       -> o := Some t
-    | _         -> ()
-  in
-  Rdf_sparql.solution_iter get solution;
-  let target_uri, link_tag = match !p, !o with
-    | None, _        -> failwith "Predicate not found"
-    | _, None        -> failwith "Object not found"
-    | Some p, Some o -> string_of_term p, string_of_term o
-  in
-  target_uri, link_tag
+let target_from_solution solution =
+  try string_of_term (Rdf_sparql.get_term solution "p")
+  with Not_found -> failwith "Target not found"
+
+let tag_from_solution solution =
+  try string_of_term (Rdf_sparql.get_term solution "o")
+  with Not_found -> failwith "Tag not found"
+
+let tuple_from_solution solution =
+  target_from_solution solution, tag_from_solution solution
 
 let links_of_solutions origin_uri solutions =
   let build_tag_list map solution =
-    let target_uri, link_tag = data_from_solution origin_uri solution in
+    let target_uri, link_tag = tuple_from_solution solution in
     let tags =
       try SMap.find target_uri map
       with Not_found -> []
@@ -67,15 +62,6 @@ let links_of_solutions origin_uri solutions =
     (link_id, content_id_of_uri target_uri, tags)::links
   in
   SMap.fold build_links tags []
-
-let tag_from_solution solution =
-  let get n t v = match n with
-    | "o"       -> Some t
-    | _         -> v
-  in
-  match Rdf_sparql.solution_fold get solution None with
-  | Some o    -> string_of_term o
-  | None      -> failwith "Object not found"
 
 let get_solutions = function
   | Rdf_sparql.Solutions s -> s
