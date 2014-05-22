@@ -1,5 +1,5 @@
 (*
-** Json tools
+** Internal Json utils
 ** This module help the translate between json and ocaml
  *)
 
@@ -35,7 +35,6 @@ let map func = function
 let get_service_return func json =
   let data =
     try
-      print_endline (Yojson.to_string json);
       let assoc_list = to_assoc json in
       let idx_last_element = (List.length assoc_list) - 1 in
       let name, data = List.nth assoc_list idx_last_element in

@@ -3,7 +3,7 @@
   This module manage the cliento process
 *)
 
-{shared{
+{client{
 
 open Eliom_lib
 open Eliom_content
@@ -11,10 +11,7 @@ open Eliom_content.Html5
 open Eliom_content.Html5.F
 
 module Yojson = Yojson.Basic
-
-}}
-
-{client{
+module Util = Intern_yj_util
 
 (** Get all name of checked dom_inputs and return them in a list. *)
 let get_checked_inputs dom_inputs =
@@ -66,9 +63,8 @@ let save_update_content id title text tags remove_links new_tags =
   lwt res = Eliom_client.call_service ~service:%API_services.get_tags_by_type
     %API_conf.content_tag ()
   in
-  let all_tags =
-    Yojson_tools.get_service_return Yojson_tools.get_tag_list
-      (Yojson.from_string res)
+  let all_tags = Util.get_service_return Util.get_tag_list
+    (Yojson.from_string res)
   in
   let rec get_id_of name = function
     | []                -> raise Not_found
@@ -103,7 +99,7 @@ let save_insert_content title text new_tags =
     %API_conf.content_tag ()
   in
   let all_tags =
-    Yojson_tools.(get_service_return get_tag_list (Yojson.from_string res))
+    Util.get_service_return Util.get_tag_list (Yojson.from_string res)
   in
   let rec get_id_of name = function
     | []                -> raise Not_found
@@ -124,7 +120,7 @@ let save_insert_content title text new_tags =
   lwt res = Eliom_client.call_service ~service:%API_services.insert_content ()
       (title, ("", (text, Some tags_list)))
   in
-  let id = Yojson_tools.get_content_id_return (Yojson.from_string res) in
+  let id = Util.get_content_id_return (Yojson.from_string res) in
   lwt _ = Eliom_client.call_service ~service:%API_services.insert_tags ()
       (%API_conf.content_tag, (Some id, not_found_list))
   in
@@ -260,8 +256,7 @@ let handle_refresh_links content_id html_elt inputs_elt submit_elt =
   let dom_inputs = List.map To_dom.of_input inputs_elt in
   handle_refresh_list html_elt submit_elt
     (fun r -> GUI_tools.build_links_list
-      (Yojson_tools.get_service_return
-         Yojson_tools.get_link_list r))
+      (Util.get_service_return Util.get_link_list r))
     (fun () ->
       let list = get_checked_inputs dom_inputs in
       Eliom_client.call_service
@@ -273,8 +268,7 @@ let handle_refresh_contents html_elt inputs_elt submit_elt =
   let dom_inputs = List.map To_dom.of_input inputs_elt in
   handle_refresh_list html_elt submit_elt
     (fun r -> GUI_tools.build_contents_list
-      (Yojson_tools.get_service_return
-         Yojson_tools.get_content_list r))
+      (Util.get_service_return Util.get_content_list r))
     (fun () -> Eliom_client.call_service
       ~service:%API_services.get_contents
       (None, Some (get_checked_inputs dom_inputs)) ())

@@ -6,7 +6,7 @@
 module Yojson = Yojson.Basic
 
 open Yojson.Util
-open Yojson_tools
+open Intern_yj_util
 open API_conf
 
 (** Get insert content input data *)

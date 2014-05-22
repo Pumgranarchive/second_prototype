@@ -12,9 +12,6 @@ open Eliom_content
 open Eliom_content.Html5
 open Eliom_content.Html5.F
 
-module Yojson = Yojson.Basic
-
-
 (*** Build tools  *)
 
 let build_header elt_list =
