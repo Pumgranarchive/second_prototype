@@ -7,6 +7,8 @@ type link_id = string * string
 type link = link_id * string * string list
 
 let base_content_url = "http://pumgrana.com/content/detail/"
+let base_tag_url = "http://pumgrana.com/tag/"
+let base_tag_link_url = base_tag_url ^ "link/"
 let base_url = Rdf_uri.uri "http://127.0.0.1:8000"
 let get_url = Rdf_uri.append base_url "/sparql/"
 let update_url = Rdf_uri.append base_url "/update/"
@@ -15,6 +17,8 @@ let string_of_link_id (origin_uri, target_uri) =
   origin_uri ^ "@" ^ target_uri
 
 let uri_of_content_id str = base_content_url ^ str
+
+let uri_of_tag_id_link str = base_tag_link_url ^ str
 
 let link_id origin_uri target_uri = origin_uri, target_uri
 
@@ -30,26 +34,31 @@ let content_id_of_uri str =
   let regexp = Str.regexp base_content_url in
   Str.replace_first regexp "" str
 
+let tag_id_link_of_uri str =
+  let regexp = Str.regexp base_tag_link_url in
+  Str.replace_first regexp "" str
+
 let string_of_term = function
   | Rdf_term.Iri iri     -> Rdf_iri.string iri
   | Rdf_term.Literal lit -> Rdf_utf8.utf8_escape lit.Rdf_term.lit_value
   | Rdf_term.Blank       -> "_"
   | Rdf_term.Blank_ id   ->  "_:" ^ (Rdf_term.string_of_blank_id id)
 
-let target_from_solution solution =
-  try string_of_term (Rdf_sparql.get_term solution "p")
-  with Not_found -> failwith "Target not found"
-
 let tag_from_solution solution =
-  try string_of_term (Rdf_sparql.get_term solution "o")
+  try string_of_term (Rdf_sparql.get_term solution "p")
   with Not_found -> failwith "Tag not found"
+
+let target_from_solution solution =
+  try string_of_term (Rdf_sparql.get_term solution "o")
+  with Not_found -> failwith "Target not found"
 
 let tuple_from_solution solution =
   target_from_solution solution, tag_from_solution solution
 
 let links_of_solutions origin_uri solutions =
   let build_tag_list map solution =
-    let target_uri, link_tag = tuple_from_solution solution in
+    let target_uri, tag_uri = tuple_from_solution solution in
+    let link_tag = tag_id_link_of_uri tag_uri in
     let tags =
       try SMap.find target_uri map
       with Not_found -> []
@@ -85,12 +94,13 @@ let origin_id_from_link_id (origin_uri, target_uri) =
 
 let build_tags_query content_uri tags =
   let filter_query = if List.length tags == 0 then "" else
-      let build_rgx rgx tag =
+      let build_rgx rgx tag_id =
         let rgx' = if String.length rgx == 0 then rgx else rgx ^ "|" in
-        rgx' ^ "(" ^ tag ^ ")"
+        let tag_uri = uri_of_tag_id_link tag_id in
+        rgx' ^ "(" ^ tag_uri ^ ")"
       in
       let regex = List.fold_left build_rgx "" tags in
-      " . FILTER regex(?o, \"" ^ regex ^ "\")"
+      " . FILTER regex(str(?p), \"" ^ regex ^ "\")"
   in
   "SELECT ?p ?o WHERE { <"^content_uri^"> ?p ?o" ^ filter_query ^ " }"
 
@@ -106,14 +116,15 @@ let links_from_content_tags content_id tags =
 let links_from_content content_id =
   links_from_content_tags content_id []
 
+let build_query origin_uri target_uri query tag_id =
+  let q = if String.length query == 0 then query else query ^ " . " in
+  let tag_uri = uri_of_tag_id_link tag_id in
+  q ^ "<" ^ origin_uri ^ ">  <" ^ tag_uri ^ "> <" ^ target_uri ^ ">"
+
 (*** Not protected if link already exist ! *)
 let insert_links origin_id targets_id tags =
   let origin_uri = uri_of_content_id origin_id in
   let targets_uri = List.map uri_of_content_id targets_id in
-  let build_query origin_uri target_uri query tag =
-    let query' = if String.length query == 0 then query else query ^ " . " in
-    query' ^ "<" ^ origin_uri ^ "> <" ^ target_uri ^ "> \"" ^ tag ^ "\""
-  in
   let query_of_target query target_uri tags =
     if List.length tags == 0 then
       raise API_conf.(Pum_exc(return_not_found,
@@ -132,10 +143,6 @@ let insert_links origin_id targets_id tags =
   Lwt.return (List.map (link_id origin_uri) targets_uri)
 
 let build_delete_query_tag links_id tags =
-  let build_query o_uri t_uri query tag =
-    let q = if String.length query == 0 then query else query ^ " . " in
-    q ^ "<" ^ o_uri ^ "> <" ^ t_uri ^ "> \"" ^ tag ^ "\""
-  in
   let manager query link_id tags =
     let o_uri, t_uri = link_id in
     if List.length tags == 0 then
@@ -150,7 +157,7 @@ let build_delete_query links_id =
   let build_query query link_id =
     let o_uri, t_uri = link_id in
     let q = if String.length query == 0 then query else query ^ " UNION " in
-    q ^ "{ <" ^ o_uri ^ "> <" ^ t_uri ^ "> ?o . {?s ?p ?o.} UNION {?x ?y ?z} }"
+    q ^ "{ <" ^ o_uri ^ "> ?p <" ^ t_uri ^ "> . {?s ?p ?o.} UNION {?x ?y ?z} }"
   in
   let half_query = List.fold_left build_query "" links_id in
   "DELETE {?s ?p ?o.} WHERE { " ^ half_query ^ " }"
@@ -169,12 +176,14 @@ let delete_links links_id tags =
 (*** Not protected if link_id does not exist ! *)
 let update_link link_id new_tags =
   let o_uri, t_uri = link_id in
-  let query = "SELECT ?o WHERE { <" ^ o_uri ^ "> <" ^ t_uri ^ "> ?o }" in
+  let query = "SELECT ?p WHERE { <" ^ o_uri ^ "> ?p <" ^ t_uri ^ "> }" in
   let base = Rdf_iri.iri "http://pumgrana.com" in
   let msg = {in_query = query; in_dataset = empty_dataset} in
   lwt results = Rdf_4s_lwt.get ~base get_url msg in
   let solutions = get_solutions (get_result results) in
-  let old_tags = List.map tag_from_solution solutions in
+  let old_tags = List.map
+    (fun t -> uri_of_tag_id_link (tag_from_solution t)) solutions
+  in
   let are_equal tag e = String.compare tag e == 0 in
   let build_list ref_list build_list tag =
     if List.exists (are_equal tag) ref_list then build_list else tag::build_list
