@@ -8,17 +8,26 @@ type link = link_id * string * string list
 
 type tag_type = TagLink | TagContent
 
+(******************************************************************************
+****************************** Configuration **********************************
+*******************************************************************************)
+
 let domain = "http://pumgrana.com/"
 let base_ressouce_url = domain ^ "ressource/"
 let base_content_url = domain ^ "content/detail/"
 let base_tag_url = domain ^ "tag/"
 let base_tag_link_url = base_tag_url ^ "link/"
+let base_tag_content_url = base_tag_url ^ "content/"
 let tagged_content = base_ressouce_url ^ "tagged_content"
 let tag_link_ressouce = base_ressouce_url ^ "tag_link"
 let tag_content_ressouce = base_ressouce_url ^ "tag_content"
 let base_url = Rdf_uri.uri "http://127.0.0.1:8000"
 let get_url = Rdf_uri.append base_url "/sparql/"
 let update_url = Rdf_uri.append base_url "/update/"
+
+(******************************************************************************
+********************************** Tools **************************************
+*******************************************************************************)
 
 let string_of_link_id (origin_uri, target_uri) =
   origin_uri ^ "@" ^ target_uri
@@ -98,6 +107,11 @@ let target_id_from_link_id (origin_uri, target_uri) =
 let origin_id_from_link_id (origin_uri, target_uri) =
   Lwt.return (content_id_of_uri origin_uri)
 
+let next_query query sep =
+  if String.length query == 0 then query else query ^ sep
+
+(*** Shortcut ***)
+
 let get_from_4store query =
   let base = Rdf_iri.iri domain in
   let msg = {in_query = query; in_dataset = empty_dataset} in
@@ -131,29 +145,85 @@ let get_tags tag_type tags_uri =
   in
   let query = "SELECT ?tag ?subject WHERE { " ^ half_query ^ " }" in
   lwt solutions = get_from_4store query in
-  let tags_tuple = List.map tuple_tag_from solutions in
-  Lwt.return (tags_tuple)
+  let tuple_tags = List.map tuple_tag_from solutions in
+  Lwt.return (tuple_tags)
 
 let get_tags_from_link link_id =
   let o_uri, t_uri = link_id in
-  let query = "SELECT ?tag WHERE { <" ^ o_uri ^ "> ?tag <" ^ t_uri ^ "> }" in
+  let query = "SELECT ?tag ?subject WHERE
+{ <"^ o_uri ^"> ?tag <"^ t_uri ^"> .
+?tag <" ^ tag_link_ressouce ^ "> ?subject }"
+  in
   lwt solutions = get_from_4store query in
-  let tags_uri = List.map (from_solution "tag") solutions in
-  Lwt.return (tags_uri)
+  let tuple_tags = List.map tuple_tag_from solutions in
+  Lwt.return (tuple_tags)
 
 let get_tags_from_content content_id =
   let c_uri = uri_of_content_id content_id in
-  let query = "SELECT ?tag WHERE {<"^ c_uri ^"> <"^ tagged_content ^"> ?tag}" in
+  let query = "SELECT ?tag ?subject WHERE
+{ <"^ c_uri ^"> <"^ tagged_content ^"> ?tag .
+  ?tag <" ^ tag_content_ressouce ^ "> ?subject }"
+  in
   lwt solutions = get_from_4store query in
-  let tags_uri = List.map (from_solution "tag") solutions in
-  Lwt.return (tags_uri)
+  let tuple_tags = List.map tuple_tag_from solutions in
+  Lwt.return (tuple_tags)
 
 let get_tags_from_content_link content_id =
   let o_uri = uri_of_content_id content_id in
-  let query = "SELECT ?tag WHERE { <" ^ o_uri ^ "> ?tag ?target }" in
+  let query = "SELECT ?tag ?subject WHERE
+{ <" ^ o_uri ^ "> ?tag ?target.
+  ?tag <" ^ tag_link_ressouce ^ "> ?subject }"
+  in
   lwt solutions = get_from_4store query in
-  let tags_uri = List.map (from_solution "tag") solutions in
+  let tags_tuple = List.map tuple_tag_from solutions in
+  Lwt.return (tags_tuple)
+
+let insert_tags tag_type ?link_id ?content_id subjects =
+  let ressource_url, base_tag_url =
+    match tag_type, link_id, content_id with
+    | TagContent, None, _ -> tag_content_ressouce, base_tag_content_url
+    | TagLink, _, None    -> tag_link_ressouce, base_tag_link_url
+    | _, _, _             -> failwith "Bad association"
+  in
+  let content_uri = match content_id with
+    | Some id   -> Some (uri_of_content_id id)
+    | None      -> None
+  in
+  let tag_uri_of_subject subject =
+    let rdf_uri = Rdf_uri.(neturl (uri (base_tag_url ^ subject))) in
+    let neturl = Neturl.modify_url ~encoded:true rdf_uri in
+    Rdf_uri.string (Rdf_uri.of_neturl neturl)
+  in
+  let insert_tag_on query tag_uri =
+    let q = next_query query " . " in
+    match link_id, content_uri with
+    | None, Some content_uri    ->
+        q ^ "<" ^ content_uri ^ ">  <" ^ tagged_content ^ "> <" ^ tag_uri ^ ">"
+    | Some (o_uri, t_uri), None ->
+        q ^ "<" ^ o_uri ^ ">  <" ^ tag_uri ^ "> <" ^ t_uri ^ ">"
+    | _, _ -> query
+  in
+  let insert_tag query uri subject =
+    let q = next_query query " . " in
+    let q' = q ^ "<" ^ uri ^ ">  <" ^ ressource_url ^ "> \"" ^ subject ^ "\"" in
+    insert_tag_on q' uri
+  in
+  let tags_uri = List.map tag_uri_of_subject subjects in
+  let half_query = List.fold_left2 insert_tag "" tags_uri subjects in
+  let query = "INSERT DATA { " ^ half_query ^ " }" in
+  lwt () = post_on_4store query in
   Lwt.return (tags_uri)
+
+let delete_tags tags_uri =
+  let build_query query tag_uri =
+    let q = next_query query " . " in
+    q ^ "{ <" ^ tag_uri ^ "> ?res1 ?sub. {?tag ?res1 ?sub.} UNION {?x ?y ?z} }.
+{ ?origin <" ^ tag_uri ^ "> ?target. {?origin ?tag ?target.} UNION {?x ?y ?z} }.
+{ ?content ?res2 <" ^ tag_uri ^ ">. {?content ?res2 ?tag.} UNION {?x ?y ?z} }"
+  in
+  let half_query = List.fold_left build_query "" tags_uri in
+  let query = "DELETE {?x ?y ?z.} WHERE { " ^ half_query ^ " }" in
+  post_on_4store query
 
 (******************************************************************************
 ******************************** Links ****************************************
@@ -237,7 +307,7 @@ let delete_links links_id tags =
 let update_link link_id new_tags =
   let o_uri, t_uri = link_id in
   lwt old_tags_uri = get_tags_from_link link_id in
-  let old_tags = List.map tag_id_link_of_uri old_tags_uri in
+  let old_tags = List.map (fun (x, _) -> tag_id_link_of_uri x) old_tags_uri in
   let are_equal tag e = String.compare tag e == 0 in
   let build_list ref_list build_list tag =
     if List.exists (are_equal tag) ref_list then build_list else tag::build_list
