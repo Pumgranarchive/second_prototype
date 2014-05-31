@@ -10,6 +10,18 @@ type link = link_id * string * string list
 
 type tag_type = TagLink | TagContent
 
+(** {6 Contents}  *)
+
+(** [get_triple_contents tags_uri]
+    return a triple (content_uri, title, summary) *)
+val get_triple_contents : string list -> (string * string * string) list Lwt.t
+
+(** [insert_content content_uri title summary tags_uri] *)
+val insert_content : string -> string -> string -> string list -> unit Lwt.t
+
+(** [delete_contents contents_uri *)
+val delete_contents : string list -> unit Lwt.t
+
 (** {6 Links}  *)
 
 val string_of_link_id : link_id -> string

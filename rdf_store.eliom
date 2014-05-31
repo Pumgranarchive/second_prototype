@@ -18,9 +18,14 @@ let base_content_url = domain ^ "content/detail/"
 let base_tag_url = domain ^ "tag/"
 let base_tag_link_url = base_tag_url ^ "link/"
 let base_tag_content_url = base_tag_url ^ "content/"
-let tagged_content = base_ressouce_url ^ "tagged_content"
-let tag_link_ressouce = base_ressouce_url ^ "tag_link"
-let tag_content_ressouce = base_ressouce_url ^ "tag_content"
+let base_content_ressource = base_ressouce_url ^ "content/"
+
+let tagged_content_r = base_content_ressource ^ "tagged"
+let content_title_r = base_content_ressource ^ "title"
+let content_summary_r = base_content_ressource ^ "summary"
+let tag_link_r = base_ressouce_url ^ "tag_link"
+let tag_content_r = base_ressouce_url ^ "tag_content"
+
 let base_url = Rdf_uri.uri "http://127.0.0.1:8000"
 let get_url = Rdf_uri.append base_url "/sparql/"
 let update_url = Rdf_uri.append base_url "/update/"
@@ -32,9 +37,9 @@ let update_url = Rdf_uri.append base_url "/update/"
 let string_of_link_id (origin_uri, target_uri) =
   origin_uri ^ "@" ^ target_uri
 
-let uri_of_content_id str = base_content_url ^ str
-
-let uri_of_tag_id_link str = base_tag_link_url ^ str
+let uri_of_content_id = (^) base_content_url
+let uri_of_tag_id_link = (^) base_tag_link_url
+let uri_of_tag_id_content = (^) base_tag_content_url
 
 let link_id origin_uri target_uri = origin_uri, target_uri
 
@@ -46,13 +51,13 @@ let link_id_of_string link_id =
   with e ->
     raise API_conf.(Pum_exc(return_not_found, "Invalid Link ID"))
 
-let content_id_of_uri str =
-  let regexp = Str.regexp base_content_url in
+let pumgrana_id_of_uri base str =
+  let regexp = Str.regexp base in
   Str.replace_first regexp "" str
 
-let tag_id_link_of_uri str =
-  let regexp = Str.regexp base_tag_link_url in
-  Str.replace_first regexp "" str
+let content_id_of_uri = pumgrana_id_of_uri base_content_url
+let tag_id_link_of_uri = pumgrana_id_of_uri base_tag_link_url
+let tag_id_content_of_uri = pumgrana_id_of_uri base_tag_content_url
 
 let string_of_term = function
   | Rdf_term.Iri iri     -> Rdf_iri.string iri
@@ -69,6 +74,10 @@ let tuple_link_from solution =
 
 let tuple_tag_from solution =
   from_solution "tag" solution, from_solution "subject" solution
+
+let triple_content_from solution =
+  from_solution "content" solution, from_solution "title" solution,
+  from_solution "summary" solution
 
 let links_of_solutions origin_uri solutions =
   let build_tag_list map solution =
@@ -101,12 +110,6 @@ let check_ok = function
   | Error e     -> failwith (string_of_error e)
   | Result _    -> failwith "Unexpected result return"
 
-let target_id_from_link_id (origin_uri, target_uri) =
-  Lwt.return (content_id_of_uri target_uri)
-
-let origin_id_from_link_id (origin_uri, target_uri) =
-  Lwt.return (content_id_of_uri origin_uri)
-
 let next_query query sep =
   if String.length query == 0 then query else query ^ sep
 
@@ -126,13 +129,59 @@ let post_on_4store query =
   Lwt.return (check_ok res)
 
 (******************************************************************************
+******************************* Contents ***************************************
+*******************************************************************************)
+
+let get_triple_contents tags_uri =
+  let build_regexp query tag_uri =
+    let q = next_query query "|" in
+    q ^ "(" ^ tag_uri ^ ")"
+  in
+  let half_query =
+    if List.length tags_uri == 0 then "" else
+      let regexp = List.fold_left build_regexp "" tags_uri in
+      "?content <" ^ tagged_content_r ^ "> ?tag .
+       FILTER regex(str(?tag), \"" ^ regexp ^ "\")"
+  in
+  let query = "SELECT ?content ?title ?summary WHERE
+{ ?content <" ^ content_title_r ^ "> ?title .
+  ?content <" ^ content_summary_r ^ "> ?summary .
+  " ^ half_query ^ " }"
+  in
+  lwt solutions = get_from_4store query in
+  let triple_contents = List.map triple_content_from solutions in
+  Lwt.return (triple_contents)
+
+(* !! Warning: does not check if the content already exist !!  *)
+let insert_content content_uri title summary tags_uri =
+  let build_tag_data q tag_uri =
+    q ^ " . <" ^ content_uri ^ "> <" ^ tagged_content_r ^ "> <" ^ tag_uri ^ ">"
+  in
+  let tags_data = List.fold_left build_tag_data "" tags_uri in
+  let content_data =
+    "<" ^ content_uri ^ "> <" ^ content_title_r ^ "> \"" ^ title ^ "\" . " ^
+    "<" ^ content_uri ^ "> <" ^ content_summary_r ^ "> \"" ^ summary ^ "\"" ^
+      tags_data
+  in
+  let query = "INSERT DATA { " ^ content_data ^ " }" in
+  post_on_4store query
+
+let delete_contents contents_uri =
+  let build_query q content_uri =
+    q ^ "{ <" ^ content_uri ^ "> ?r ?v. {?u ?r ?v.} UNION {?x ?y ?z} } . "
+  in
+  let half_query = List.fold_left build_query "" contents_uri in
+  let query = "DELETE {?u ?r ?v.} WHERE { " ^ half_query ^ " }" in
+  post_on_4store query
+
+(******************************************************************************
 ******************************** Tags *****************************************
 *******************************************************************************)
 
 let get_tags tag_type tags_uri =
   let ressource_url = match tag_type with
-    | TagLink    -> tag_link_ressouce
-    | TagContent -> tag_content_ressouce
+    | TagLink    -> tag_link_r
+    | TagContent -> tag_content_r
   in
   let build_query query tag_uri =
     let q = if String.length query == 0 then query else query ^ " . " in
@@ -152,7 +201,7 @@ let get_tags_from_link link_id =
   let o_uri, t_uri = link_id in
   let query = "SELECT ?tag ?subject WHERE
 { <"^ o_uri ^"> ?tag <"^ t_uri ^"> .
-?tag <" ^ tag_link_ressouce ^ "> ?subject }"
+?tag <" ^ tag_link_r ^ "> ?subject }"
   in
   lwt solutions = get_from_4store query in
   let tuple_tags = List.map tuple_tag_from solutions in
@@ -161,8 +210,8 @@ let get_tags_from_link link_id =
 let get_tags_from_content content_id =
   let c_uri = uri_of_content_id content_id in
   let query = "SELECT ?tag ?subject WHERE
-{ <"^ c_uri ^"> <"^ tagged_content ^"> ?tag .
-  ?tag <" ^ tag_content_ressouce ^ "> ?subject }"
+{ <"^ c_uri ^"> <"^ tagged_content_r ^"> ?tag .
+  ?tag <" ^ tag_content_r ^ "> ?subject }"
   in
   lwt solutions = get_from_4store query in
   let tuple_tags = List.map tuple_tag_from solutions in
@@ -172,17 +221,17 @@ let get_tags_from_content_link content_id =
   let o_uri = uri_of_content_id content_id in
   let query = "SELECT ?tag ?subject WHERE
 { <" ^ o_uri ^ "> ?tag ?target.
-  ?tag <" ^ tag_link_ressouce ^ "> ?subject }"
+  ?tag <" ^ tag_link_r ^ "> ?subject }"
   in
   lwt solutions = get_from_4store query in
   let tags_tuple = List.map tuple_tag_from solutions in
   Lwt.return (tags_tuple)
 
 let insert_tags tag_type ?link_id ?content_id subjects =
-  let ressource_url, base_tag_url =
+  let ressource_url, uri_of_tag_id =
     match tag_type, link_id, content_id with
-    | TagContent, None, _ -> tag_content_ressouce, base_tag_content_url
-    | TagLink, _, None    -> tag_link_ressouce, base_tag_link_url
+    | TagContent, None, _ -> tag_content_r, uri_of_tag_id_content
+    | TagLink, _, None    -> tag_link_r, uri_of_tag_id_link
     | _, _, _             -> failwith "Bad association"
   in
   let content_uri = match content_id with
@@ -190,7 +239,7 @@ let insert_tags tag_type ?link_id ?content_id subjects =
     | None      -> None
   in
   let tag_uri_of_subject subject =
-    let rdf_uri = Rdf_uri.(neturl (uri (base_tag_url ^ subject))) in
+    let rdf_uri = Rdf_uri.(neturl (uri (uri_of_tag_id subject))) in
     let neturl = Neturl.modify_url ~encoded:true rdf_uri in
     Rdf_uri.string (Rdf_uri.of_neturl neturl)
   in
@@ -198,7 +247,7 @@ let insert_tags tag_type ?link_id ?content_id subjects =
     let q = next_query query " . " in
     match link_id, content_uri with
     | None, Some content_uri    ->
-        q ^ "<" ^ content_uri ^ ">  <" ^ tagged_content ^ "> <" ^ tag_uri ^ ">"
+        q ^ "<" ^ content_uri ^ ">  <" ^ tagged_content_r ^ "> <" ^ tag_uri ^ ">"
     | Some (o_uri, t_uri), None ->
         q ^ "<" ^ o_uri ^ ">  <" ^ tag_uri ^ "> <" ^ t_uri ^ ">"
     | _, _ -> query
@@ -228,6 +277,12 @@ let delete_tags tags_uri =
 (******************************************************************************
 ******************************** Links ****************************************
 *******************************************************************************)
+
+let target_id_from_link_id (origin_uri, target_uri) =
+  Lwt.return (content_id_of_uri target_uri)
+
+let origin_id_from_link_id (origin_uri, target_uri) =
+  Lwt.return (content_id_of_uri origin_uri)
 
 let build_tags_query content_uri tags =
   let filter_query = if List.length tags == 0 then "" else
