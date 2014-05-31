@@ -129,52 +129,6 @@ let post_on_4store query =
   Lwt.return (check_ok res)
 
 (******************************************************************************
-******************************* Contents ***************************************
-*******************************************************************************)
-
-let get_triple_contents tags_uri =
-  let build_regexp query tag_uri =
-    let q = next_query query "|" in
-    q ^ "(" ^ tag_uri ^ ")"
-  in
-  let half_query =
-    if List.length tags_uri == 0 then "" else
-      let regexp = List.fold_left build_regexp "" tags_uri in
-      "?content <" ^ tagged_content_r ^ "> ?tag .
-       FILTER regex(str(?tag), \"" ^ regexp ^ "\")"
-  in
-  let query = "SELECT ?content ?title ?summary WHERE
-{ ?content <" ^ content_title_r ^ "> ?title .
-  ?content <" ^ content_summary_r ^ "> ?summary .
-  " ^ half_query ^ " }"
-  in
-  lwt solutions = get_from_4store query in
-  let triple_contents = List.map triple_content_from solutions in
-  Lwt.return (triple_contents)
-
-(* !! Warning: does not check if the content already exist !!  *)
-let insert_content content_uri title summary tags_uri =
-  let build_tag_data q tag_uri =
-    q ^ " . <" ^ content_uri ^ "> <" ^ tagged_content_r ^ "> <" ^ tag_uri ^ ">"
-  in
-  let tags_data = List.fold_left build_tag_data "" tags_uri in
-  let content_data =
-    "<" ^ content_uri ^ "> <" ^ content_title_r ^ "> \"" ^ title ^ "\" . " ^
-    "<" ^ content_uri ^ "> <" ^ content_summary_r ^ "> \"" ^ summary ^ "\"" ^
-      tags_data
-  in
-  let query = "INSERT DATA { " ^ content_data ^ " }" in
-  post_on_4store query
-
-let delete_contents contents_uri =
-  let build_query q content_uri =
-    q ^ "{ <" ^ content_uri ^ "> ?r ?v. {?u ?r ?v.} UNION {?x ?y ?z} } . "
-  in
-  let half_query = List.fold_left build_query "" contents_uri in
-  let query = "DELETE {?u ?r ?v.} WHERE { " ^ half_query ^ " }" in
-  post_on_4store query
-
-(******************************************************************************
 ******************************** Tags *****************************************
 *******************************************************************************)
 
@@ -207,10 +161,9 @@ let get_tags_from_link link_id =
   let tuple_tags = List.map tuple_tag_from solutions in
   Lwt.return (tuple_tags)
 
-let get_tags_from_content content_id =
-  let c_uri = uri_of_content_id content_id in
+let get_tags_from_content content_uri =
   let query = "SELECT ?tag ?subject WHERE
-{ <"^ c_uri ^"> <"^ tagged_content_r ^"> ?tag .
+{ <"^ content_uri ^"> <"^ tagged_content_r ^"> ?tag .
   ?tag <" ^ tag_content_r ^ "> ?subject }"
   in
   lwt solutions = get_from_4store query in
@@ -273,6 +226,95 @@ let delete_tags tags_uri =
   let half_query = List.fold_left build_query "" tags_uri in
   let query = "DELETE {?x ?y ?z.} WHERE { " ^ half_query ^ " }" in
   post_on_4store query
+
+(******************************************************************************
+******************************* Contents ***************************************
+*******************************************************************************)
+
+let get_triple_contents tags_uri =
+  let build_regexp query tag_uri =
+    let q = next_query query "|" in
+    q ^ "(" ^ tag_uri ^ ")"
+  in
+  let half_query =
+    if List.length tags_uri == 0 then "" else
+      let regexp = List.fold_left build_regexp "" tags_uri in
+      "?content <" ^ tagged_content_r ^ "> ?tag .
+       FILTER regex(str(?tag), \"" ^ regexp ^ "\")"
+  in
+  let query = "SELECT ?content ?title ?summary WHERE
+{ ?content <" ^ content_title_r ^ "> ?title .
+  ?content <" ^ content_summary_r ^ "> ?summary .
+  " ^ half_query ^ " }"
+  in
+  lwt solutions = get_from_4store query in
+  let triple_contents = List.map triple_content_from solutions in
+  Lwt.return (triple_contents)
+
+(* !! Warning: does not check if the content already exist !!  *)
+let insert_content content_uri title summary tags_uri =
+  let build_tag_data q tag_uri =
+    q ^ " . <" ^ content_uri ^ "> <" ^ tagged_content_r ^ "> <" ^ tag_uri ^ ">"
+  in
+  let tags_data = List.fold_left build_tag_data "" tags_uri in
+  let content_data =
+    "<" ^ content_uri ^ "> <" ^ content_title_r ^ "> \"" ^ title ^ "\" . " ^
+    "<" ^ content_uri ^ "> <" ^ content_summary_r ^ "> \"" ^ summary ^ "\"" ^
+      tags_data
+  in
+  let query = "INSERT DATA { " ^ content_data ^ " }" in
+  post_on_4store query
+
+let delete_contents contents_uri =
+  let build_query q content_uri =
+    q ^ "{ <" ^ content_uri ^ "> ?r ?v. {?u ?r ?v.} UNION {?x ?y ?z} } . "
+  in
+  let half_query = List.fold_left build_query "" contents_uri in
+  let query = "DELETE {?u ?r ?v.} WHERE { " ^ half_query ^ " }" in
+  post_on_4store query
+
+(* Warning : does not verify if at least one parameter is given to be updated *)
+let update_content c_uri ?title ?summary ?tags_uri () =
+  let d_query, i_query =
+    match title with
+    | Some t ->
+      "{<"^c_uri^"> <"^content_title_r^"> ?ti. {?s ?p ?o.} UNION {?x ?y ?z}}. ",
+      "<" ^ c_uri ^ "> <" ^ content_title_r ^ "> \"" ^ t ^ "\" . "
+    | None -> "", ""
+  in
+  let d_query', i_query' =
+    match summary with
+    | Some s ->
+      d_query^"{<"^c_uri^"> <"^content_summary_r^"> ?su. {?s ?p ?o.} UNION {?x ?y ?z}}. ",
+      i_query ^ "<" ^ c_uri ^ "> <" ^ content_summary_r ^ "> \"" ^ s ^ "\" . "
+    | None -> d_query, i_query
+  in
+  lwt d_query'', i_query'' =
+    match tags_uri with
+    | Some new_tags ->
+      lwt old_tuple_tags = get_tags_from_content c_uri in
+      let old_tags = List.map (fun (x, _) -> x) old_tuple_tags in
+      let are_equal tag e = String.compare tag e == 0 in
+      let build_list ref_list new_list tag =
+        if List.exists (are_equal tag) ref_list then new_list else tag::new_list
+      in
+      let deleting_list = List.fold_left (build_list new_tags) [] old_tags in
+      let adding_list = List.fold_left (build_list old_tags) [] new_tags in
+      let build_delete q uri =
+        q^"{<"^c_uri^"> <"^tagged_content_r^"> <"^uri^">. {?s ?p ?o.} UNION {?x ?y ?z}}. "
+      in
+      let build_insert q uri =
+        q ^ "<"^ c_uri ^"> <"^ tagged_content_r ^"> <"^ uri ^"> . "
+      in
+      let delete_query_tags = List.fold_left build_delete "" deleting_list in
+      let insert_query_tags = List.fold_left build_insert "" adding_list in
+      Lwt.return (d_query' ^ delete_query_tags, i_query' ^ insert_query_tags)
+    | None -> Lwt.return(d_query', i_query')
+  in
+  let delete_query = "DELETE {?s ?p ?o.} WHERE { " ^ d_query'' ^ " }" in
+  let insert_query = "INSERT DATA { " ^ i_query'' ^ " }" in
+  lwt () = post_on_4store delete_query in
+  post_on_4store insert_query
 
 (******************************************************************************
 ******************************** Links ****************************************
