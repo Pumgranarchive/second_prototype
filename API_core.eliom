@@ -259,7 +259,7 @@ let get_tags_from_content_link content_id =
       List.map API_tools.objectid_of_string cleaned_tags_id
     in
     let get_tags new_list (link_id, target_id, tags_uri) =
-      let tags_id = List.map Rdf_store.string_of_uri tags_uri in
+      let tags_id = List.map Rdf_store.tag_id_link_of_uri tags_uri in
       tags_id@new_list
     in
     let tags_id = objects_id_of_tags_id (List.fold_left get_tags [] links) in
