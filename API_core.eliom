@@ -39,7 +39,7 @@ let get_detail content_id =
 let get_detail_by_link str_link_id =
   let aux () =
     let link_id = Rdf_store.link_id_of_string str_link_id in
-    let target_id =
+    let target_id = Nosql_store.string_of_id
       Rdf_store.(content_id_of_uri (target_uri_from_link_id link_id))
     in
     let btarget_id = Bson.create_objectId target_id in
@@ -241,7 +241,9 @@ let get_tags_from_content_link content_id =
   let aux () =
 
     (* step 1: get links related to the content*)
-    let content_uri = Rdf_store.uri_of_content_id content_id in
+    let content_uri =
+      Rdf_store.uri_of_content_id (Nosql_store.id_of_string content_id)
+    in
     lwt links = Rdf_store.links_from_content content_uri in
     if List.length links == 0 then
       raise API_conf.(Pum_exc (return_no_content, "This content has no link."));
@@ -352,7 +354,9 @@ let delete_tags = delete_from API_tools.tags_coll
 let get_links_from_content_tags content_id opt_tags_id =
   let aux tags_id () =
     (* getting every link with 'content_id' as origin *)
-    let content_uri = Rdf_store.uri_of_content_id content_id in
+    let content_uri =
+      Rdf_store.uri_of_content_id (Nosql_store.id_of_string content_id)
+    in
     let tags_uri = List.map Rdf_store.uri_of_tag_id_content tags_id in
     lwt link_list = Rdf_store.links_from_content_tags content_uri tags_uri in
     if List.length link_list == 0 then
@@ -361,7 +365,9 @@ let get_links_from_content_tags content_id opt_tags_id =
 
     (* getting content to return *)
     let make_target_id_bson (link_id, target_uri, tags_uri) =
-      let target_id = Rdf_store.(content_id_of_uri target_uri) in
+      let target_id =
+        Nosql_store.string_of_id (Rdf_store.content_id_of_uri target_uri)
+      in
       Bson.add_element API_tools.id_field
         (Bson.create_objectId target_id) Bson.empty
     in
@@ -389,8 +395,14 @@ let get_links_from_content content_id =
 
 let insert_links id_from ids_to tags_id =
   let aux () =
-    let uri_from = Rdf_store.uri_of_content_id id_from in
-    let uris_to = List.map Rdf_store.uri_of_content_id ids_to in
+    let uri_from =
+      Rdf_store.uri_of_content_id (Nosql_store.id_of_string id_from)
+    in
+    let uris_to =
+      List.map
+        (fun x -> Rdf_store.uri_of_content_id (Nosql_store.id_of_string x))
+        ids_to
+    in
     let tags_uri =
       List.map (fun x -> List.map Rdf_store.uri_of_tag_id_link x) tags_id
     in

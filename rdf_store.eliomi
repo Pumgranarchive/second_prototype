@@ -25,20 +25,18 @@ val uri_of_string : string -> uri
 (** Create a string from a URI  *)
 val string_of_uri : uri -> string
 
-(** Create a URI from a content_id string. *)
-val uri_of_content_id : string -> uri
-
-(** Create a string from a link_id  *)
-val string_of_link_id : link_id -> string
-
 (** Create a link_id from a string
     @raise Invalid_link_id *)
 val link_id_of_string : string -> link_id
 
+(** Create a string from a link_id  *)
+val string_of_link_id : link_id -> string
+
 val target_uri_from_link_id : link_id -> uri
 val origin_uri_from_link_id : link_id -> uri
 
-val content_id_of_uri : uri -> string
+val uri_of_content_id : Nosql_store.id -> uri
+val content_id_of_uri : uri -> Nosql_store.id
 
 (* To remove in the futur *)
 
@@ -52,26 +50,29 @@ val tag_id_link_of_uri : uri -> string
 
 val tag_id_content_of_uri : uri -> string
 
+(* End area of removing *)
+
 (** {6 Contents}  *)
 
 (** [get_triple_contents tags_uri]
     if [tags_uri] is an empty list, return all contents' triple.
-    return a triple (content_uri, title, summary) *)
-val get_triple_contents : uri list -> (uri * string * string) list Lwt.t
+    return a triple (content_id, title, summary) *)
+val get_triple_contents : uri list ->
+  (Nosql_store.id * string * string) list Lwt.t
 
-(** [insert_content content_uri title summary tags_uri]
+(** [insert_content content_id title summary tags_uri]
     [tags_uri] can be an empty list *)
-val insert_content : string -> string -> string -> uri list -> unit Lwt.t
+val insert_content : Nosql_store.id -> string -> string -> uri list -> unit Lwt.t
 
-(** [delete_contents contents_uri *)
-val delete_contents : string list -> unit Lwt.t
+(** [delete_contents contents_id *)
+val delete_contents : Nosql_store.id list -> unit Lwt.t
 
-(** [update_content c_uri ?title ?summary ?tags_uri ()]
+(** [update_content content_id ?title ?summary ?tags_uri ()]
     @param at least one have to be gived. *)
-val update_content : string -> ?title: string -> ?summary: string ->
+val update_content : Nosql_store.id -> ?title: string -> ?summary: string ->
   ?tags_uri: uri list -> unit -> unit Lwt.t
 
-(** [update_content_tags c_uri tags_uri] *)
+(** [update_content_tags content_uri tags_uri] *)
 val update_content_tags : uri -> uri list -> unit Lwt.t
 
 

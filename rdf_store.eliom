@@ -71,19 +71,29 @@ let origin_uri_from_link_id (origin_uri, target_uri) = origin_uri
 
 (* Id's tools *)
 
-let uri_of_content_id id = uri_of_string (base_content_url ^ id)
+let uri_of_content_id id =
+  uri_of_string (base_content_url ^ (Nosql_store.string_of_id id))
+
 let uri_of_tag_id_link id = uri_of_string (base_tag_link_url ^ id)
 let uri_of_tag_id_content id = uri_of_string (base_tag_content_url ^ id)
 
-let uri_of_tag_link_subject id = uri_of_string (base_tag_link_url ^ id)
-let uri_of_tag_content_subject id = uri_of_string (base_tag_content_url ^ id)
+let uri_of_subject base subject =
+  let uri = uri_of_string (base ^ subject) in
+  let rdf_uri = Rdf_uri.neturl uri in
+  let neturl = Neturl.modify_url ~encoded:true rdf_uri in
+  Rdf_uri.of_neturl neturl
+
+let uri_of_tag_link_subject = uri_of_subject base_tag_link_url
+let uri_of_tag_content_subject = uri_of_subject base_tag_content_url
 
 let pumgrana_id_of_uri base uri =
   let str = string_of_uri uri in
   let regexp = Str.regexp base in
   Str.replace_first regexp "" str
 
-let content_id_of_uri = pumgrana_id_of_uri base_content_url
+let content_id_of_uri uri =
+  Nosql_store.id_of_string (pumgrana_id_of_uri base_content_url uri)
+
 let tag_id_link_of_uri = pumgrana_id_of_uri base_tag_link_url
 let tag_id_content_of_uri = pumgrana_id_of_uri base_tag_content_url
 
@@ -108,7 +118,7 @@ let tuple_tag_from solution =
   from_solution "subject" solution
 
 let triple_content_from solution =
-  uri_of_string (from_solution "content" solution),
+  content_id_of_uri (uri_of_string (from_solution "content" solution)),
   from_solution "title" solution,
   from_solution "summary" solution
 
@@ -145,6 +155,12 @@ let check_ok = function
 
 let next_query query sep =
   if String.length query == 0 then query else query ^ sep
+
+let build_list ref_list new_list element =
+  let are_equal element e = String.compare element e == 0 in
+  if List.exists (are_equal element) ref_list
+  then new_list
+  else (uri_of_string element)::new_list
 
 (*** Shortcut ***)
 
@@ -229,11 +245,7 @@ let insert_tags tag_type ?link_id ?content_uri subjects =
     | Some id   -> Some (str_tuple_of_link_id id)
     | None      -> None
   in
-  let tag_uri_of_subject subject =
-    let rdf_uri = Rdf_uri.(neturl (uri_of_subject subject)) in
-    let neturl = Neturl.modify_url ~encoded:true rdf_uri in
-    Rdf_uri.string (Rdf_uri.of_neturl neturl)
-  in
+  let str_uri_of_subject subject = Rdf_uri.string (uri_of_subject subject) in
   let insert_tag_on query tag_uri =
     let q = next_query query " . " in
     match link_str_uri, content_str_uri with
@@ -248,7 +260,7 @@ let insert_tags tag_type ?link_id ?content_uri subjects =
     let q' = q ^ "<" ^ uri ^ ">  <" ^ ressource_url ^ "> \"" ^ subject ^ "\"" in
     insert_tag_on q' uri
   in
-  let tags_str_uri = List.map tag_uri_of_subject subjects in
+  let tags_str_uri = List.map str_uri_of_subject subjects in
   let tags_uri = List.map uri_of_string tags_str_uri in
   let half_query = List.fold_left2 insert_tag "" tags_str_uri subjects in
   let query = "INSERT DATA { " ^ half_query ^ " }" in
@@ -264,6 +276,27 @@ let delete_tags tags_uri =
   in
   let half_query = List.fold_left build_query "" tags_uri in
   let query = "DELETE {?x ?y ?z.} WHERE { " ^ half_query ^ " }" in
+  post_on_4store query
+
+let insert_tags_on_content content_uri tags_uri =
+  let content_str_uri = string_of_uri content_uri in
+  let insert_tag_on q tag_uri =
+    let t_uri = string_of_uri tag_uri in
+    q ^ "<"^ content_str_uri ^"> <"^ tagged_content_r ^"> <"^ t_uri ^"> . "
+  in
+  let half_query = List.fold_left insert_tag_on "" tags_uri in
+  let query = "INSERT DATA { " ^ half_query ^ " }" in
+  lwt () = post_on_4store query in
+  Lwt.return (tags_uri)
+
+let delete_tags_on_content content_uri tags_uri =
+  let content_uri = string_of_uri content_uri in
+  let build_query q tag_uri =
+    let t_uri = string_of_uri tag_uri in
+    q^" <"^content_uri^"> <"^tagged_content_r^"> <"^t_uri^"> . "
+  in
+  let half_query = List.fold_left build_query "" tags_uri in
+  let query = "DELETE DATA { " ^ half_query ^ " }" in
   post_on_4store query
 
 (******************************************************************************
@@ -291,30 +324,34 @@ let get_triple_contents tags_uri =
   Lwt.return (triple_contents)
 
 (* !! Warning: does not check if the content already exist !!  *)
-let insert_content content_uri title summary tags_uri =
+let insert_content content_id title summary tags_uri =
+  let content_str_uri = string_of_uri (uri_of_content_id content_id) in
   let build_tag_data q tag_uri =
     let t_uri = string_of_uri tag_uri in
-    q ^ " . <" ^ content_uri ^ "> <" ^ tagged_content_r ^ "> <" ^ t_uri ^ ">"
+    q ^ " . <" ^ content_str_uri ^ "> <" ^ tagged_content_r ^ "> <" ^ t_uri ^ ">"
   in
   let tags_data = List.fold_left build_tag_data "" tags_uri in
   let content_data =
-    "<" ^ content_uri ^ "> <" ^ content_title_r ^ "> \"" ^ title ^ "\" . " ^
-    "<" ^ content_uri ^ "> <" ^ content_summary_r ^ "> \"" ^ summary ^ "\"" ^
+    "<" ^ content_str_uri ^ "> <" ^ content_title_r ^ "> \"" ^ title ^ "\" . " ^
+    "<" ^ content_str_uri ^ "> <" ^ content_summary_r ^ "> \"" ^ summary ^ "\"" ^
       tags_data
   in
   let query = "INSERT DATA { " ^ content_data ^ " }" in
   post_on_4store query
 
-let delete_contents contents_uri =
-  let build_query q content_uri =
+let delete_contents contents_id =
+  let build_query q content_id =
+    let content_uri = string_of_uri (uri_of_content_id content_id) in
     q ^ "{ <" ^ content_uri ^ "> ?r ?v. {?u ?r ?v.} UNION {?x ?y ?z} } . "
   in
-  let half_query = List.fold_left build_query "" contents_uri in
+  let half_query = List.fold_left build_query "" contents_id in
   let query = "DELETE {?u ?r ?v.} WHERE { " ^ half_query ^ " }" in
   post_on_4store query
 
 (* Warning : does not verify if at least one parameter is given to be updated *)
-let update_content c_str_uri ?title ?summary ?tags_uri () =
+let update_content content_id ?title ?summary ?tags_uri () =
+  let content_uri = uri_of_content_id content_id in
+  let c_str_uri = string_of_uri content_uri in
   let d_query, i_query =
     match title with
     | Some t ->
@@ -332,7 +369,6 @@ let update_content c_str_uri ?title ?summary ?tags_uri () =
   lwt d_query'', i_query'' =
     match tags_uri with
     | Some tags_uri ->
-      let content_uri = uri_of_string c_str_uri in
       lwt old_tuple_tags = get_tags_from_content content_uri in
       let old_tags = List.map (fun (x, _) -> string_of_uri x) old_tuple_tags in
       let are_equal tag e = String.compare tag e == 0 in
@@ -359,8 +395,21 @@ let update_content c_str_uri ?title ?summary ?tags_uri () =
   post_on_4store insert_query
 
 let update_content_tags content_uri tags_uri =
-  let content_str_uri = string_of_uri content_uri in
-  update_content content_str_uri ~tags_uri ()
+  lwt old_tuple_tags = get_tags_from_content content_uri in
+  let old_tags = List.map (fun (x, _) -> string_of_uri x) old_tuple_tags in
+  let new_tags = List.map string_of_uri tags_uri in
+  let deleting_list = List.fold_left (build_list new_tags) [] old_tags in
+  let adding_list = List.fold_left (build_list old_tags) [] new_tags in
+  lwt () = if List.length deleting_list != 0
+    then delete_tags_on_content content_uri deleting_list
+    else Lwt.return ()
+  in
+  lwt _ = if List.length adding_list != 0
+    then insert_tags_on_content content_uri adding_list
+    else Lwt.return ([])
+  in
+  Lwt.return ()
+
 
 (******************************************************************************
 ******************************** Links ****************************************
@@ -444,12 +493,6 @@ let update_link link_id new_tags_uri =
   let new_tags = List.map string_of_uri new_tags_uri in
   lwt old_tags_uri = get_tags_from_link link_id in
   let old_tags = List.map (fun (x, _) -> string_of_uri x) old_tags_uri in
-  let are_equal tag e = String.compare tag e == 0 in
-  let build_list ref_list build_list tag =
-    if List.exists (are_equal tag) ref_list
-    then build_list
-    else (uri_of_string tag)::build_list
-  in
   let deleting_list = List.fold_left (build_list new_tags) [] old_tags in
   let adding_list = List.fold_left (build_list old_tags) [] new_tags in
   let update list update_func =
@@ -457,9 +500,7 @@ let update_link link_id new_tags_uri =
   in
   lwt () = update deleting_list (fun l -> delete_links [link_id] [l]) in
   lwt () = update adding_list (fun l ->
-    lwt res = (insert_links origin_uri [target_uri] [l]) in
-    if List.length l != 0 && List.length res == 0
-    then raise API_conf.(Pum_exc(return_internal_error, "Updating failed"));
-    Lwt.return ())
+    lwt _ = insert_links origin_uri [target_uri] [l] in
+    Lwt.return())
   in
   Lwt.return ()
