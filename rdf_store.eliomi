@@ -61,14 +61,16 @@ val get_triple_contents : uri list ->
   (Nosql_store.id * string * string) list Lwt.t
 
 (** [insert_content content_id title summary tags_uri]
-    [tags_uri] can be an empty list *)
+    [tags_uri] can be an empty list
+    @raise Invalid_argument if the content is already registred. *)
 val insert_content : Nosql_store.id -> string -> string -> uri list -> unit Lwt.t
 
 (** [delete_contents contents_id *)
 val delete_contents : Nosql_store.id list -> unit Lwt.t
 
 (** [update_content content_id ?title ?summary ?tags_uri ()]
-    @param at least one have to be gived. *)
+    @param at least one have to be gave, otherwised @raise Invalid_argument,
+    @raise Invalid_argument if the content is not registred. *)
 val update_content : Nosql_store.id -> ?title: string -> ?summary: string ->
   ?tags_uri: uri list -> unit -> unit Lwt.t
 
@@ -84,10 +86,14 @@ val links_from_content : uri -> link list Lwt.t
 (** [get_links_from_content_tags content_id tags_uri]  *)
 val links_from_content_tags : uri -> uri list -> link list Lwt.t
 
-(** [insert_links origin_uri targets_uri tags_uri]  *)
+(** [insert_links origin_uri targets_uri tags_uri]
+    @raise Invalid_argument if target list is empty or
+    if at least one tags list is empty.
+    @raise Invalid_argument if one link or more are already registred. *)
 val insert_links : uri -> uri list -> uri list list -> link_id list Lwt.t
 
-(** [update_link link_id new_tags_uri]  *)
+(** [update_link link_id new_tags_uri]
+    @raise Invalid_argument if the link is not registred. *)
 val update_link : link_id -> uri list -> unit Lwt.t
 
 (** [delete_links links_id tags_uri]
@@ -114,6 +120,7 @@ val get_tags_from_content_link : uri -> (uri * string) list Lwt.t
 (** [insert_tags tag_type ?link_id ?content_uri subjects]
     @param [link_id] and [content_uri] have to correspond with the tag_type,
     @param [link_id] or [content_uri] can be setted to associate all new tags on,
+    @raise Invalid_argument if at least one subject already exist.
     return a list of created tags_uri *)
 val insert_tags : tag_type -> ?link_id:link_id -> ?content_uri:uri ->
   string list -> uri list Lwt.t

@@ -78,11 +78,14 @@ let uri_of_content_id id =
 let uri_of_tag_id_link id = uri_of_string (base_tag_link_url ^ id)
 let uri_of_tag_id_content id = uri_of_string (base_tag_content_url ^ id)
 
+let syntax =
+  let stx = Hashtbl.find Neturl.common_url_syntax "http" in
+  let stx = Neturl.partial_url_syntax stx in
+  { stx with Neturl.url_enable_fragment = Neturl.Url_part_allowed }
+
 let uri_of_subject base subject =
-  let uri = uri_of_string (base ^ subject) in
-  let rdf_uri = Rdf_uri.neturl uri in
-  let neturl = Neturl.modify_url ~encoded:true rdf_uri in
-  Rdf_uri.of_neturl neturl
+  let encode_subject = Netencoding.Url.encode subject in
+  Rdf_uri.uri (base ^ encode_subject)
 
 let uri_of_tag_link_subject = uri_of_subject base_tag_link_url
 let uri_of_tag_content_subject = uri_of_subject base_tag_content_url
@@ -143,10 +146,14 @@ let links_of_solutions origin_uri solutions =
 
 let get_solutions = function
   | Rdf_sparql.Solutions s -> s
-  | _                      -> raise (Internal_error "None a solution format returned")
+  | _                      -> raise (Internal_error "None a solution format")
+
+let get_boolean = function
+  | Rdf_sparql.Bool b -> b
+  | _                 -> raise (Internal_error "None a boolean format")
 
 let get_result = function
-  | Ok          -> raise (Internal_error "No solutions returned")
+  | Ok          -> raise (Internal_error "No result returned")
   | Result r    -> r
   | Error e     -> raise (Internal_error (string_of_error e))
 
@@ -166,12 +173,20 @@ let build_list ref_list new_list element =
 
 (*** Shortcut ***)
 
-let get_from_4store query =
+let half_get_from_4store query =
   let base = Rdf_iri.iri domain in
   let msg = {in_query = query; in_dataset = empty_dataset} in
-  lwt results = Rdf_4s_lwt.get ~base get_url msg in
+  Rdf_4s_lwt.get ~base get_url msg
+
+let get_from_4store query =
+  lwt results = half_get_from_4store query in
   let solutions = get_solutions (get_result results) in
   Lwt.return (solutions)
+
+let ask_to_4store query =
+  lwt results = half_get_from_4store query in
+  let boolean = get_boolean (get_result results) in
+  Lwt.return (boolean)
 
 let post_on_4store query =
   let fake_base = Rdf_iri.iri ~check:false domain in
@@ -233,6 +248,7 @@ let get_tags_from_content_link content_uri =
   Lwt.return (tags_tuple)
 
 let insert_tags tag_type ?link_id ?content_uri subjects =
+
   let ressource_url, uri_of_subject =
     match tag_type, link_id, content_uri with
     | TagContent, None, _ -> tag_content_r, uri_of_tag_content_subject
@@ -247,7 +263,14 @@ let insert_tags tag_type ?link_id ?content_uri subjects =
     | Some id   -> Some (str_tuple_of_link_id id)
     | None      -> None
   in
-  let str_uri_of_subject subject = Rdf_uri.string (uri_of_subject subject) in
+
+  (* Check if subject does not already exist *)
+  let build_ask q subject = q ^ "?tag ?ressource \"" ^ subject ^ "\" . " in
+  let half_ask = List.fold_left build_ask "" subjects in
+  let ask_query = "ASK { " ^ half_ask ^ " }" in
+  lwt exist = ask_to_4store ask_query in
+  if exist then raise (Invalid_argument "One subject or more already exist.");
+
   let insert_tag_on query tag_uri =
     let q = next_query query " . " in
     match link_str_uri, content_str_uri with
@@ -262,12 +285,17 @@ let insert_tags tag_type ?link_id ?content_uri subjects =
     let q' = q ^ "<" ^ uri ^ ">  <" ^ ressource_url ^ "> \"" ^ subject ^ "\"" in
     insert_tag_on q' uri
   in
-  let tags_str_uri = List.map str_uri_of_subject subjects in
-  let tags_uri = List.map uri_of_string tags_str_uri in
+  let tags_uri = List.map uri_of_subject subjects in
+  let tags_str_uri = List.map string_of_uri tags_uri in
   let half_query = List.fold_left2 insert_tag "" tags_str_uri subjects in
   let query = "INSERT DATA { " ^ half_query ^ " }" in
   lwt () = post_on_4store query in
   Lwt.return (tags_uri)
+
+(* let _ = *)
+(*   Lwt.async (fun () -> *)
+(*     lwt _ = insert_tags TagLink ["subject_01"; "subject_02"] in *)
+(*     Lwt.return ()) *)
 
 let delete_tags tags_uri =
   let build_query q tag_uri =
@@ -325,17 +353,22 @@ let get_triple_contents tags_uri =
   let triple_contents = List.map triple_content_from solutions in
   Lwt.return (triple_contents)
 
-(* !! Warning: does not check if the content already exist !!  *)
 let insert_content content_id title summary tags_uri =
   let content_str_uri = string_of_uri (uri_of_content_id content_id) in
+
+  (* Check if the content does not already exist *)
+  let ask_query = "ASK { <" ^ content_str_uri ^ "> ?p ?o }" in
+  lwt exist = ask_to_4store ask_query in
+  if exist then raise (Invalid_argument "The content is already registered.");
+
   let build_tag_data q tag_uri =
     let t_uri = string_of_uri tag_uri in
-    q ^ " . <" ^ content_str_uri ^ "> <" ^ tagged_content_r ^ "> <" ^ t_uri ^ ">"
+    q ^ "<" ^ content_str_uri ^ "> <" ^ tagged_content_r ^ "> <" ^ t_uri ^ "> . "
   in
   let tags_data = List.fold_left build_tag_data "" tags_uri in
   let content_data =
     "<" ^ content_str_uri ^ "> <" ^ content_title_r ^ "> \"" ^ title ^ "\" . " ^
-    "<" ^ content_str_uri ^ "> <" ^ content_summary_r ^ "> \"" ^ summary ^ "\"" ^
+    "<" ^ content_str_uri ^ "> <" ^ content_summary_r ^ "> \"" ^ summary ^ "\" . " ^
       tags_data
   in
   let query = "INSERT DATA { " ^ content_data ^ " }" in
@@ -354,6 +387,20 @@ let delete_contents contents_id =
 let update_content content_id ?title ?summary ?tags_uri () =
   let content_uri = uri_of_content_id content_id in
   let c_str_uri = string_of_uri content_uri in
+
+  (* Check if at least one parameter is given *)
+  let () = match title, summary, tags_uri with
+    | None, None, None ->
+      raise (Invalid_argument "At least one argument have to be setted")
+    | _, _, _ -> ()
+  in
+
+  (* Check if the content does already exist *)
+  let ask_query = "ASK { <" ^ c_str_uri ^ "> ?p ?o }" in
+  lwt exist = ask_to_4store ask_query in
+  if not exist then raise (Invalid_argument "The content is not registered.");
+
+  (* Build the update query *)
   let d_query, i_query =
     match title with
     | Some t ->
@@ -444,9 +491,17 @@ let build_query origin_str_uri target_str_uri q tag_uri =
   let tag_str_uri = string_of_uri tag_uri in
   q ^"<"^ origin_str_uri ^">  <"^ tag_str_uri ^"> <"^ target_str_uri ^"> . "
 
-(*** Not protected if link already exist ! *)
 let insert_links origin_uri targets_uri tags_uri =
   let origin_str_uri = string_of_uri origin_uri in
+  let targets_str_uri = List.map string_of_uri targets_uri in
+
+  (* Check if links does not already exist *)
+  let build_ask q t_uri = q^"<"^origin_str_uri^"> ?tag <"^t_uri^"> . " in
+  let half_ask = List.fold_left build_ask "" targets_str_uri in
+  let ask_query = "ASK { " ^ half_ask ^ " }" in
+  lwt exist = ask_to_4store ask_query in
+  if exist then raise (Invalid_argument "One link or more are already registered.");
+
   let query_of_target query target_str_uri tags_uri =
     if List.length tags_uri == 0
     then raise (Invalid_argument "Empty tags list is not allowed");
@@ -454,7 +509,6 @@ let insert_links origin_uri targets_uri tags_uri =
   in
   if List.length targets_uri == 0
   then raise (Invalid_argument "Empty target list is not allowed");
-  let targets_str_uri = List.map string_of_uri targets_uri in
   let half_query = List.fold_left2 query_of_target "" targets_str_uri tags_uri
   in
   let query = "INSERT DATA { " ^ half_query ^ " }" in
@@ -492,6 +546,13 @@ let delete_links links_id tags_uri =
 (*** Not protected if link_id does not exist ! *)
 let update_link link_id new_tags_uri =
   let origin_uri, target_uri = link_id in
+  let origin_str_uri, target_str_uri = str_tuple_of_link_id link_id in
+
+  (* Check if the link does already exist *)
+  let ask_query = "ASK { <"^origin_str_uri^"> ?tag <"^target_str_uri^"> }" in
+  lwt exist = ask_to_4store ask_query in
+  if not exist then raise (Invalid_argument "The link is not registered.");
+
   let new_tags = List.map string_of_uri new_tags_uri in
   lwt old_tags_uri = get_tags_from_link link_id in
   let old_tags = List.map (fun (x, _) -> string_of_uri x) old_tags_uri in
