@@ -5,6 +5,7 @@ module SMap = Map.Make(String)
 
 exception Invalid_uri = Rdf_uri.Invalid_uri
 exception Invalid_link_id of string
+exception Internal_error of string
 
 type uri = Rdf_uri.uri
 
@@ -57,7 +58,7 @@ let link_id_of_string link_id =
   let regexp = Str.regexp "@" in
   try
     let strings = Str.split regexp link_id in
-    if List.length strings > 2 then failwith "Too many @";
+    if List.length strings > 2 then raise (Invalid_argument "Too many @");
     let origin_str_uri = List.hd strings in
     let target_str_uri = List.hd (List.tl strings) in
     let origin_uri = uri_of_string origin_str_uri in
@@ -107,7 +108,7 @@ let string_of_term = function
 
 let from_solution name solution =
   try string_of_term (Rdf_sparql.get_term solution name)
-  with Not_found -> failwith (name ^ ": Not found into the solution")
+  with Not_found -> raise (Internal_error (name ^ ": Not found into the solution"))
 
 let tuple_link_from solution =
   from_solution "target" solution,
@@ -133,25 +134,26 @@ let links_of_solutions origin_uri solutions =
     SMap.add target_uri (tags_uri::tags) map
   in
   let solution_map = List.fold_left build_tag_list SMap.empty solutions in
-  let build_links target_uri tags_uri links =
-    let link_id = link_id origin_uri (uri_of_string target_uri) in
-    (link_id, uri_of_string target_uri, tags_uri)::links
+  let build_links target_str_uri tags_uri links =
+    let target_uri = uri_of_string target_str_uri in
+    let link_id = link_id origin_uri target_uri in
+    (link_id, target_uri, tags_uri)::links
   in
   SMap.fold build_links solution_map []
 
 let get_solutions = function
   | Rdf_sparql.Solutions s -> s
-  | _                      -> failwith "None a solutions format result"
+  | _                      -> raise (Internal_error "None a solution format returned")
 
 let get_result = function
-  | Ok          -> failwith "No solutions returned"
+  | Ok          -> raise (Internal_error "No solutions returned")
   | Result r    -> r
-  | Error e     -> failwith (string_of_error e)
+  | Error e     -> raise (Internal_error (string_of_error e))
 
 let check_ok = function
   | Ok          -> ()
-  | Error e     -> failwith (string_of_error e)
-  | Result _    -> failwith "Unexpected result return"
+  | Error e     -> raise (Internal_error (string_of_error e))
+  | Result _    -> raise (Internal_error "Unexpected result return")
 
 let next_query query sep =
   if String.length query == 0 then query else query ^ sep
@@ -203,8 +205,8 @@ let get_tags tag_type tags_uri =
 let get_tags_from_link link_id =
   let o_str_uri, t_str_uri = str_tuple_of_link_id link_id in
   let query = "SELECT ?tag ?subject WHERE
-{ <"^ o_str_uri ^"> ?tag <"^ t_str_uri ^"> .
-?tag <" ^ tag_link_r ^ "> ?subject }"
+  { <"^ o_str_uri ^"> ?tag <"^ t_str_uri ^"> .
+    ?tag <" ^ tag_link_r ^ "> ?subject }"
   in
   lwt solutions = get_from_4store query in
   let tuple_tags = List.map tuple_tag_from solutions in
@@ -213,8 +215,8 @@ let get_tags_from_link link_id =
 let get_tags_from_content content_uri =
   let content_str_uri = string_of_uri content_uri in
   let query = "SELECT ?tag ?subject WHERE
-{ <"^ content_str_uri ^"> <"^ tagged_content_r ^"> ?tag .
-  ?tag <" ^ tag_content_r ^ "> ?subject }"
+  { <"^ content_str_uri ^"> <"^ tagged_content_r ^"> ?tag .
+    ?tag <" ^ tag_content_r ^ "> ?subject }"
   in
   lwt solutions = get_from_4store query in
   let tuple_tags = List.map tuple_tag_from solutions in
@@ -223,8 +225,8 @@ let get_tags_from_content content_uri =
 let get_tags_from_content_link content_uri =
   let o_uri = string_of_uri content_uri in
   let query = "SELECT ?tag ?subject WHERE
-{ <" ^ o_uri ^ "> ?tag ?target.
-  ?tag <" ^ tag_link_r ^ "> ?subject }"
+  { <" ^ o_uri ^ "> ?tag ?target.
+    ?tag <" ^ tag_link_r ^ "> ?subject }"
   in
   lwt solutions = get_from_4store query in
   let tags_tuple = List.map tuple_tag_from solutions in
@@ -235,7 +237,7 @@ let insert_tags tag_type ?link_id ?content_uri subjects =
     match tag_type, link_id, content_uri with
     | TagContent, None, _ -> tag_content_r, uri_of_tag_content_subject
     | TagLink, _, None    -> tag_link_r, uri_of_tag_link_subject
-    | _, _, _             -> failwith "Bad association"
+    | _, _, _             -> raise (Invalid_argument "Bad association")
   in
   let content_str_uri = match content_uri with
     | Some uri  -> Some (string_of_uri uri)
@@ -271,8 +273,8 @@ let delete_tags tags_uri =
   let build_query q tag_uri =
     let uri = string_of_uri tag_uri in
     q ^ "{ <" ^ uri ^ "> ?res1 ?sub. {?tag ?res1 ?sub.} UNION {?x ?y ?z} }.
-{ ?origin <" ^ uri ^ "> ?target. {?origin ?tag ?target.} UNION {?x ?y ?z} }.
-{ ?content ?res2 <" ^ uri ^ ">. {?content ?res2 ?tag.} UNION {?x ?y ?z} }. "
+    { ?origin <" ^ uri ^ "> ?target. {?origin ?tag ?target.} UNION {?x ?y ?z} }.
+    { ?content ?res2 <" ^ uri ^ ">. {?content ?res2 ?tag.} UNION {?x ?y ?z} }. "
   in
   let half_query = List.fold_left build_query "" tags_uri in
   let query = "DELETE {?x ?y ?z.} WHERE { " ^ half_query ^ " }" in
@@ -315,8 +317,8 @@ let get_triple_contents tags_uri =
        FILTER regex(str(?tag), \"" ^ regexp ^ "\")"
   in
   let query = "SELECT ?content ?title ?summary WHERE
-{ ?content <" ^ content_title_r ^ "> ?title .
-  ?content <" ^ content_summary_r ^ "> ?summary .
+  { ?content <" ^ content_title_r ^ "> ?title .
+    ?content <" ^ content_summary_r ^ "> ?summary .
   " ^ half_query ^ " }"
   in
   lwt solutions = get_from_4store query in
@@ -446,12 +448,12 @@ let build_query origin_str_uri target_str_uri q tag_uri =
 let insert_links origin_uri targets_uri tags_uri =
   let origin_str_uri = string_of_uri origin_uri in
   let query_of_target query target_str_uri tags_uri =
-    if List.length tags_uri == 0 then
-      raise API_conf.(Pum_exc(return_not_found, "Empty tags list is not allowed"));
+    if List.length tags_uri == 0
+    then raise (Invalid_argument "Empty tags list is not allowed");
     List.fold_left (build_query origin_str_uri target_str_uri) query tags_uri
   in
-  if List.length targets_uri == 0 then
-      raise API_conf.(Pum_exc(return_not_found, "Empty target list is not allowed"));
+  if List.length targets_uri == 0
+  then raise (Invalid_argument "Empty target list is not allowed");
   let targets_str_uri = List.map string_of_uri targets_uri in
   let half_query = List.fold_left2 query_of_target "" targets_str_uri tags_uri
   in
@@ -462,8 +464,8 @@ let insert_links origin_uri targets_uri tags_uri =
 let build_delete_query_tag links_id tags_uri =
   let manager query link_id tags_uri =
     let o_str_uri, t_str_uri = str_tuple_of_link_id link_id in
-    if List.length tags_uri == 0 then
-      raise API_conf.(Pum_exc(return_not_found, "Empty tag list is not allowed"));
+    if List.length tags_uri == 0
+    then raise (Invalid_argument "Empty tag list is not allowed");
     List.fold_left (build_query o_str_uri t_str_uri) query tags_uri
   in
   let half_query = List.fold_left2 manager "" links_id tags_uri in

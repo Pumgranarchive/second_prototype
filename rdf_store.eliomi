@@ -99,7 +99,7 @@ val delete_links : link_id list -> uri list list -> unit Lwt.t
     Tag's getter return a tuple list of (tag_uri, subject) *)
 
 (** [get_tags tag_type tags_uri]
-    if [tags_uri] list is null, all tag of tag_type are returned *)
+    if [tags_uri] list is null, all tags of the given tag_type are returned *)
 val get_tags : tag_type -> uri list -> (uri * string) list Lwt.t
 
 (** [get_tags_from_link link_id] *)
