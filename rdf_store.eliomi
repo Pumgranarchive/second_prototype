@@ -86,19 +86,16 @@ val links_from_content : uri -> link list Lwt.t
 (** [get_links_from_content_tags content_id tags_uri]  *)
 val links_from_content_tags : uri -> uri list -> link list Lwt.t
 
-(** [insert_links origin_uri targets_uri tags_uri]
-    @raise Invalid_argument if target list is empty or
-    if at least one tags list is empty.
-    @raise Invalid_argument if one link or more are already registred. *)
-val insert_links : uri -> uri list -> uri list list -> link_id list Lwt.t
+(** [insert_links (origin_uri, targets_uri, tag_uri list) list]
+    @raise Invalid_argument if at least one tags list is empty. *)
+val insert_links : (uri * uri * uri list) list -> link_id list Lwt.t
 
-(** [update_link link_id new_tags_uri]
-    @raise Invalid_argument if the link is not registred. *)
-val update_link : link_id -> uri list -> unit Lwt.t
+(** [update_link (link_id, new_tag_uri list) list]
+    @raise Invalid_argument if at least one tags list is empty. *)
+val update_link : (link_id * uri list) list -> unit Lwt.t
 
-(** [delete_links links_id tags_uri]
-    [tags_id] could be empty *)
-val delete_links : link_id list -> uri list list -> unit Lwt.t
+(** [delete_links links_id] *)
+val delete_links : link_id list -> unit Lwt.t
 
 
 (** {6 Tags}

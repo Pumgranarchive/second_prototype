@@ -14,6 +14,8 @@ type link = link_id * uri * uri list
 
 type tag_type = TagLink | TagContent
 
+type update_mode = Adding | Replacing
+
 (******************************************************************************
 ****************************** Configuration **********************************
 *******************************************************************************)
@@ -113,6 +115,11 @@ let from_solution name solution =
   try string_of_term (Rdf_sparql.get_term solution name)
   with Not_found -> raise (Internal_error (name ^ ": Not found into the solution"))
 
+let triple_link_from solution =
+  from_solution "origin" solution,
+  from_solution "target" solution,
+  from_solution "tag" solution
+
 let tuple_link_from solution =
   from_solution "target" solution,
   from_solution "tag" solution
@@ -171,12 +178,18 @@ let build_list ref_list new_list element =
   then new_list
   else (uri_of_string element)::new_list
 
+(*** Lwt tools  *)
+
+let lwt_ignore l =
+  lwt _ = l in
+  Lwt.return ()
+
 (*** Shortcut ***)
 
 let half_get_from_4store query =
   let base = Rdf_iri.iri domain in
   let msg = {in_query = query; in_dataset = empty_dataset} in
-  Rdf_4s_lwt.get ~base get_url msg
+  Rdf_4s_lwt.get ~base ~accept:"application/xml" get_url msg
 
 let get_from_4store query =
   lwt results = half_get_from_4store query in
@@ -292,10 +305,10 @@ let insert_tags tag_type ?link_id ?content_uri subjects =
   lwt () = post_on_4store query in
   Lwt.return (tags_uri)
 
-(* let _ = *)
-(*   Lwt.async (fun () -> *)
-(*     lwt _ = insert_tags TagLink ["subject_01"; "subject_02"] in *)
-(*     Lwt.return ()) *)
+let _ =
+  Lwt.async (fun () ->
+    lwt _ = insert_tags TagLink ["subject_01"; "subject_02"] in
+    Lwt.return ())
 
 let delete_tags tags_uri =
   let build_query q tag_uri =
@@ -491,30 +504,6 @@ let build_query origin_str_uri target_str_uri q tag_uri =
   let tag_str_uri = string_of_uri tag_uri in
   q ^"<"^ origin_str_uri ^">  <"^ tag_str_uri ^"> <"^ target_str_uri ^"> . "
 
-let insert_links origin_uri targets_uri tags_uri =
-  let origin_str_uri = string_of_uri origin_uri in
-  let targets_str_uri = List.map string_of_uri targets_uri in
-
-  (* Check if links does not already exist *)
-  let build_ask q t_uri = q^"<"^origin_str_uri^"> ?tag <"^t_uri^"> . " in
-  let half_ask = List.fold_left build_ask "" targets_str_uri in
-  let ask_query = "ASK { " ^ half_ask ^ " }" in
-  lwt exist = ask_to_4store ask_query in
-  if exist then raise (Invalid_argument "One link or more are already registered.");
-
-  let query_of_target query target_str_uri tags_uri =
-    if List.length tags_uri == 0
-    then raise (Invalid_argument "Empty tags list is not allowed");
-    List.fold_left (build_query origin_str_uri target_str_uri) query tags_uri
-  in
-  if List.length targets_uri == 0
-  then raise (Invalid_argument "Empty target list is not allowed");
-  let half_query = List.fold_left2 query_of_target "" targets_str_uri tags_uri
-  in
-  let query = "INSERT DATA { " ^ half_query ^ " }" in
-  lwt () = post_on_4store query in
-  Lwt.return (List.map (link_id origin_uri) targets_uri)
-
 let build_delete_query_tag links_id tags_uri =
   let manager query link_id tags_uri =
     let o_str_uri, t_str_uri = str_tuple_of_link_id link_id in
@@ -534,8 +523,7 @@ let build_delete_query links_id =
   let half_query = List.fold_left build_query "" links_id in
   "DELETE {?origin ?tag ?target.} WHERE { " ^ half_query ^ " }"
 
-(*** Not protected if link does not exist ! *)
-let delete_links links_id tags_uri =
+let internal_delete_links links_id tags_uri =
   let query = if List.length tags_uri == 0
     then build_delete_query links_id
     else build_delete_query_tag links_id tags_uri
@@ -543,27 +531,78 @@ let delete_links links_id tags_uri =
   lwt () = post_on_4store query in
   Lwt.return ()
 
-(*** Not protected if link_id does not exist ! *)
-let update_link link_id new_tags_uri =
-  let origin_uri, target_uri = link_id in
-  let origin_str_uri, target_str_uri = str_tuple_of_link_id link_id in
+let delete_links links_id =
+  internal_delete_links links_id []
 
-  (* Check if the link does already exist *)
-  let ask_query = "ASK { <"^origin_str_uri^"> ?tag <"^target_str_uri^"> }" in
-  lwt exist = ask_to_4store ask_query in
-  if not exist then raise (Invalid_argument "The link is not registered.");
 
-  let new_tags = List.map string_of_uri new_tags_uri in
-  lwt old_tags_uri = get_tags_from_link link_id in
-  let old_tags = List.map (fun (x, _) -> string_of_uri x) old_tags_uri in
-  let deleting_list = List.fold_left (build_list new_tags) [] old_tags in
-  let adding_list = List.fold_left (build_list old_tags) [] new_tags in
-  let update list update_func =
-    if List.length list != 0 then update_func list else Lwt.return ()
+let internal_update_link mode triple_list =
+
+  (* Format part *)
+  let to_str_triple new_list (origin_uri, target_uri, tags_uri) =
+    if List.length tags_uri == 0
+    then raise (Invalid_argument "Empty tags list is not allowed");
+    let list = List.map (fun t ->
+      string_of_uri origin_uri, string_of_uri target_uri, string_of_uri t)
+      tags_uri
+    in
+   list@new_list
   in
-  lwt () = update deleting_list (fun l -> delete_links [link_id] [l]) in
-  lwt () = update adding_list (fun l ->
-    lwt _ = insert_links origin_uri [target_uri] [l] in
-    Lwt.return())
+  let str_triple_list = List.fold_left to_str_triple [] triple_list in
+
+  (* Getting part *)
+  let build_select s (origin_str_uri, target_str_uri, _) =
+    s ^"{ ?origin ?tag ?target .
+          FILTER regex(str(origin), \"" ^ origin_str_uri ^ "\") .
+          FILTER regex(str(target), \"" ^ target_str_uri ^ "\") } . "
   in
-  Lwt.return ()
+  let half_select = List.fold_left build_select "" str_triple_list in
+  let select = "SELECT {?origin ?target ?tag} WHERE { " ^ half_select ^ " }" in
+  lwt solutions = get_from_4store select in
+  let existing_l = List.map triple_link_from solutions in
+
+  (* Adding / Deleting tools *)
+  let build_list ref_list new_list (origin, target, tag) =
+    let are_equal (ori, tar, ta) =
+      (String.compare origin ori) == 0 &&
+      (String.compare target tar) == 0 &&
+      (String.compare tag ta) == 0
+    in
+    if List.exists are_equal ref_list then new_list else
+      (origin, target, tag)::new_list
+  in
+  let build_query q (ori_uri, tar_uri, tag_uri) =
+    q ^"<"^ ori_uri ^">  <"^ tag_uri ^"> <"^ tar_uri ^"> . "
+  in
+
+  (* Adding part *)
+  let a_list = List.fold_left (build_list existing_l) [] str_triple_list in
+  let half_insert_query = List.fold_left build_query "" a_list in
+  let insert_query = "INSERT DATA { " ^ half_insert_query ^ " }" in
+
+  (* Delete part *)
+  lwt () = if mode != Replacing then Lwt.return () else
+      let d_list = List.fold_left (build_list str_triple_list) [] existing_l in
+      let half_delete_query = List.fold_left build_query "" d_list in
+      let delete_query = "DELETE DATA { " ^ half_delete_query ^ " }" in
+      post_on_4store delete_query
+  in
+
+  lwt () = post_on_4store insert_query in
+
+  (* Return format tools *)
+  let build_link_id (origin_uri, target_uri, tags_uri) =
+    link_id origin_uri target_uri
+  in
+  let link_ids = List.map build_link_id triple_list in
+  Lwt.return (link_ids)
+
+let insert_links triple_list =
+  internal_update_link Adding triple_list
+
+let update_link tuple_list =
+  let triple_from_tuple (link_id, tags_uri) =
+    let origin_uri, target_uri = link_id in
+    (origin_uri, target_uri, tags_uri)
+  in
+  let triple_list = List.map triple_from_tuple tuple_list in
+  lwt_ignore (internal_update_link Replacing triple_list)

@@ -28,18 +28,6 @@ let _ =
     ~service:get_detail
     (fun content_id () -> return_of_json (API_core.get_detail content_id))
 
-(* Get_detail_by_link  *)
-let get_detail_by_link =
-  Eliom_service.Http.service
-    ~path:["api"; "content"; "detail_by_link"]
-    ~get_params:Eliom_parameter.(suffix (string "link_id"))
-    ()
-
-let _ =
-  Eliom_registration.String.register
-    ~service:get_detail_by_link
-    (fun link_id () -> return_of_json (API_core.get_detail_by_link link_id))
-
 (* get_contents *)
 let get_contents =
   Eliom_service.Http.service
@@ -415,32 +403,16 @@ let insert_links_json =
     ~post_params:Eliom_parameter.raw_post_data
     ()
 
-let insert_links =
-  Eliom_service.Http.post_service
-    ~fallback:fallback_insert_links
-    ~post_params:Eliom_parameter.(string "id_from" **
-                                  list "ids" (string "to") **
-                                  list "list" (list "tags" (string "id")))
-    ()
-
 let _ =
   Eliom_registration.String.register
     ~service:insert_links_json
     (fun () (input_type, ostream) ->
       let aux () =
         lwt yojson = API_tools.json_of_ocsigen_string_stream input_type ostream in
-        let id_from, ids_to, list_tags_id =
-          API_deserialize.get_insert_links_data yojson
-        in
-        return_of_json (API_core.insert_links id_from ids_to list_tags_id)
+        let data = API_deserialize.get_insert_links_data yojson in
+        return_of_json (API_core.insert_links data)
       in
       API_tools.manage_bad_request aux)
-
-let _ =
-  Eliom_registration.String.register
-    ~service:insert_links
-    (fun () (id_from, (ids_to, list_tags_id)) ->
-      return_of_json (API_core.insert_links id_from ids_to list_tags_id))
 
 (* Update links *)
 let fallback_update_link =
@@ -461,30 +433,16 @@ let update_link_json =
     ~post_params:Eliom_parameter.raw_post_data
     ()
 
-let update_link =
-  Eliom_service.Http.post_service
-    ~fallback:fallback_update_link
-    ~post_params:Eliom_parameter.(string "link_id" **
-                                  list "tags" (string "id"))
-    ()
-
 let _ =
   Eliom_registration.String.register
     ~service:update_link_json
     (fun () (input_type, ostream) ->
       let aux () =
         lwt yojson = API_tools.json_of_ocsigen_string_stream input_type ostream in
-        let link_id, tags_id =
-          API_deserialize.get_update_link_data yojson in
-        return_of_json (API_core.update_link link_id tags_id)
+        let data = API_deserialize.get_update_links_data yojson in
+        return_of_json (API_core.update_link data)
       in
       API_tools.manage_bad_request aux)
-
-let _ =
-  Eliom_registration.String.register
-    ~service:update_link
-    (fun () (link_id, tags_id) ->
-      return_of_json (API_core.update_link link_id tags_id))
 
 (* Delete links *)
 let fallback_delete_links =

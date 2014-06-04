@@ -70,12 +70,12 @@ val get_links_from_content: string -> Yojson.Basic.json Lwt.t
 val get_links_from_content_tags: string -> string list option ->
   Yojson.Basic.json Lwt.t
 
-(** [insert_links id_from ids_to tags_id]  *)
-val insert_links: string -> string list -> string list list ->
+(** [insert_links (origin_uri, target_uri, tags_uri) list]  *)
+val insert_links: (string * string * string list) list ->
   Yojson.Basic.json Lwt.t
 
-(** [update_link link_id tags_id]  *)
-val update_link: string -> string list -> Yojson.Basic.json Lwt.t
+(** [update_link (link_id tag_uri list) list]  *)
+val update_link: (string * string list) list -> Yojson.Basic.json Lwt.t
 
 (** [delete_links links_id]  *)
 val delete_links: string list -> Yojson.Basic.json Lwt.t

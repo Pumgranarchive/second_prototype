@@ -393,20 +393,15 @@ let get_links_from_content_tags content_id opt_tags_id =
 let get_links_from_content content_id =
   get_links_from_content_tags content_id None
 
-let insert_links id_from ids_to tags_id =
+let insert_links data =
   let aux () =
-    let uri_from =
-      Rdf_store.uri_of_content_id (Nosql_store.id_of_string id_from)
+    let triple_uri (origin_str_uri, target_str_uri, tags_str_uri) =
+      Rdf_store.uri_of_content_id (Nosql_store.id_of_string origin_str_uri),
+      Rdf_store.uri_of_content_id (Nosql_store.id_of_string target_str_uri),
+      List.map Rdf_store.uri_of_tag_id_link tags_str_uri
     in
-    let uris_to =
-      List.map
-        (fun x -> Rdf_store.uri_of_content_id (Nosql_store.id_of_string x))
-        ids_to
-    in
-    let tags_uri =
-      List.map (fun x -> List.map Rdf_store.uri_of_tag_id_link x) tags_id
-    in
-    lwt links_id = Rdf_store.insert_links uri_from uris_to tags_uri in
+    let triple_list = List.map triple_uri data in
+    lwt links_id = Rdf_store.insert_links triple_list in
     let json_of_link_id link_id =
       `String (Rdf_store.string_of_link_id link_id)
     in
@@ -418,11 +413,14 @@ let insert_links id_from ids_to tags_id =
     ~param_name:API_tools.linksid_ret_name
     aux
 
-let update_link str_link_id tags_id =
+let update_link data =
   let aux () =
-    let link_id = Rdf_store.link_id_of_string str_link_id in
-    let tags_uri = List.map Rdf_store.uri_of_tag_id_link tags_id in
-    lwt () = Rdf_store.update_link link_id tags_uri in
+    let tuple_uri (str_link_id, tags_str_uri) =
+      Rdf_store.link_id_of_string str_link_id,
+      List.map Rdf_store.uri_of_tag_id_link tags_str_uri
+    in
+    let tuple_list = List.map tuple_uri data in
+    lwt () = Rdf_store.update_link tuple_list in
     Lwt.return (`Null)
   in
   API_tools.check_return aux
@@ -430,7 +428,7 @@ let update_link str_link_id tags_id =
 let delete_links str_links_id =
   let aux () =
     let links_id = List.map Rdf_store.link_id_of_string str_links_id in
-    lwt () = Rdf_store.delete_links links_id [] in
+    lwt () = Rdf_store.delete_links links_id in
     Lwt.return (`Null)
   in
   API_tools.check_return aux
