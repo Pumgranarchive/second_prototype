@@ -397,6 +397,15 @@ let _ =
     (fun () () ->
       return_of_error (API_tools.bad_request "All parameters are mandatory"))
 
+let insert_links =
+  Eliom_service.Http.post_service
+    ~fallback:fallback_insert_links
+    ~post_params:Eliom_parameter.(list "data"
+                                    (string "origin_uri" **
+                                       string "target_uri" **
+                                       list "tags" (string "uri")))
+    ()
+
 let insert_links_json =
   Eliom_service.Http.post_service
     ~fallback:fallback_insert_links
@@ -414,6 +423,19 @@ let _ =
       in
       API_tools.manage_bad_request aux)
 
+let _ =
+  Eliom_registration.String.register
+    ~service:insert_links
+    (fun () data ->
+      let aux () =
+        let to_triple (origin_uri, (target_uri, tags_uri)) =
+          (origin_uri, target_uri, tags_uri)
+        in
+        let formated_data = List.map to_triple data in
+        return_of_json (API_core.insert_links formated_data)
+      in
+      API_tools.manage_bad_request aux)
+
 (* Update links *)
 let fallback_update_link =
   Eliom_service.Http.service
@@ -427,7 +449,15 @@ let _ =
     (fun () () ->
       return_of_error (API_tools.bad_request "All parameter are mandatory"))
 
-let update_link_json =
+let update_links =
+  Eliom_service.Http.post_service
+    ~fallback:fallback_insert_links
+    ~post_params:Eliom_parameter.(list "data"
+                                    (string "link_uri" **
+                                       list "tags" (string "uri")))
+    ()
+
+let update_links_json =
   Eliom_service.Http.post_service
     ~fallback:fallback_update_link
     ~post_params:Eliom_parameter.raw_post_data
@@ -435,13 +465,20 @@ let update_link_json =
 
 let _ =
   Eliom_registration.String.register
-    ~service:update_link_json
+    ~service:update_links_json
     (fun () (input_type, ostream) ->
       let aux () =
         lwt yojson = API_tools.json_of_ocsigen_string_stream input_type ostream in
         let data = API_deserialize.get_update_links_data yojson in
-        return_of_json (API_core.update_link data)
+        return_of_json (API_core.update_links data)
       in
+      API_tools.manage_bad_request aux)
+
+let _ =
+  Eliom_registration.String.register
+    ~service:update_links
+    (fun () data ->
+      let aux () = return_of_json (API_core.update_links data) in
       API_tools.manage_bad_request aux)
 
 (* Delete links *)

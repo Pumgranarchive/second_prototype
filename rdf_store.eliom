@@ -189,7 +189,7 @@ let lwt_ignore l =
 let half_get_from_4store query =
   let base = Rdf_iri.iri domain in
   let msg = {in_query = query; in_dataset = empty_dataset} in
-  Rdf_4s_lwt.get ~base ~accept:"application/xml" get_url msg
+  Rdf_4s_lwt.get ~base get_url msg
 
 let get_from_4store query =
   lwt results = half_get_from_4store query in
@@ -278,9 +278,12 @@ let insert_tags tag_type ?link_id ?content_uri subjects =
   in
 
   (* Check if subject does not already exist *)
-  let build_ask q subject = q ^ "?tag ?ressource \"" ^ subject ^ "\" . " in
+  let build_ask query subject =
+    let q = next_query query " || " in
+    q ^ "?sub = \"" ^ subject ^ "\""
+  in
   let half_ask = List.fold_left build_ask "" subjects in
-  let ask_query = "ASK { " ^ half_ask ^ " }" in
+  let ask_query = "ASK { ?tag ?res ?sub . FILTER(" ^ half_ask ^ ") }" in
   lwt exist = ask_to_4store ask_query in
   if exist then raise (Invalid_argument "One subject or more already exist.");
 
@@ -304,11 +307,6 @@ let insert_tags tag_type ?link_id ?content_uri subjects =
   let query = "INSERT DATA { " ^ half_query ^ " }" in
   lwt () = post_on_4store query in
   Lwt.return (tags_uri)
-
-let _ =
-  Lwt.async (fun () ->
-    lwt _ = insert_tags TagLink ["subject_01"; "subject_02"] in
-    Lwt.return ())
 
 let delete_tags tags_uri =
   let build_query q tag_uri =
@@ -396,7 +394,6 @@ let delete_contents contents_id =
   let query = "DELETE {?u ?r ?v.} WHERE { " ^ half_query ^ " }" in
   post_on_4store query
 
-(* Warning : does not verify if at least one parameter is given to be updated *)
 let update_content content_id ?title ?summary ?tags_uri () =
   let content_uri = uri_of_content_id content_id in
   let c_str_uri = string_of_uri content_uri in
@@ -535,7 +532,7 @@ let delete_links links_id =
   internal_delete_links links_id []
 
 
-let internal_update_link mode triple_list =
+let internal_update_links mode triple_list =
 
   (* Format part *)
   let to_str_triple new_list (origin_uri, target_uri, tags_uri) =
@@ -597,12 +594,12 @@ let internal_update_link mode triple_list =
   Lwt.return (link_ids)
 
 let insert_links triple_list =
-  internal_update_link Adding triple_list
+  internal_update_links Adding triple_list
 
-let update_link tuple_list =
+let update_links tuple_list =
   let triple_from_tuple (link_id, tags_uri) =
     let origin_uri, target_uri = link_id in
     (origin_uri, target_uri, tags_uri)
   in
   let triple_list = List.map triple_from_tuple tuple_list in
-  lwt_ignore (internal_update_link Replacing triple_list)
+  lwt_ignore (internal_update_links Replacing triple_list)

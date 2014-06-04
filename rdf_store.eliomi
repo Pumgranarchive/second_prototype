@@ -92,7 +92,7 @@ val insert_links : (uri * uri * uri list) list -> link_id list Lwt.t
 
 (** [update_link (link_id, new_tag_uri list) list]
     @raise Invalid_argument if at least one tags list is empty. *)
-val update_link : (link_id * uri list) list -> unit Lwt.t
+val update_links : (link_id * uri list) list -> unit Lwt.t
 
 (** [delete_links links_id] *)
 val delete_links : link_id list -> unit Lwt.t

@@ -413,14 +413,14 @@ let insert_links data =
     ~param_name:API_tools.linksid_ret_name
     aux
 
-let update_link data =
+let update_links data =
   let aux () =
     let tuple_uri (str_link_id, tags_str_uri) =
       Rdf_store.link_id_of_string str_link_id,
       List.map Rdf_store.uri_of_tag_id_link tags_str_uri
     in
     let tuple_list = List.map tuple_uri data in
-    lwt () = Rdf_store.update_link tuple_list in
+    lwt () = Rdf_store.update_links tuple_list in
     Lwt.return (`Null)
   in
   API_tools.check_return aux

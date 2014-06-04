@@ -75,7 +75,7 @@ val insert_links: (string * string * string list) list ->
   Yojson.Basic.json Lwt.t
 
 (** [update_link (link_id tag_uri list) list]  *)
-val update_link: (string * string list) list -> Yojson.Basic.json Lwt.t
+val update_links: (string * string list) list -> Yojson.Basic.json Lwt.t
 
 (** [delete_links links_id]  *)
 val delete_links: string list -> Yojson.Basic.json Lwt.t
