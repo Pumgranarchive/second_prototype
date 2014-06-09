@@ -192,7 +192,7 @@ let update_content content_id ?title ?summary ?body () =
     (opt_add summary_field summary
        (opt_add body_field body Bson.empty))
   in
-  if content = Bson.empty
+  if Bson.is_empty content
   then raise (Invalid_argument "At least one parameter have to be given.");
   Mongo_lwt.update_one coll (bson_query, content)
 

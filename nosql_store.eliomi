@@ -29,7 +29,7 @@ val get_detail: id -> (id * string * string * string) Lwt.t
 val insert_content: string -> string -> string -> id Lwt.t
 
 (** [update_content content_id ?title ?summary ?body ()]
-    @param one have to be given at least, ore raise Invalid_argument,
+    @param one have to be given at least, or raise Invalid_argument,
     @raise Not_found if not content exist with this id. *)
 val update_content: id -> ?title:string -> ?summary:string ->
   ?body:string -> unit -> unit Lwt.t
