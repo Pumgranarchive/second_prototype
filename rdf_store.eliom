@@ -95,7 +95,18 @@ let uri_of_tag_content_subject = uri_of_subject base_tag_content_url
 let pumgrana_id_of_uri base uri =
   let str = string_of_uri uri in
   let regexp = Str.regexp base in
+  let pos =
+    try (Str.search_forward regexp str 0) + (String.length base)
+    with Not_found -> raise (Invalid_uri (uri ^ ": is not a Pumgrana URI."))
+  in
+  let _ =
+    try
+      let _ = Str.search_forward regexp str pos in
+      raise (Invalid_uri (uri ^ ": looks to be an invalid URI."))
+    with Not_found -> ()
+  in
   Str.replace_first regexp "" str
+
 
 let content_id_of_uri uri =
   Nosql_store.id_of_string (pumgrana_id_of_uri base_content_url uri)
