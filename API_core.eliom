@@ -3,6 +3,23 @@
   This Module do request to data base and format well to return it in service
  *)
 
+(* Tools *)
+
+let id_of_string_uri uri =
+  try Rdf_store.(content_id_of_uri (uri_of_string uri))
+  with
+  | Rdf_store.Invalid_uri str_err
+  | Nosql_store.Invalid_id str_err ->
+    raise API_conf.(Pum_exc (return_not_found, str_err))
+
+let string_uri_of_id id =
+  Rdf_store.(string_of_uri (uri_of_content_id id))
+
+let uri_of_string str =
+  try Rdf_store.uri_of_string str
+  with Rdf_store.Invalid_uri str_err ->
+    raise API_conf.(Pum_exc (return_not_found, str_err))
+
 (*
 ** Generic request
 *)
@@ -25,39 +42,21 @@ let delete_from coll ids =
 *)
 
 (*** Getters *)
-let get_detail content_id =
+let get_detail content_str_uri =
   let aux () =
-    let object_id = API_tools.objectid_of_string content_id in
-    let bson_query = Bson.add_element API_tools.id_field object_id Bson.empty in
-    let result = Mongo.find_q_s_one API_tools.contents_coll bson_query
-      API_tools.content_format in
-    let ret = API_tools.yojson_of_mongoreply result in
-    Lwt.return (API_tools.check_empty_yojson ret content_id)
+    (* Lack the implementation of external content *)
+    let content_id = id_of_string_uri content_str_uri in
+    try_lwt
+      lwt (id, title, summary, body) = Nosql_store.get_detail content_id in
+      Lwt.return (`Assoc [("uri", `String content_str_uri);
+                          ("title", `String title);
+                          ("summary", `String summary);
+                          ("body", `String body)])
+    with Not_found -> Lwt.return `Null
   in
   API_tools.check_return ~param_name:API_tools.contents_ret_name aux
 
-let get_detail_by_link str_link_id =
-  let aux () =
-    let link_id = Rdf_store.link_id_of_string str_link_id in
-    let target_id = Nosql_store.string_of_id
-      Rdf_store.(content_id_of_uri (target_uri_from_link_id link_id))
-    in
-    let btarget_id = Bson.create_objectId target_id in
-    let bson_query = Bson.add_element API_tools.id_field btarget_id Bson.empty in
-    let result = Mongo.find_q_s_one API_tools.contents_coll bson_query
-      API_tools.content_format in
-    let ret = API_tools.yojson_of_mongoreply result in
-    Lwt.return (API_tools.check_empty_yojson ret str_link_id)
-  in
-  API_tools.check_return ~param_name:API_tools.contents_ret_name aux
-
-(* Currently, filter is not used,
-   because we haven't enought informations in the DB
-
-   Warning: if one tag_id does not exist, no error will be returned,
-   but no content neither.
-*)
-let get_contents filter tags_id =
+let get_contents filter tags_str_uri =
   let aux () =
     let () =
       match filter with
@@ -68,93 +67,87 @@ let get_contents filter tags_id =
       | Some x                  ->
         raise API_conf.(Pum_exc (return_not_found, errstr_not_expected x))
     in
-    let bson_query = match tags_id with
-      | None    -> Bson.empty
-      | Some x  -> Bson.add_element API_tools.tagsid_field
-        (Bson.create_doc_element
-           (MongoQueryOp.all (List.map API_tools.objectid_of_string x)))
-        Bson.empty
+    let tags_uri =
+      match tags_str_uri with
+      | Some t -> List.map uri_of_string t
+      | None   -> []
     in
-    let results = Mongo.find_q_s API_tools.contents_coll bson_query
-      API_tools.content_format in
-    Lwt.return (API_tools.yojson_of_mongoreply results)
+    lwt res = Rdf_store.get_triple_contents tags_uri in
+    let aux_format (id, title, summary) =
+      `Assoc [("uri", `String (string_uri_of_id id));
+              ("title", `String title);
+              ("summary", `String summary)]
+    in
+    let json = `List (List.map aux_format res) in
+    Lwt.return json
   in
   API_tools.check_return ~param_name:API_tools.contents_ret_name aux
 
 (*** Setters  *)
 
-let insert_content title summary text tags_id =
+(* Insert on both (nosql and rdf) stores *)
+let insert_content title summary body tags_str_uri =
   let aux () =
-    let bson_title = Bson.create_string title in
-    let bson_summary = Bson.create_string summary in
-    let bson_text = Bson.create_string text in
-    let bson_tags_list = match tags_id with
-      | None    -> []
-      | Some x  -> List.map API_tools.objectid_of_tagstr x
+    let tags_uri =
+      match tags_str_uri with
+      | Some t -> List.map uri_of_string t
+      | None   -> []
     in
-    let bson_tagsid = Bson.create_list bson_tags_list in
-    let content = Bson.add_element API_tools.title_field bson_title
-      (Bson.add_element API_tools.summary_field bson_summary
-         (Bson.add_element API_tools.text_field bson_text
-            (Bson.add_element API_tools.tagsid_field bson_tagsid Bson.empty)))
+    lwt id = Nosql_store.insert_content title summary body in
+    lwt () =
+      try_lwt
+        Rdf_store.insert_content id title summary tags_uri
+      with Invalid_argument str_err ->
+        raise API_conf.(Pum_exc (return_not_found, str_err))
     in
-    let saved_state = API_tools.get_id_state API_tools.contents_coll in
-    Mongo.insert API_tools.contents_coll [content];
-    Lwt.return (`String (API_tools.string_of_id
-                           (List.hd (API_tools.get_last_created_id
-                                       API_tools.contents_coll saved_state))))
+    Lwt.return (`String (Nosql_store.string_of_id id))
   in
   API_tools.check_return
     ~param_name:API_tools.content_id_ret_name
     ~default_return:API_conf.return_created aux
 
-let update_content content_id title summary text tags_id =
+(* Insert on both (nosql and rdf) stores *)
+let update_content content_str_uri title summary body tags_str_uri =
   let aux () =
-    API_tools.check_exist API_tools.contents_coll content_id;
-    let object_id = API_tools.objectid_of_string content_id in
-    let bson_query = Bson.add_element API_tools.id_field object_id Bson.empty in
-    let content = Bson.empty in
-    let content_1 = match title with
-      | None      -> content
-      | Some x    -> Bson.add_element
-        API_tools.title_field (Bson.create_string x) content
+    let id = id_of_string_uri content_str_uri in
+    let tags_uri =
+      match tags_str_uri with
+      | Some t -> Some (List.map uri_of_string t)
+      | None   -> None
     in
-    let content_2 = match summary with
-      | None      -> content_1
-      | Some x    -> Bson.add_element
-        API_tools.summary_field (Bson.create_string x) content_1
+    lwt () =
+      try_lwt
+        lwt () = Nosql_store.update_content id ?title ?summary ?body () in
+        Rdf_store.update_content id ?title ?summary ?tags_uri ()
+      with
+      | Not_found ->
+        raise API_conf.(Pum_exc (return_not_found, errstr_not_found content_str_uri))
+      | Invalid_argument str_err ->
+        raise API_conf.(Pum_exc (return_not_found, str_err))
     in
-    let content_3 = match text with
-      | None      -> content_2
-      | Some x    -> Bson.add_element
-        API_tools.text_field (Bson.create_string x) content_2
-    in
-    let content_4 = match tags_id with
-      | None      -> content_3
-      | Some x    ->
-        let bson_objid = List.map API_tools.objectid_of_tagstr x in
-        let bson_list = Bson.create_list bson_objid in
-        Bson.add_element API_tools.tagsid_field bson_list content_3
-    in
-    if content_4 = Bson.empty
-    then raise API_conf.(Pum_exc (return_not_found, "title, summary, text and tags_id can not be all null"));
-    Mongo.update_one API_tools.contents_coll (bson_query, content_4);
-    Lwt.return (`Null)
+    Lwt.return `Null
   in
   API_tools.check_return aux
 
-let delete_contents content_ids =
-  let aux content_id =
-    let object_id = API_tools.objectid_of_string content_id in
-    [Bson.add_element API_tools.originid_field object_id Bson.empty;
-     Bson.add_element API_tools.targetid_field object_id Bson.empty]
+(* Insert on rdf store only *)
+let update_content_tags content_str_uri tags_str_uri =
+  let aux () =
+    let content_uri = uri_of_string content_str_uri in
+    let tags_uri = List.map uri_of_string tags_str_uri in
+    lwt () = Rdf_store.update_content_tags content_uri tags_uri in
+    Lwt.return `Null
   in
-  let ret = delete_from API_tools.contents_coll content_ids in
-  let or_list = List.flatten (List.map aux content_ids) in
-  let bson_query = MongoQueryOp.or_op or_list in
-  Mongo.delete_all API_tools.contents_coll bson_query;
-  ret
+  API_tools.check_return aux
 
+(* Delete on both (nosql and rdf) stores *)
+let delete_contents content_uris =
+  let aux content_id =
+    let ids = List.map id_of_string_uri content_uris in
+    lwt () = Nosql_store.delete_contents ids in
+    lwt () = Rdf_store.delete_contents ids in
+    Lwt.return `Null
+  in
+  API_tools.check_return aux
 
 (*
 ** Tags
@@ -162,7 +155,6 @@ let delete_contents content_ids =
 
 (*** Getters *)
 
-(* Warning: if one tag_id does not exist, no error will be fire. *)
 let get_tags tags_id =
   let aux () =
     let document_of_tag tag_id =

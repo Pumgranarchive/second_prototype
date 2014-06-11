@@ -8,30 +8,30 @@
 
 (** {6 Content} *)
 
-(** [get_detail content_id]  *)
+(** [get_detail content_uri]  *)
 val get_detail: string -> Yojson.Basic.json Lwt.t
 
-(** [get_detail_by_link link_id]  *)
-val get_detail_by_link: string -> Yojson.Basic.json Lwt.t
-
-(** [get_contents filter tags_id]
+(** [get_contents filter tags_uri]
     Currently, filter is not used,
     because we haven't enought informations in the DB
 
     Warning: if one tag_id does not exist, no error will be returned,
-    but no content neither.
+    and no content neither.
 *)
 val get_contents: string option -> string list option -> Yojson.Basic.json Lwt.t
 
-(** [insert_content title text tags_id]  *)
+(** [insert_content title summary text tags_uri]  *)
 val insert_content: string -> string -> string -> string list option ->
   Yojson.Basic.json Lwt.t
 
-(** [update_content content_id title text tags_id]  *)
+(** [update_content content_uri title summary text tags_uri]  *)
 val update_content: string -> string option -> string option -> string option ->
   string list option -> Yojson.Basic.json Lwt.t
 
-(** [delete_contents content_ids]  *)
+(** [update_content_tags content_uri tags_uri]  *)
+val update_content_tags: string -> string list -> Yojson.Basic.json Lwt.t
+
+(** [delete_contents content_uris]  *)
 val delete_contents: string list -> Yojson.Basic.json Lwt.t
 
 

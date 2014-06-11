@@ -74,7 +74,7 @@ val delete_contents : Nosql_store.id list -> unit Lwt.t
 
 (** [update_content content_id ?title ?summary ?tags_uri ()]
     @param at least one have to be gave, otherwised @raise Invalid_argument,
-    @raise Invalid_argument if the content is not registred. *)
+    @raise Not_found if the content is not registred. *)
 val update_content : Nosql_store.id -> ?title: string -> ?summary: string ->
   ?tags_uri: uri list -> unit -> unit Lwt.t
 

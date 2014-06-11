@@ -1,3 +1,4 @@
+
 (**
    {b rdf_store -
    This Module do request to the rdf store}

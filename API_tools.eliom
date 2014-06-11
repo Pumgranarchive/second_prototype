@@ -281,7 +281,7 @@ let check_return ?(default_return=API_conf.return_ok) ?param_name func =
   try_lwt
     lwt res = func () in
     match_lwt Lwt.return (res, param_name) with
-    | `Null, Some _     -> null_return ()
+    | `Null, _          -> null_return ()
     | `List [], _       -> null_return ()
     | `List ret, _      -> valided_return ret
     | ret, _            -> valided_return [ret]

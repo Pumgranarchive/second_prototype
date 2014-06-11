@@ -46,7 +46,7 @@ let content_format =
 
 let id_of_string str =
   try Bson.create_objectId str
-  with e -> raise (Invalid_id str)
+  with _ -> raise (Invalid_id (str ^ ": is an invalid id"))
 
 let string_of_id id = Bson.get_objectId id
 

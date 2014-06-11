@@ -97,12 +97,12 @@ let pumgrana_id_of_uri base uri =
   let regexp = Str.regexp base in
   let pos =
     try (Str.search_forward regexp str 0) + (String.length base)
-    with Not_found -> raise (Invalid_uri (uri ^ ": is not a Pumgrana URI."))
+    with Not_found -> raise (Invalid_uri (str ^ ": is not a Pumgrana URI."))
   in
   let _ =
     try
       let _ = Str.search_forward regexp str pos in
-      raise (Invalid_uri (uri ^ ": looks to be an invalid URI."))
+      raise (Invalid_uri (str ^ ": looks to be an invalid URI."))
     with Not_found -> ()
   in
   Str.replace_first regexp "" str
@@ -419,7 +419,7 @@ let update_content content_id ?title ?summary ?tags_uri () =
   (* Check if the content does already exist *)
   let ask_query = "ASK { <" ^ c_str_uri ^ "> ?p ?o }" in
   lwt exist = ask_to_4store ask_query in
-  if not exist then raise (Invalid_argument "The content is not registered.");
+  if not exist then raise Not_found;
 
   (* Build the update query *)
   let d_query, i_query =
