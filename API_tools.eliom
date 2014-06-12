@@ -22,13 +22,15 @@ let new_id () = process_rand +. new_rand () +. Unix.time ()
 (** content type return by API' services *)
 (* let content_type = "application/json" *)
 
+let uri_field = "uri"
 let id_field = "_id"
-let tagsid_field = "tags_id"
-let targetid_field = "target_id"
-let originid_field = "origin_id"
+let tagsid_field = "tags_uri"
+let targetid_field = "target_uri"
+let originid_field = "origin_uri"
 let title_field = "title"
 let summary_field = "summary"
 let text_field = "text"
+let body_field = "body"
 let subject_field = "subject"
 let type_field = "type"
 
@@ -37,12 +39,12 @@ let tags_ret_name = "tags"
 let links_ret_name = "links"
 let link_id_ret_name = "link_id"
 let content_ud_ret_name = "content_"
-let content_id_ret_name = "content_id"
+let content_id_ret_name = "content_uri"
 let content_title_ret_name = "content_title"
 let content_summary_ret_name = "content_summary"
-let tagsid_ret_name = "tags_id"
-let linksid_ret_name = "links_id"
-let detail_ret_name = "links_id"
+let tagsid_ret_name = "tags_uri"
+let linksid_ret_name = "links_uri"
+let detail_ret_name = "links_uri"
 
 (*** DB's collection *)
 
@@ -281,7 +283,7 @@ let check_return ?(default_return=API_conf.return_ok) ?param_name func =
   try_lwt
     lwt res = func () in
     match_lwt Lwt.return (res, param_name) with
-    | `Null, _          -> null_return ()
+    | `Null, Some _     -> null_return ()
     | `List [], _       -> null_return ()
     | `List ret, _      -> valided_return ret
     | ret, _            -> valided_return [ret]

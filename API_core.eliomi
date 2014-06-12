@@ -37,10 +37,6 @@ val delete_contents: string list -> Yojson.Basic.json Lwt.t
 
 (** {6 Tag} *)
 
-(** [get_tags tags_id]
-    Warning: if one tag_id does not exist, no error will be fire. *)
-val get_tags: string list -> Yojson.Basic.json Lwt.t
-
 (** [get_tags_by_type tag_type]  *)
 val get_tags_by_type: string -> Yojson.Basic.json Lwt.t
 

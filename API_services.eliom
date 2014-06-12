@@ -205,17 +205,17 @@ let _ =
 
 
 (* List_tag *)
-let list_tags =
-  Eliom_service.Http.service
-    ~path:["api"; "tag"; "list_tag"]
-    ~get_params:Eliom_parameter.(suffix (list "tags" (string "id")))
-    ()
+(* let list_tags = *)
+(*   Eliom_service.Http.service *)
+(*     ~path:["api"; "tag"; "list_tag"] *)
+(*     ~get_params:Eliom_parameter.(suffix (list "tags" (string "id"))) *)
+(*     () *)
 
-let _ =
-  Eliom_registration.String.register
-    ~service:list_tags
-    (fun (tags_id) () ->
-      return_of_json (API_core.get_tags tags_id))
+(* let _ = *)
+(*   Eliom_registration.String.register *)
+(*     ~service:list_tags *)
+(*     (fun (tags_id) () -> *)
+(*       return_of_json (API_core.get_tags tags_id)) *)
 
 (* Get_tags_by_type *)
 let get_tags_by_type =

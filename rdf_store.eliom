@@ -67,7 +67,7 @@ let link_id_of_string link_id =
     let target_uri = uri_of_string target_str_uri in
     origin_uri, target_uri
   with e ->
-    raise (Invalid_link_id link_id)
+    raise (Invalid_link_id (link_id ^ ": is not a valid link_id"))
 
 let target_uri_from_link_id (origin_uri, target_uri) = target_uri
 let origin_uri_from_link_id (origin_uri, target_uri) = origin_uri

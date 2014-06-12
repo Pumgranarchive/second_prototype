@@ -12,6 +12,9 @@
 (** content type return by API' services *)
 (* val content_type: string *)
 
+(** Value of the uri field in the database *)
+val uri_field: string
+
 (** Value of the id field in the database *)
 val id_field: string
 
@@ -32,6 +35,9 @@ val summary_field: string
 
 (** Value of the text field in the database *)
 val text_field: string
+
+(** Value of the body field in the database *)
+val body_field: string
 
 (** Value of the subject field in the database *)
 val subject_field: string
