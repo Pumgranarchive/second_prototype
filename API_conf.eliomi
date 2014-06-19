@@ -8,27 +8,6 @@
 
 {server{
 
-(** {6 Basic data} *)
-
-(** The database url *)
-val db_url: string
-
-(** The name of the database *)
-val db_name: string
-
-(** The using port to connect to the database *)
-val db_port: int
-
-(** The name of the contents collection *)
-val contents_coll_name: string
-
-(** The name of the tags collection *)
-val tags_coll_name: string
-
-(** The name of the links collection *)
-val links_coll_name: string
-
-
 (** {6 API exception} *)
 
 (** Pum_exc (error_value, error_message)
