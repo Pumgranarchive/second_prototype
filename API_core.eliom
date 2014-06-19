@@ -26,23 +26,6 @@ let link_id_of_string str =
     raise API_conf.(Pum_exc (return_not_found, str_err))
 
 (*
-** Generic request
-*)
-
-let delete_from coll ids =
-  let aux () =
-    let objectid_of_idstr str =
-      let object_id = API_tools.objectid_of_string str in
-      API_tools.check_exist coll str;
-      Bson.add_element API_tools.id_field object_id Bson.empty
-    in
-    let bson_query = MongoQueryOp.or_op (List.map objectid_of_idstr ids) in
-    Mongo.delete_all coll bson_query;
-    Lwt.return (`Null)
-  in
-  API_tools.check_return aux
-
-(*
 ** Content
 *)
 
@@ -233,54 +216,37 @@ let delete_tags tags_str_uri =
 *)
 
 (*** Getters *)
-let get_links_from_content_tags content_id opt_tags_id =
-  let aux tags_id () =
-    (* getting every link with 'content_id' as origin *)
-    let content_uri =
-      Rdf_store.uri_of_content_id (Nosql_store.id_of_string content_id)
+let get_links_from_content_tags content_uri opt_tags_uri =
+  let aux tags_str_uri () =
+    let content_uri = Rdf_store.uri_of_string content_uri in
+    let tags_uri = List.map Rdf_store.uri_of_string tags_str_uri in
+    lwt linked_cs = Rdf_store.links_from_content_tags content_uri tags_uri in
+    let build_json (link_id, content_uri, title, summary) =
+      let str_link_id = Rdf_store.string_of_link_id link_id in
+      let content_str_uri = Rdf_store.string_of_uri content_uri in
+      `Assoc [(API_tools.link_id_ret_name, `String str_link_id);
+              (API_tools.content_id_ret_name, `String content_str_uri);
+              (API_tools.content_title_ret_name, `String title);
+              (API_tools.content_summary_ret_name, `String summary)]
     in
-    let tags_uri = List.map Rdf_store.uri_of_tag_id_content tags_id in
-    lwt link_list = Rdf_store.links_from_content_tags content_uri tags_uri in
-    if List.length link_list == 0 then
-      raise API_conf.(Pum_exc (return_no_content,
-                               "This content has no link on given tags"));
-
-    (* getting content to return *)
-    let make_target_id_bson (link_id, target_uri, tags_uri) =
-      let target_id =
-        Nosql_store.string_of_id (Rdf_store.content_id_of_uri target_uri)
-      in
-      Bson.add_element API_tools.id_field
-        (Bson.create_objectId target_id) Bson.empty
-    in
-    let make_link_id (link_id, target_uri, tags_uri) =
-      Rdf_store.string_of_link_id link_id
-    in
-    let target_id_bson_list = List.map make_target_id_bson link_list in
-    let link_id_list = List.map make_link_id link_list in
-
-    let target_query = (MongoQueryOp.or_op target_id_bson_list) in
-    let result_query = Mongo.find_q_s API_tools.contents_coll
-      target_query API_tools.link_format
-    in
-    Lwt.return (API_tools.link_format_ret link_id_list
-                  (API_tools.yojson_of_mongoreply result_query))
+    let json = `List (List.map build_json linked_cs) in
+    Lwt.return json
   in
-  let tags_id = match opt_tags_id with
+  let tags_str_uri = match opt_tags_uri with
     | Some x -> x
     | None   -> []
   in
-  API_tools.check_return ~param_name:API_tools.links_ret_name (aux tags_id)
+  API_tools.check_return ~param_name:API_tools.links_ret_name (aux tags_str_uri)
 
-let get_links_from_content content_id =
-  get_links_from_content_tags content_id None
+let get_links_from_content content_uri =
+  get_links_from_content_tags content_uri None
 
 let insert_links data =
   let aux () =
     let triple_uri (origin_str_uri, target_str_uri, tags_str_uri) =
-      Rdf_store.uri_of_content_id (Nosql_store.id_of_string origin_str_uri),
-      Rdf_store.uri_of_content_id (Nosql_store.id_of_string target_str_uri),
-      List.map Rdf_store.uri_of_tag_id_link tags_str_uri
+      Rdf_store.uri_of_string origin_str_uri,
+      Rdf_store.uri_of_string target_str_uri,
+      List.map Rdf_store.uri_of_string tags_str_uri
     in
     let triple_list = List.map triple_uri data in
     lwt links_id = Rdf_store.insert_links triple_list in
@@ -299,11 +265,11 @@ let update_links data =
   let aux () =
     let tuple_uri (str_link_id, tags_str_uri) =
       Rdf_store.link_id_of_string str_link_id,
-      List.map Rdf_store.uri_of_tag_id_link tags_str_uri
+      List.map Rdf_store.uri_of_string tags_str_uri
     in
     let tuple_list = List.map tuple_uri data in
     lwt () = Rdf_store.update_links tuple_list in
-    Lwt.return (`Null)
+    Lwt.return `Null
   in
   API_tools.check_return aux
 
