@@ -10,8 +10,8 @@ type uri
 
 type link_id
 
-(** link_id * target_uri * tag_uri list * title * summary  *)
-type linked_content = link_id * uri * uri list * string * string
+(** link_id * target_uri * title * summary  *)
+type linked_content = link_id * uri * string * string
 
 type content = Nosql_store.id * string * string
 
@@ -87,10 +87,10 @@ val update_content_tags : uri -> uri list -> unit Lwt.t
 (** {6 Links}  *)
 
 (** [get_links_from_content content_uri]  *)
-val links_from_content : uri -> link list Lwt.t
+val links_from_content : uri -> linked_content list Lwt.t
 
 (** [get_links_from_content_tags content_id tags_uri]  *)
-val links_from_content_tags : uri -> uri list -> link list Lwt.t
+val links_from_content_tags : uri -> uri list -> linked_content list Lwt.t
 
 (** [insert_links (origin_uri, targets_uri, tag_uri list) list]
     @raise Invalid_argument if at least one tags list is empty. *)

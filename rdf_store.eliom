@@ -10,7 +10,7 @@ exception Internal_error of string
 type uri = Rdf_uri.uri
 
 type link_id = uri * uri
-type linked_content = link_id * uri * uri list * string * string
+type linked_content = link_id * uri * string * string
 
 type content = Nosql_store.id * string * string
 
@@ -134,9 +134,10 @@ let triple_link_from solution =
   from_solution "target" solution,
   from_solution "tag" solution
 
-let tuple_link_from solution =
-  from_solution "target" solution,
-  from_solution "tag" solution
+let linked_content_from solution =
+  uri_of_string (from_solution "target" solution),
+  from_solution "title" solution,
+  from_solution "summary" solution
 
 let tuple_tag_from solution =
   uri_of_string (from_solution "tag" solution),
@@ -147,23 +148,13 @@ let triple_content_from solution =
   from_solution "title" solution,
   from_solution "summary" solution
 
-let links_of_solutions origin_uri solutions =
-  let build_tag_list map solution =
-    let target_uri, tag_str_uri = tuple_link_from solution in
-    let tags_uri = uri_of_string tag_str_uri in
-    let tags =
-      try SMap.find target_uri map
-      with Not_found -> []
-    in
-    SMap.add target_uri (tags_uri::tags) map
-  in
-  let solution_map = List.fold_left build_tag_list SMap.empty solutions in
-  let build_links target_str_uri tags_uri links =
-    let target_uri = uri_of_string target_str_uri in
+let linked_contents_of_solutions origin_uri solutions =
+  let aux solution =
+    let target_uri, title, summary = linked_content_from solution in
     let link_id = link_id origin_uri target_uri in
-    (link_id, target_uri, tags_uri)::links
+    link_id, target_uri, title, summary
   in
-  SMap.fold build_links solution_map []
+  List.map aux solutions
 
 let get_solutions = function
   | Rdf_sparql.Solutions s -> s
@@ -496,17 +487,19 @@ let build_tags_query content_uri tags =
         rgx' ^ "(" ^ tag_uri ^ ")"
       in
       let regex = List.fold_left build_rgx "" tags in
-      " . FILTER regex(str(?tag), \"" ^ regex ^ "\")"
+      ". FILTER regex(str(?tag), \"" ^ regex ^ "\")"
   in
   let content_str_uri = string_of_uri content_uri in
-  "SELECT ?tag ?target WHERE
-  { <"^content_str_uri^"> ?tag ?target"^filter_query^" }"
+  "SELECT ?tag ?target ?title ?summay WHERE
+  { <"^content_str_uri^"> ?tag ?target "^filter_query^" .
+    ?target <"^content_title_r^"> ?title .
+    ?target <"^content_summary_r^"> ?summary }"
 
 let links_from_content_tags content_uri tags_uri =
   let query = build_tags_query content_uri tags_uri in
   lwt solutions = get_from_4store query in
-  let links = links_of_solutions content_uri solutions in
-  Lwt.return (links)
+  let linked_contents = linked_contents_of_solutions content_uri solutions in
+  Lwt.return (linked_contents)
 
 let links_from_content content_uri =
   links_from_content_tags content_uri []
