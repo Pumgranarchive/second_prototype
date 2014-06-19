@@ -10,8 +10,11 @@ exception Internal_error of string
 type uri = Rdf_uri.uri
 
 type link_id = uri * uri
-type link = link_id * uri * uri list
+type linked_content = link_id * uri * uri list * string * string
 
+type content = Nosql_store.id * string * string
+
+type tag = uri * string
 type tag_type = TagLink | TagContent
 
 type update_mode = Adding | Replacing

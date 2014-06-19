@@ -10,9 +10,13 @@ type uri
 
 type link_id
 
-(** link_id * target_uri * tag_uri list  *)
-type link = link_id * uri * uri list
+(** link_id * target_uri * tag_uri list * title * summary  *)
+type linked_content = link_id * uri * uri list * string * string
 
+type content = Nosql_store.id * string * string
+
+(** uri * subject  *)
+type tag = uri * string
 type tag_type = TagLink | TagContent
 
 
@@ -59,10 +63,8 @@ val tag_id_content_of_uri : uri -> string
 (** {6 Contents}  *)
 
 (** [get_triple_contents tags_uri]
-    if [tags_uri] is an empty list, return all contents' triple.
-    return a triple (content_id, title, summary) *)
-val get_triple_contents : uri list ->
-  (Nosql_store.id * string * string) list Lwt.t
+    if [tags_uri] is an empty list, return all contents' triple. *)
+val get_triple_contents : uri list -> content list Lwt.t
 
 (** [insert_content content_id title summary tags_uri]
     [tags_uri] can be an empty list
@@ -102,21 +104,20 @@ val update_links : (link_id * uri list) list -> unit Lwt.t
 val delete_links : link_id list -> unit Lwt.t
 
 
-(** {6 Tags}
-    Tag's getter return a tuple list of (tag_uri, subject) *)
+(** {6 Tags} *)
 
 (** [get_tags tag_type tags_uri]
     if [tags_uri] list is null, all tags of the given tag_type are returned *)
-val get_tags : tag_type -> uri list -> (uri * string) list Lwt.t
+val get_tags : tag_type -> uri list -> tag list Lwt.t
 
 (** [get_tags_from_link link_id] *)
-val get_tags_from_link : link_id -> (uri * string) list Lwt.t
+val get_tags_from_link : link_id -> tag list Lwt.t
 
 (** [get_tags_from_content content_uri] *)
-val get_tags_from_content: uri -> (uri * string) list Lwt.t
+val get_tags_from_content: uri -> tag list Lwt.t
 
 (** [get_tags_from_content_link content_uri]  *)
-val get_tags_from_content_link : uri -> (uri * string) list Lwt.t
+val get_tags_from_content_link : uri -> tag list Lwt.t
 
 (** [insert_tags tag_type ?link_id ?content_uri subjects]
     @param [link_id] and [content_uri] have to correspond with the tag_type,
