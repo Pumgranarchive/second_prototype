@@ -213,9 +213,12 @@ let bind_add_tag_content submit_tag div_tags_html add_tag_input input_list =
 (** [bind_delete_content button_elt content_id] bind the button
     on click event to remove the content with the given content_id. *)
 let bind_delete_content button_elt content_id =
+  let uri = Rdf_store.string_of_uri
+    (Rdf_store.uri_of_content_id (Nosql_store.id_of_string content_id))
+  in
   let action () =
     lwt _ = Eliom_client.call_service
-    ~service:%API_services.delete_contents () [content_id] in
+    ~service:%API_services.delete_contents () [uri] in
     Lwt.return (go_back ())
   in
   bind_button button_elt action
