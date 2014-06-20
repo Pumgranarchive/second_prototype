@@ -448,9 +448,10 @@ let insert_content content_id title summary tags_uri =
   post_on_4store query
 
 let delete_contents contents_id =
-  let build_query q content_id =
+  let build_query query content_id =
     let content_uri = string_of_uri (uri_of_content_id content_id) in
-    q ^ "{ <" ^ content_uri ^ "> ?r ?v. {?u ?r ?v.} UNION {?x ?y ?z} } . "
+    let q = next_query query " UNION " in
+    q ^ "{ <" ^ content_uri ^ "> ?r ?v. {?u ?r ?v.} UNION {?x ?y ?z} }"
   in
   let half_query = List.fold_left build_query "" contents_id in
   let query = "DELETE {?u ?r ?v.} WHERE { " ^ half_query ^ " }" in

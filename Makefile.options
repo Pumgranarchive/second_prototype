@@ -18,7 +18,7 @@ CLIENT_FILES_DOC := $(wildcard *.eliomi)
 # OCamlfind packages for the server
 SERVER_PACKAGES := yojson bson cohttp cohttp.lwt mongo mongo.lwt rdf rdf.lwt
 # OCamlfind packages for the client
-CLIENT_PACKAGES := yojson bson str
+CLIENT_PACKAGES := yojson bson
 
 # Directory with files to be statically served
 LOCAL_STATIC = static
