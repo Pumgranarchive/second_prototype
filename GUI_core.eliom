@@ -24,7 +24,11 @@ let get_detail_content content_id =
     Lwt.return (content, tags, link_list, tags_link_list)
   with
   | e -> print_endline (Printexc.to_string e);
-    Lwt.return (("title", "Internal server error", "", "id"), [], [], [])
+    Lwt.return (
+      GUI_deserialize.(Internal
+                         (Id (Nosql_store.id_of_string "0000000000000000"),
+                          "title", "", "Internal server error")),
+      [], [], [])
 
 (** Get all data for get_contents html service. *)
 let get_contents filter tags_id =

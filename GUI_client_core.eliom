@@ -50,21 +50,22 @@ let go_forward () =
   Dom_html.window##history##forward()
 
 let go_update_content id =
+  let str_id = GUI_deserialize.string_of_id id in
   Eliom_client.change_page
-    ~service:%GUI_services.content_update_service id ()
+    ~service:%GUI_services.content_update_service str_id ()
 
 let go_insert_content () =
   Eliom_client.change_page
     ~service:%GUI_services.content_insert_service () ()
 
 let cancel_update_content id =
+  let str_id = GUI_deserialize.string_of_id id in
   Eliom_client.change_page
-    ~service:%GUI_services.content_detail_service id ()
+    ~service:%GUI_services.content_detail_service str_id ()
 
 let save_update_content id title summary body tags remove_links new_tags =
-  let uri =
-    Rdf_store.(string_of_uri (uri_of_content_id (Nosql_store.id_of_string id)))
-  in
+  let uri = GUI_deserialize.uri_of_id id in
+  let str_id = GUI_deserialize.string_of_id id in
   lwt res = Eliom_client.call_service ~service:%API_services.get_tags_by_type
     %API_conf.content_tag ()
   in
@@ -95,7 +96,7 @@ let save_update_content id title summary body tags remove_links new_tags =
   lwt _ = Eliom_client.call_service ~service:%API_services.delete_links_from_to
       () (uri, remove_links)
   in
-  Eliom_client.change_page ~service:%GUI_services.content_detail_service id ()
+  Eliom_client.change_page ~service:%GUI_services.content_detail_service str_id ()
 
 let save_insert_content title summary body new_tags =
   lwt res = Eliom_client.call_service ~service:%API_services.get_tags_by_type
@@ -213,9 +214,7 @@ let bind_add_tag_content submit_tag div_tags_html add_tag_input input_list =
 (** [bind_delete_content button_elt content_id] bind the button
     on click event to remove the content with the given content_id. *)
 let bind_delete_content button_elt content_id =
-  let uri = Rdf_store.string_of_uri
-    (Rdf_store.uri_of_content_id (Nosql_store.id_of_string content_id))
-  in
+  let uri = GUI_deserialize.uri_of_id content_id in
   let action () =
     lwt _ = Eliom_client.call_service
     ~service:%API_services.delete_contents () [uri] in
@@ -272,6 +271,7 @@ let handle_refresh_list html_elt submit_elt div_of_yojson fun_request =
 
 (** Manage link's refreshing by getting data from API's serice. *)
 let handle_refresh_links content_id html_elt inputs_elt submit_elt =
+  let uri = GUI_deserialize.uri_of_id content_id in
   let dom_inputs = List.map To_dom.of_input inputs_elt in
   handle_refresh_list html_elt submit_elt
     (fun r -> GUI_tools.build_links_list
@@ -280,7 +280,7 @@ let handle_refresh_links content_id html_elt inputs_elt submit_elt =
       let list = get_checked_inputs dom_inputs in
       Eliom_client.call_service
       ~service:%API_services.get_links_from_content_tags
-      (content_id, Some list) ())
+      (uri, Some list) ())
 
 (** Manage content's refreshing by getting data from API's serice. *)
 let handle_refresh_contents html_elt inputs_elt submit_elt =

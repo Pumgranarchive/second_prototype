@@ -14,6 +14,19 @@ module Yojson = Yojson.Basic
 
 }}
 
+let empty_html ?msg () =
+  let body_list = match msg with
+    | Some s    -> [pcdata s]
+    | None      -> []
+  in
+  Eliom_tools.F.html
+    ~title:"Pumgrana"
+    ~css:[["css";"pumgrana.css"]]
+    Html5.F.(body body_list)
+
+let internal_error_html () =
+  empty_html ~msg:"Internal Error" ()
+
 (** Display the home html service *)
 let home_html (contents, tags) =
   let submit, tags_inputs, tags_html_list = GUI_tools.build_tags_form tags in
@@ -42,7 +55,6 @@ let home_html (contents, tags) =
 
 (** Display the content detail html service *)
 let content_detail (content, tags_id, links, tags_link) =
-  let c_title, c_summary, c_body, c_id = content in
   try
     let aux (subject, id) =  div [pcdata subject] in
     let tags_subjects = List.map aux tags_id in
@@ -52,6 +64,13 @@ let content_detail (content, tags_id, links, tags_link) =
     in
     let backb, forwardb, updateb, deleteb, header_elt =
       GUI_tools.build_detail_content_header ()
+    in
+    let c_id, content_elt = match content with
+      | GUI_deserialize.Internal (c_id, c_title, c_summary, c_body) ->
+        c_id, div [h3 [pcdata c_title]; p [pcdata c_summary]; p [pcdata c_body]]
+      | GUI_deserialize.External (c_id, c_title, c_summary) ->
+        let uri = Xml.uri_of_string (GUI_deserialize.uri_of_id c_id) in
+        c_id, div [iframe ~a:[a_src uri] []]
     in
     ignore {unit{ GUI_client_core.bind_back %backb }};
     ignore {unit{ GUI_client_core.bind_forward %forwardb }};
@@ -65,9 +84,7 @@ let content_detail (content, tags_id, links, tags_link) =
       Html5.F.(body [
         header_elt;
         div ~a:[a_class["detail"]]
-          [h3 [pcdata c_title];
-           p [pcdata c_summary];
-           p [pcdata c_body];
+          [content_elt;
            div ~a:[a_class["detail_tags"]]
              [h5 [pcdata "Tags"];
               div tags_subjects]];
@@ -79,16 +96,20 @@ let content_detail (content, tags_id, links, tags_link) =
               div links_tags_html]]
       ])
   with
-  | e -> print_endline (Printexc.to_string e);
-    Eliom_tools.F.html
-      ~title:"Pumgrana"
-      ~css:[["css";"pumgrana.css"]]
-      Html5.F.(body [])
+  | e ->
+    let err_msg = Printexc.to_string e in
+    print_endline err_msg;
+    empty_html ~msg:err_msg ()
 
 (** Update content detail html service *)
 let content_update (content, tags, links, tags_link) =
-  let c_title, c_summary, c_body, c_id = content in
   try
+    let c_id, c_title, c_summary, c_body = match content with
+      | GUI_deserialize.Internal (c_id, c_title, c_summary, c_body) ->
+        c_id, c_title, c_summary, c_body
+      | GUI_deserialize.External (c_id, c_title, c_summary) ->
+        failwith "Not allow on External content"
+    in
     let tags_inputs, tags_html = GUI_tools.build_ck_tags_list tags in
     let links_inputs, links_html = GUI_tools.build_ck_links_list links in
     let links_tags_html = GUI_tools.build_tags_list tags_link in
@@ -106,8 +127,8 @@ let content_update (content, tags, links, tags_link) =
         ~input_type:`Text ~name:"summary" ~value:c_summary ()
     in
     let body_elt =
-      D.raw_textarea ~a:[a_class ["body_update"]]
-        ~name:"body" ~value:c_body ()
+        D.raw_textarea ~a:[a_class ["body_update"]]
+          ~name:"body" ~value:c_body ()
     in
     ignore {unit{ GUI_client_core.bind_cancel_update_content %cancelb %c_id}};
     ignore {unit{ GUI_client_core.bind_save_update_content %saveb %c_id
@@ -136,11 +157,10 @@ let content_update (content, tags, links, tags_link) =
               div links_tags_html]]
       ])
   with
-  | e -> print_endline (Printexc.to_string e);
-    Eliom_tools.F.html
-      ~title:"Pumgrana"
-      ~css:[["css";"pumgrana.css"]]
-      Html5.F.(body [])
+  | e ->
+    let err_str = Printexc.to_string e in
+    print_endline err_str;
+    empty_html ~msg:err_str ()
 
 (** Insert content html service *)
 let content_insert () =
@@ -181,8 +201,7 @@ let content_insert () =
               div_tags_html;
               div add_tag_html]]])
   with
-  | e -> print_endline (Printexc.to_string e);
-    Eliom_tools.F.html
-      ~title:"Pumgrana"
-      ~css:[["css";"pumgrana.css"]]
-      Html5.F.(body [])
+  | e ->
+    let err_msg = Printexc.to_string e in
+    print_endline err_msg;
+    empty_html ~msg:err_msg ()
