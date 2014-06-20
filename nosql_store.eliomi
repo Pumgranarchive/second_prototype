@@ -4,6 +4,8 @@
    This Module do request to the rdf store}
 *)
 
+{shared{
+
 exception Invalid_id of string
 
 type id
@@ -17,6 +19,7 @@ val id_of_string : string -> id
 (** Create a string from an id *)
 val string_of_id : id -> string
 
+}}
 
 (** {6 Contents} *)
 

@@ -3,6 +3,8 @@ open Rdf_sparql_protocol
 
 module SMap = Map.Make(String)
 
+{shared{
+
 exception Invalid_uri = Rdf_uri.Invalid_uri
 exception Invalid_link_id of string
 exception Internal_error of string
@@ -113,6 +115,8 @@ let pumgrana_id_of_uri base uri =
 
 let content_id_of_uri uri =
   Nosql_store.id_of_string (pumgrana_id_of_uri base_content_url uri)
+
+}}
 
 let tag_id_link_of_uri = pumgrana_id_of_uri base_tag_link_url
 let tag_id_content_of_uri = pumgrana_id_of_uri base_tag_content_url
@@ -362,10 +366,10 @@ let get_triple_contents tags_uri =
   in
   let query = "SELECT ?content ?title ?summary WHERE
   { ?content <" ^ content_title_r ^ "> ?title .
-    ?content <" ^ content_summary_r ^ "> ?summary .
-  " ^ half_query ^ " }"
+    ?content <" ^ content_summary_r ^ "> ?summary . " ^ half_query ^ " }"
   in
   lwt solutions = get_from_4store query in
+  if List.length solutions == 0 then print_endline "Empty !";
   let triple_contents = List.map triple_content_from solutions in
   Lwt.return (triple_contents)
 

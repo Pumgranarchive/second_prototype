@@ -95,11 +95,11 @@ let build_links_list links =
   List.map aux links
 
 let build_contents_list contents =
-  let aux (title, text, id) =
+  let aux (title, summary, id) =
     div ~a:[a_class ["content"]]
       [a ~service:%GUI_services.content_detail_service [pcdata title] id;
        br ();
-       span [pcdata text]]
+       span [pcdata summary]]
   in
   List.map aux contents
 

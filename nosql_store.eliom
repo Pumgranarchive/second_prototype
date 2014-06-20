@@ -1,11 +1,14 @@
 module Yojson = Yojson.Basic
 
 open Yojson.Util
-open Intern_yj_util
+
+{shared{
 
 exception Invalid_id of string
 
 type id = Bson.element
+
+}}
 
 (******************************************************************************
 ****************************** Configuration **********************************
@@ -43,12 +46,6 @@ let content_format =
 (******************************************************************************
 ********************************** Tools **************************************
 *******************************************************************************)
-
-let id_of_string str =
-  try Bson.create_objectId str
-  with _ -> raise (Invalid_id (str ^ ": is an invalid id"))
-
-let string_of_id id = Bson.get_objectId id
 
 (* Initialize the random *)
 let _ = Random.self_init ()
@@ -100,6 +97,8 @@ let new_id () =
 
 (*** Cast tools *)
 
+{shared{
+
 (** Convert string objectID from mongo in Hexa 12 char format
     into string in hex 24 char format *)
 let reformat_id str_id =
@@ -126,6 +125,14 @@ let reformat_id str_id =
     Buffer.contents buf
   with
   | e -> print_endline (Printexc.to_string e); "0"
+
+let id_of_string str =
+  try Bson.create_objectId str
+  with _ -> raise (Invalid_id (str ^ ": is an invalid id"))
+
+let string_of_id id = reformat_id (Bson.get_objectId id)
+
+}}
 
 let yojson_of_bson bson =
   let tmp = Yojson.from_string (Bson.to_simple_json bson) in

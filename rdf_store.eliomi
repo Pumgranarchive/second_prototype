@@ -1,3 +1,5 @@
+{shared{
+
 (**
    {b rdf_store -
    This Module do request to the rdf store}
@@ -18,7 +20,6 @@ type content = Nosql_store.id * string * string
 (** uri * subject  *)
 type tag = uri * string
 type tag_type = TagLink | TagContent
-
 
 (** {6 Utils}  *)
 
@@ -45,6 +46,8 @@ val uri_of_content_id : Nosql_store.id -> uri
     @raise Invalid_uri in case of a full invalid or a not Pumgrana uri.
     may @raise Nosql_store.Invalid_id *)
 val content_id_of_uri : uri -> Nosql_store.id
+
+}}
 
 (* To remove in the futur *)
 

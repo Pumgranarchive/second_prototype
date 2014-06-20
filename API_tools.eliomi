@@ -81,64 +81,7 @@ val linksid_ret_name: string
 (** Detail field name in the API json return *)
 val detail_ret_name: string
 
-
-(** {6 DB's collection } *)
-
-(** Contents collection selection for Mongo request  *)
-val contents_coll: Mongo.t
-
-(** Tags collection selection for Mongo request  *)
-val tags_coll: Mongo.t
-
-(** Links collection selection for Mongo request  *)
-val links_coll: Mongo.t
-
-
-(** {6 Request format tools  } *)
-
-(** Bson yes value using to select wanted field in return format *)
-val yes_value: Bson.element
-
-(** Wanted content return format *)
-val content_format: Bson.t
-
-(** Wanted tag return format *)
-val tag_format: Bson.t
-
-(** Wanted link return format *)
-val link_format: Bson.t
-
-
-(** {6 Getter tools  } *)
-
-(** Save all id of given collection *)
-val get_id_state: Mongo.t -> string list
-
-(** Get new id in the given collection, in function of previous save state *)
-val get_last_created_id: Mongo.t -> string list -> string list
-
-
 (** {6 Cast tools } *)
-
-(** Cast the given string to an object id in Bson manner *)
-val objectid_of_string: string -> Bson.element
-
-(** Convert string objectID from mongo in Hexa 12 char format
-    into string in hex 24 char format *)
-val string_of_id: string -> string
-
-(** Convert string objectID from mongo in Hexa 12 char format
-    into string in hex 24 char format *)
-val string_of_objectid: Bson.element -> string
-
-(** Cast single bson document to yojson *)
-val yojson_of_bson: Bson.t -> Yojson.Basic.json
-
-(** Cast list of bson document to yojson *)
-val yojson_of_bson_list: Bson.t list -> Yojson.Basic.json
-
-(** Cast mongreply document list to yojson *)
-val yojson_of_mongoreply: MongoReply.t -> Yojson.Basic.json
 
 val json_of_ocsigen_string_stream:
   ((string * string) * (string * string) list) option->
@@ -147,33 +90,9 @@ val json_of_ocsigen_string_stream:
 
 (** {6 Checking tools  } *)
 
-(** If the yojson is empty, raise an not_found excepetion with the given value,
-    else, return the given yosjon. *)
-val check_empty_yojson: Yojson.Basic.json -> string -> Yojson.Basic.json
-
 (** If the list is empty, raise an not_found excepetion with the given value,
     else return the given list. *)
 val check_empty_ocaml_list: 'a list -> string -> 'a list
-
-(** If the reply is empty, raise an not_found excepetion with the given value,
-    else return the reply. *)
-val check_empty_bson: MongoReply.t -> string -> Bson.t list
-
-(** Check if the given string_id {b exist} in the given collection,
-    if not raise an not_found exception with the given id *)
-val check_exist: Mongo.t -> string -> unit
-
-(** Check if the given string_id {b not exist} in the given collection,
-    if not raise an exist exception with given id *)
-val check_not_exist: Mongo.t -> string -> Bson.element -> string -> unit
-
-
-(** {6 Checking and cast tools  } *)
-
-(** Check if the given string_id exist the the tags collection and
-    cast it to ObjectID in Bson way. *)
-val objectid_of_tagstr: string -> Bson.element
-
 
 (** {6 Http tools } *)
 
@@ -182,9 +101,6 @@ val return_of_json : Yojson.Basic.json Lwt.t -> (string * string) Lwt.t
 val return_of_error : string Lwt.t -> (string * string) Lwt.t
 
 (** {6 Manage return tools } *)
-
-(** Removing the value from text field *)
-val link_format_ret: string list -> Yojson.Basic.json -> Yojson.Basic.json
 
 (** Format the returned value *)
 val format_ret: ?param_name:string -> int -> ?error_str:string ->
