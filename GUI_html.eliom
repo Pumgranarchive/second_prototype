@@ -102,8 +102,8 @@ let content_update (content, tags, links, tags_link) =
         ~input_type:`Text ~name:"title" ~value:c_title ()
     in
     let summary_elt =
-      D.raw_textarea ~a:[a_class ["summary_update"]]
-        ~name:"summary" ~value:c_summary ()
+      D.raw_input ~a:[a_class ["summary_update"]]
+        ~input_type:`Text ~name:"summary" ~value:c_summary ()
     in
     let body_elt =
       D.raw_textarea ~a:[a_class ["body_update"]]
@@ -111,7 +111,7 @@ let content_update (content, tags, links, tags_link) =
     in
     ignore {unit{ GUI_client_core.bind_cancel_update_content %cancelb %c_id}};
     ignore {unit{ GUI_client_core.bind_save_update_content %saveb %c_id
-                  %title_elt %body_elt %tags_inputs %links_inputs
+                  %title_elt %summary_elt %body_elt %tags_inputs %links_inputs
                   %tags_input_list}};
     ignore {unit{ GUI_client_core.bind_add_tag_content %submit_tag
                   %div_tags_html %add_tag_input %tags_input_list}};
@@ -155,22 +155,26 @@ let content_insert () =
       D.raw_input ~a:[a_class ["title_update"]]
         ~input_type:`Text ~name:"title" ()
     in
-    let text_elt =
-      D.raw_textarea ~a:[a_class ["text_update"]]
-        ~name:"text" ()
+    let summary_elt =
+      D.raw_input ~a:[a_class ["summary_update"]]
+        ~input_type:`Text ~name:"summary" ()
+    in
+    let body_elt =
+      D.raw_textarea ~a:[a_class ["body_update"]]
+        ~name:"body" ()
     in
     ignore {unit{ GUI_client_core.bind_back %cancelb}};
     ignore {unit{ GUI_client_core.bind_add_tag_content %submit_tag
                     %div_tags_html %add_tag_input %tags_input_list}};
     ignore {unit{ GUI_client_core.bind_save_insert_content %saveb
-                    %title_elt %text_elt %tags_input_list}};
+                    %title_elt %summary_elt %body_elt %tags_input_list}};
     Eliom_tools.F.html
       ~title:"Pumgrana"
       ~css:[["css";"pumgrana.css"]]
       Html5.F.(body [
         header_elt;
         div ~a:[a_class["detail"]]
-          [title_elt; br (); text_elt;
+          [title_elt; br (); summary_elt; br (); body_elt;
            div ~a:[a_class["detail_tags"]]
              [h5 [pcdata "Tags"];
               span [pcdata "Select to unadd"];

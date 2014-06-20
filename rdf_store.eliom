@@ -5,11 +5,28 @@ module SMap = Map.Make(String)
 
 {shared{
 
-exception Invalid_uri = Rdf_uri.Invalid_uri
 exception Invalid_link_id of string
 exception Internal_error of string
 
+}}
+
+{server{
+
+exception Invalid_uri = Rdf_uri.Invalid_uri
+
 type uri = Rdf_uri.uri
+
+}}
+
+{client{
+
+exception Invalid_uri of string
+
+type uri = string
+
+}}
+
+{shared{
 
 type link_id = uri * uri
 type linked_content = link_id * uri * string * string
@@ -21,9 +38,13 @@ type tag_type = TagLink | TagContent
 
 type update_mode = Adding | Replacing
 
+}}
+
 (******************************************************************************
 ****************************** Configuration **********************************
 *******************************************************************************)
+
+{shared{
 
 let domain = "http://pumgrana.com/"
 let base_ressouce_url = domain ^ "ressource/"
@@ -39,6 +60,8 @@ let content_summary_r = base_content_ressource ^ "summary"
 let tag_link_r = base_ressouce_url ^ "tag_link"
 let tag_content_r = base_ressouce_url ^ "tag_content"
 
+}}
+
 let base_url = Rdf_uri.uri "http://127.0.0.1:8000"
 let get_url = Rdf_uri.append base_url "/sparql/"
 let update_url = Rdf_uri.append base_url "/update/"
@@ -47,8 +70,21 @@ let update_url = Rdf_uri.append base_url "/update/"
 ********************************** Tools **************************************
 *******************************************************************************)
 
+{server{
+
 let uri_of_string = Rdf_uri.uri ~check:true
 let string_of_uri = Rdf_uri.string
+
+}}
+
+{client{
+
+let uri_of_string str = str
+let string_of_uri uri = uri
+
+}}
+
+{shared{
 
 (* Link's tools *)
 
@@ -85,18 +121,6 @@ let uri_of_content_id id =
 let uri_of_tag_id_link id = uri_of_string (base_tag_link_url ^ id)
 let uri_of_tag_id_content id = uri_of_string (base_tag_content_url ^ id)
 
-let syntax =
-  let stx = Hashtbl.find Neturl.common_url_syntax "http" in
-  let stx = Neturl.partial_url_syntax stx in
-  { stx with Neturl.url_enable_fragment = Neturl.Url_part_allowed }
-
-let uri_of_subject base subject =
-  let encode_subject = Netencoding.Url.encode subject in
-  Rdf_uri.uri (base ^ encode_subject)
-
-let uri_of_tag_link_subject = uri_of_subject base_tag_link_url
-let uri_of_tag_content_subject = uri_of_subject base_tag_content_url
-
 let pumgrana_id_of_uri base uri =
   let str = string_of_uri uri in
   let regexp = Str.regexp base in
@@ -112,11 +136,17 @@ let pumgrana_id_of_uri base uri =
   in
   Str.replace_first regexp "" str
 
-
 let content_id_of_uri uri =
   Nosql_store.id_of_string (pumgrana_id_of_uri base_content_url uri)
 
 }}
+
+let uri_of_subject base subject =
+  let encode_subject = Netencoding.Url.encode subject in
+  Rdf_uri.uri (base ^ encode_subject)
+
+let uri_of_tag_link_subject = uri_of_subject base_tag_link_url
+let uri_of_tag_content_subject = uri_of_subject base_tag_content_url
 
 let tag_id_link_of_uri = pumgrana_id_of_uri base_tag_link_url
 let tag_id_content_of_uri = pumgrana_id_of_uri base_tag_content_url
