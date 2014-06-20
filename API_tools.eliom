@@ -7,16 +7,6 @@ open Lwt
 
 module Yojson = Yojson.Basic
 
-(*** Generation tools  *)
-
-Random.init 0
-
-let new_rand () = Random.float 200.
-
-let process_rand = new_rand ()
-
-let new_id () = process_rand +. new_rand () +. Unix.time ()
-
 (*** Static string for configuration / selection *)
 
 (** content type return by API' services *)

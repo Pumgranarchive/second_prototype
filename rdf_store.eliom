@@ -121,20 +121,36 @@ let uri_of_content_id id =
 let uri_of_tag_id_link id = uri_of_string (base_tag_link_url ^ id)
 let uri_of_tag_id_content id = uri_of_string (base_tag_content_url ^ id)
 
+let search_forward ~start str1 str2 start_pos =
+  let end1 = String.length str1 in
+  let end2 = String.length str2 in
+  let rec aux pos1 pos2 =
+    if pos1 == end1 then pos2
+    else if pos2 < end2 then
+      let c1 = String.get str1 pos1 in
+      let c2 = String.get str2 pos2 in
+      if Char.compare c1 c2 == 0
+      then aux (pos1 + 1) (pos2 + 1)
+      else if start
+      then raise Not_found
+      else aux 0 (pos2 + 1)
+    else raise Not_found
+  in
+  aux 0 start_pos
+
 let pumgrana_id_of_uri base uri =
   let str = string_of_uri uri in
-  let regexp = Str.regexp base in
   let pos =
-    try (Str.search_forward regexp str 0) + (String.length base)
+    try search_forward ~start:true base str 0
     with Not_found -> raise (Invalid_uri (str ^ ": is not a Pumgrana URI."))
   in
   let _ =
     try
-      let _ = Str.search_forward regexp str pos in
+      let _ = search_forward ~start:false base str pos in
       raise (Invalid_uri (str ^ ": looks to be an invalid URI."))
     with Not_found -> ()
   in
-  Str.replace_first regexp "" str
+  String.sub str pos ((String.length str) - pos)
 
 let content_id_of_uri uri =
   Nosql_store.id_of_string (pumgrana_id_of_uri base_content_url uri)
@@ -318,13 +334,20 @@ let insert_tags tag_type ?link_id ?content_uri subjects =
 
   (* Check if subject does not already exist *)
   let build_ask query subject =
-    let q = next_query query " || " in
-    q ^ "?sub = \"" ^ subject ^ "\""
+    let q = next_query query "|" in
+    q ^ "(" ^ subject ^ ")"
   in
-  let half_ask = List.fold_left build_ask "" subjects in
-  let ask_query = "ASK { ?tag ?res ?sub . FILTER(" ^ half_ask ^ ") }" in
-  lwt exist = ask_to_4store ask_query in
-  if exist then raise (Invalid_argument "One subject or more already exist.");
+  lwt () =
+      if List.length subjects == 0 then Lwt.return () else
+        let half_ask = List.fold_left build_ask "" subjects in
+        let ask_query =
+          "ASK { ?tag ?res ?sub . FILTER regex(?sub, \"" ^ half_ask ^ "\" ) }"
+        in
+        lwt exist = ask_to_4store ask_query in
+        if exist then
+          raise (Invalid_argument "One subject or more already exist.");
+        Lwt.return ()
+  in
 
   let insert_tag_on query tag_uri =
     let q = next_query query " . " in
@@ -453,14 +476,15 @@ let update_content content_id ?title ?summary ?tags_uri () =
   let d_query, i_query =
     match title with
     | Some t ->
-      "{<"^c_str_uri^"> <"^content_title_r^"> ?ti. {?s ?p ?o.} UNION {?x ?y ?z}}. ",
+      "{<"^c_str_uri^"> <"^content_title_r^"> ?o . {?s ?p ?o.} UNION {?x ?y ?z}}",
       "<" ^ c_str_uri ^ "> <" ^ content_title_r ^ "> \"" ^ t ^ "\" . "
     | None -> "", ""
   in
   let d_query', i_query' =
     match summary with
     | Some s ->
-      d_query^"{<"^c_str_uri^"> <"^content_summary_r^"> ?su. {?s ?p ?o.} UNION {?x ?y ?z}}. ",
+      let dq = next_query d_query " UNION " in
+      dq^"{<"^c_str_uri^"> <"^content_summary_r^"> ?o . {?s ?p ?o.} UNION {?x ?y ?z}}",
       i_query ^ "<"^c_str_uri^"> <" ^ content_summary_r ^ "> \"" ^ s ^ "\" . "
     | None -> d_query, i_query
   in
@@ -477,14 +501,15 @@ let update_content content_id ?title ?summary ?tags_uri () =
       let deleting_list = List.fold_left (build_list new_tags) [] old_tags in
       let adding_list = List.fold_left (build_list old_tags) [] new_tags in
       let build_delete q uri =
-        q^"{<"^c_str_uri^"> <"^tagged_content_r^"> <"^uri^">. {?s ?p ?o.} UNION {?x ?y ?z}}. "
+        let dq = next_query d_query " UNION " in
+        dq^"{<"^c_str_uri^"> <"^tagged_content_r^"> <"^uri^">. {?s ?p ?o.} UNION {?x ?y ?z}}"
       in
       let build_insert q uri =
         q ^ "<"^ c_str_uri ^"> <"^ tagged_content_r ^"> <"^ uri ^"> . "
       in
-      let delete_query_tags = List.fold_left build_delete "" deleting_list in
-      let insert_query_tags = List.fold_left build_insert "" adding_list in
-      Lwt.return (d_query' ^ delete_query_tags, i_query' ^ insert_query_tags)
+      let delete_query_tags = List.fold_left build_delete d_query' deleting_list in
+      let insert_query_tags = List.fold_left build_insert i_query' adding_list in
+      Lwt.return (delete_query_tags, insert_query_tags)
     | None -> Lwt.return(d_query', i_query')
   in
   let delete_query = "DELETE {?s ?p ?o.} WHERE { " ^ d_query'' ^ " }" in

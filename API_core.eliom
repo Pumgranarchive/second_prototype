@@ -88,7 +88,8 @@ let insert_content title summary body tags_str_uri =
       with Invalid_argument str_err ->
         raise API_conf.(Pum_exc (return_not_found, str_err))
     in
-    Lwt.return (`String (Nosql_store.string_of_id id))
+    let uri = Rdf_store.uri_of_content_id id in
+    Lwt.return (`String (Rdf_store.string_of_uri uri))
   in
   API_tools.check_return
     ~param_name:API_tools.content_id_ret_name
