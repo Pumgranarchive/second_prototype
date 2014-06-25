@@ -15,11 +15,11 @@ let get_detail_content content_id =
     let content_uri = content_str_uri_of_str_id content_id in
     lwt content = API_core.get_detail content_uri in
     let content = List.hd (get_service_return get_content_list content) in
-    lwt content_tags = API_core.get_tags_from_content content_id in
+    lwt content_tags = API_core.get_tags_from_content content_uri in
     let tags = (get_service_return get_tag_list content_tags) in
-    lwt links = API_core.get_links_from_content content_id in
+    lwt links = API_core.get_links_from_content content_uri in
     let link_list = (get_service_return get_link_list links) in
-    lwt tags_link = API_core.get_tags_from_content_link content_id in
+    lwt tags_link = API_core.get_tags_from_content_link content_uri in
     let tags_link_list = get_service_return get_tag_list tags_link in
     Lwt.return (content, tags, link_list, tags_link_list)
   with
