@@ -78,19 +78,22 @@ let build_tags_list tags =
 (** Build the links list with checkbox *)
 let build_ck_links_list links =
   let rec aux inputs full_html = function
-    | []                -> inputs, List.rev full_html
-    | (title, _, id)::t ->
-      let input = D.raw_input ~input_type:`Checkbox ~name:id () in
-      let html = div [input; pcdata title] in
+    | [] -> inputs, List.rev full_html
+    | (link_id, content_id, title, summary)::t ->
+      let str_link_id = Rdf_store.string_of_link_id link_id in
+      let input = D.raw_input ~input_type:`Checkbox ~name:str_link_id () in
+      let html = div [input; pcdata title; br (); pcdata summary] in
       aux (input::inputs) (html::full_html) t
   in
   aux [] [] links
 
 (** Build a links list html *)
 let build_links_list links =
-  let aux (title, _, id) =
+  let aux (link_id, content_id, title, summary) =
+    let content_str_id = GUI_deserialize.string_of_id content_id in
     div [a ~service:%GUI_services.content_detail_service
-            [h5 [pcdata title]] id]
+            [pcdata title] content_str_id;
+         br (); pcdata summary]
   in
   List.map aux links
 

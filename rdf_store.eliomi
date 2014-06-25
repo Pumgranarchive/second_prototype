@@ -30,6 +30,12 @@ val uri_of_string : string -> uri
 (** Create a string from a URI  *)
 val string_of_uri : uri -> string
 
+(** If the given string URI is a pumgrana one, return true *)
+val is_pumgrana_uri: string -> bool
+
+(** Encode all slash of the given string url  *)
+val slash_encode : string -> string
+
 (** Create a link_id from a string
     @raise Invalid_link_id *)
 val link_id_of_string : string -> link_id

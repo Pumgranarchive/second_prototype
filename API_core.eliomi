@@ -76,9 +76,4 @@ val update_links: (string * string list) list -> Yojson.Basic.json Lwt.t
 (** [delete_links links_id]  *)
 val delete_links: string list -> Yojson.Basic.json Lwt.t
 
-(** [delete_links_from_to origin_id targets_id]
-    Temporary service to solve the issue than we have no access to link_id
-    in the client side. *)
-val delete_links_from_to: string -> string list -> Yojson.Basic.json Lwt.t
-
 }}

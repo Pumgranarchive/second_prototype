@@ -93,8 +93,8 @@ let save_update_content id title summary body tags remove_links new_tags =
   lwt res = Eliom_client.call_service ~service:%API_services.insert_tags ()
       (%API_conf.content_tag, (Some uri, not_found_list))
   in
-  lwt _ = Eliom_client.call_service ~service:%API_services.delete_links_from_to
-      () (uri, remove_links)
+  lwt _ = Eliom_client.call_service ~service:%API_services.delete_links
+      () remove_links
   in
   Eliom_client.change_page ~service:%GUI_services.content_detail_service str_id ()
 
@@ -278,9 +278,11 @@ let handle_refresh_links content_id html_elt inputs_elt submit_elt =
       (get_service_return get_link_list r))
     (fun () ->
       let list = get_checked_inputs dom_inputs in
+      let encode_uri = Rdf_store.slash_encode uri in
+      let encode_list = List.map Rdf_store.slash_encode list in
       Eliom_client.call_service
       ~service:%API_services.get_links_from_content_tags
-      (uri, Some list) ())
+      (encode_uri, Some encode_list) ())
 
 (** Manage content's refreshing by getting data from API's serice. *)
 let handle_refresh_contents html_elt inputs_elt submit_elt =

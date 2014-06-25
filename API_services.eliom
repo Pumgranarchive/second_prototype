@@ -376,7 +376,7 @@ let get_links_from_content_tags =
 (** This function manage the computation
    of the get_links_from_content_tags sercice *)
 let get_links_from_content_tags_handler (content_id, tags_id) () =
-   return_of_json (API_core.get_links_from_content_tags content_id tags_id)
+  return_of_json (API_core.get_links_from_content_tags content_id tags_id)
 
 (** Simple service registration *)
 let _ =
@@ -523,17 +523,3 @@ let _ =
     ~service:delete_links
     (fun () (links_id) ->
       return_of_json (API_core.delete_links links_id))
-
-(* Temporary delete links with from to parameters *)
-let delete_links_from_to =
-  Eliom_service.Http.post_service
-    ~fallback:fallback_delete_links
-    ~post_params:Eliom_parameter.(string "origin_id" **
-                                  list "targets" (string "id"))
-    ()
-
-let _ =
-  Eliom_registration.String.register
-    ~service:delete_links_from_to
-    (fun () (origin_id, targets_id) ->
-      return_of_json (API_core.delete_links_from_to origin_id targets_id))

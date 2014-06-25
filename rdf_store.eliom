@@ -88,6 +88,47 @@ let string_of_uri uri = uri
 
 (* Link's tools *)
 
+let search_forward ~start str1 str2 start_pos =
+  let end1 = String.length str1 in
+  let end2 = String.length str2 in
+  let rec aux pos1 pos2 =
+    if pos1 == end1 then pos2
+    else if pos2 < end2 then
+      let c1 = String.get str1 pos1 in
+      let c2 = String.get str2 pos2 in
+      if Char.compare c1 c2 == 0
+      then aux (pos1 + 1) (pos2 + 1)
+      else if start
+      then raise Not_found
+      else aux 0 (pos2 + 1)
+    else raise Not_found
+  in
+  aux 0 start_pos
+
+let is_pumgrana_uri str =
+  let d_length = String.length domain in
+  if (String.length str) < d_length then
+    false
+  else
+    let sub = String.sub str 0 d_length in
+    (String.compare sub domain) == 0
+
+let slash_encode url =
+  let insert str p_start p_end str2 =
+    let str1 = String.sub str 0 p_start in
+    let str3 = String.sub str p_end ((String.length str) - p_end) in
+    str1 ^ str2 ^ str3
+  in
+  let rec aux url start =
+    try
+      let new_p = search_forward ~start:false "/" url start in
+      let new_url = insert url (new_p - 1) new_p "%2F" in
+      aux new_url new_p
+    with
+      Not_found -> url
+  in
+  aux url 0
+
 let link_id (origin_uri:uri) (target_uri:uri) = origin_uri, target_uri
 
 let str_tuple_of_link_id (origin_uri, target_uri) =
@@ -120,23 +161,6 @@ let uri_of_content_id id =
 
 let uri_of_tag_id_link id = uri_of_string (base_tag_link_url ^ id)
 let uri_of_tag_id_content id = uri_of_string (base_tag_content_url ^ id)
-
-let search_forward ~start str1 str2 start_pos =
-  let end1 = String.length str1 in
-  let end2 = String.length str2 in
-  let rec aux pos1 pos2 =
-    if pos1 == end1 then pos2
-    else if pos2 < end2 then
-      let c1 = String.get str1 pos1 in
-      let c2 = String.get str2 pos2 in
-      if Char.compare c1 c2 == 0
-      then aux (pos1 + 1) (pos2 + 1)
-      else if start
-      then raise Not_found
-      else aux 0 (pos2 + 1)
-    else raise Not_found
-  in
-  aux 0 start_pos
 
 let pumgrana_id_of_uri base uri =
   let str = string_of_uri uri in
@@ -422,7 +446,6 @@ let get_triple_contents tags_uri =
     ?content <" ^ content_summary_r ^ "> ?summary . " ^ half_query ^ " }"
   in
   lwt solutions = get_from_4store query in
-  if List.length solutions == 0 then print_endline "Empty !";
   let triple_contents = List.map triple_content_from solutions in
   Lwt.return (triple_contents)
 
@@ -543,7 +566,7 @@ let update_content_tags content_uri tags_uri =
 let build_tags_query content_uri tags =
   let filter_query = if List.length tags == 0 then "" else
       let build_rgx rgx tag_id =
-        let rgx' = if String.length rgx == 0 then rgx else rgx ^ "|" in
+        let rgx' = next_query rgx "|" in
         let tag_uri = string_of_uri tag_id in
         rgx' ^ "(" ^ tag_uri ^ ")"
       in

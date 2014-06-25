@@ -83,14 +83,21 @@ let get_short_content json_content =
 (** deserialize link from yojson to ocaml format *)
 let get_link json_link =
   try
-    (* Link id is currently not used *)
-    (* let link_id = member "link_id" json_link in *)
-    let content_id = member "content_id" json_link in
+    let link_id = member "link_uri" json_link in
+    let content_uri = member "content_uri" json_link in
     let content_title = member "content_title" json_link in
     let content_summary = member "content_summary" json_link in
-    to_string content_title, to_string content_summary, to_string content_id
+    let content_str_uri = to_string content_uri in
+    let uri =
+      if Rdf_store.is_pumgrana_uri content_str_uri
+      then Id (id_of_str_uri content_str_uri)
+      else Uri (Rdf_store.uri_of_string content_str_uri)
+    in
+    Rdf_store.link_id_of_string (to_string link_id), uri,
+    to_string content_title, to_string content_summary
   with
-  | _ -> raise (Yojson_exc  "Bad link format")
+  | e -> print_endline (Printexc.to_string e);
+    raise (Yojson_exc  "Bad link format")
 
 (** deserialize tag from yojson to ocaml format *)
 let get_tag json_tag =

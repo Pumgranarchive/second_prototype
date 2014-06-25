@@ -25,10 +25,14 @@ val build_tags_form: (string * string) list -> Html5_types.input Eliom_content.H
 val build_tags_list: (string * string) list -> Html5_types.div Eliom_content.Html5.F.elt list
 
 (** Build the links html list with checkbox *)
-val build_ck_links_list: (string * string * string) list -> Html5_types.input Eliom_content.Html5.F.elt list * Html5_types.div Eliom_content.Html5.F.elt list
+val build_ck_links_list:
+  (Rdf_store.link_id * GUI_deserialize.id * string * string) list ->
+  Html5_types.input Eliom_content.Html5.F.elt list * Html5_types.div Eliom_content.Html5.F.elt list
 
 (** Build a links list html *)
-val build_links_list: (string * string * string) list -> Html5_types.div Eliom_content.Html5.F.elt list
+val build_links_list:
+  (Rdf_store.link_id * GUI_deserialize.id * string * string) list ->
+  Html5_types.div Eliom_content.Html5.F.elt list
 
 (** Build a contents list html *)
 val build_contents_list: (string * string * string) list -> Html5_types.div Eliom_content.Html5.F.elt list
