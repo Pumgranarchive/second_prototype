@@ -551,7 +551,7 @@ let build_tags_query content_uri tags =
       ". FILTER regex(str(?tag), \"" ^ regex ^ "\")"
   in
   let content_str_uri = string_of_uri content_uri in
-  "SELECT ?tag ?target ?title ?summay WHERE
+  "SELECT ?tag ?target ?title ?summary WHERE
   { <"^content_str_uri^"> ?tag ?target "^filter_query^" .
     ?target <"^content_title_r^"> ?title .
     ?target <"^content_summary_r^"> ?summary }"
