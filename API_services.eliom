@@ -12,6 +12,10 @@ module Yojson = Yojson.Basic
      to get reference on them and use it.
 *)
 
+let map func = function
+  | Some x -> Some (func x)
+  | None   -> None
+
 (*
 ** Content
 *)
@@ -36,16 +40,13 @@ let get_contents =
                                            opt (list "tags" (string "id"))))
     ()
 
-(** This function manage the computation of the contents service.  *)
-let get_contents_handler (filter, tags_id) () =
-  return_of_json (API_core.get_contents filter tags_id)
-
-
 (** Simple contents service  *)
 let _ =
   Eliom_registration.String.register
     ~service:get_contents
-    get_contents_handler
+    (fun (filter, tags_ids) () ->
+      let tags_id_dcd = map (List.map Rdf_store.slash_decode) tags_ids in
+      return_of_json (API_core.get_contents filter tags_id_dcd))
 
 (** This service allow a simpler matching url without superfluous slashs,
     due by the two optional parameters. *)
@@ -53,7 +54,7 @@ let _ =
   Eliom_registration.String.register_service
     ~path:["api"; "content"; "list_content"]
     ~get_params:Eliom_parameter.(suffix (opt (string "filter")))
-    (fun filter -> get_contents_handler (filter, None))
+    (fun filter () -> return_of_json (API_core.get_contents filter None))
 
 (* Insert content *)
 let fallback_insert_content =
@@ -373,16 +374,15 @@ let get_links_from_content_tags =
           (opt (list "tags" (string "id")))))
        ()
 
-(** This function manage the computation
-   of the get_links_from_content_tags sercice *)
-let get_links_from_content_tags_handler (content_id, tags_id) () =
-  return_of_json (API_core.get_links_from_content_tags content_id tags_id)
-
 (** Simple service registration *)
 let _ =
   Eliom_registration.String.register
    ~service:get_links_from_content_tags
-   get_links_from_content_tags_handler
+    (fun (content_uri, tags_ids) () ->
+      let content_uri_dcd = Rdf_store.slash_decode content_uri in
+      let tags_id_dcd = map (List.map Rdf_store.slash_decode) tags_ids in
+      return_of_json
+        (API_core.get_links_from_content_tags content_uri_dcd tags_id_dcd))
 
 (* Insert links *)
 let fallback_insert_links =

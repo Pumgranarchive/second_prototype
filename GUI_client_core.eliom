@@ -278,11 +278,11 @@ let handle_refresh_links content_id html_elt inputs_elt submit_elt =
       (get_service_return get_link_list r))
     (fun () ->
       let list = get_checked_inputs dom_inputs in
-      let encode_uri = Rdf_store.slash_encode uri in
-      let encode_list = List.map Rdf_store.slash_encode list in
+      let encoded_uri = Rdf_store.slash_encode uri in
+      let encoded_list = List.map Rdf_store.slash_encode list in
       Eliom_client.call_service
-      ~service:%API_services.get_links_from_content_tags
-      (encode_uri, Some encode_list) ())
+        ~service:%API_services.get_links_from_content_tags
+        (encoded_uri, Some encoded_list) ())
 
 (** Manage content's refreshing by getting data from API's serice. *)
 let handle_refresh_contents html_elt inputs_elt submit_elt =
@@ -290,8 +290,11 @@ let handle_refresh_contents html_elt inputs_elt submit_elt =
   handle_refresh_list html_elt submit_elt
     (fun r -> GUI_tools.build_contents_list
       (get_service_return get_short_content_list r))
-    (fun () -> Eliom_client.call_service
-      ~service:%API_services.get_contents
-      (None, Some (get_checked_inputs dom_inputs)) ())
+    (fun () ->
+      let list = get_checked_inputs dom_inputs in
+      let encoded_list = List.map Rdf_store.slash_encode list in
+      Eliom_client.call_service
+        ~service:%API_services.get_contents
+        (None, Some encoded_list) ())
 
 }}

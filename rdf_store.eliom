@@ -105,6 +105,25 @@ let search_forward ~start str1 str2 start_pos =
   in
   aux 0 start_pos
 
+let insert str p_start p_end str2 =
+  let str1 = String.sub str 0 p_start in
+  let str3 = String.sub str p_end ((String.length str) - p_end) in
+  str1 ^ str2 ^ str3
+
+let replace_all remove_str replace_str str =
+  let remove_length = String.length remove_str in
+  let rec aux str start =
+    try
+      let p = search_forward ~start:false remove_str str start in
+      let new_p = p - remove_length in
+      let new_url = insert str new_p p replace_str in
+      aux new_url new_p
+    with
+      Not_found -> str
+  in
+  aux str 0
+
+
 let is_pumgrana_uri str =
   let d_length = String.length domain in
   if (String.length str) < d_length then
@@ -114,20 +133,10 @@ let is_pumgrana_uri str =
     (String.compare sub domain) == 0
 
 let slash_encode url =
-  let insert str p_start p_end str2 =
-    let str1 = String.sub str 0 p_start in
-    let str3 = String.sub str p_end ((String.length str) - p_end) in
-    str1 ^ str2 ^ str3
-  in
-  let rec aux url start =
-    try
-      let new_p = search_forward ~start:false "/" url start in
-      let new_url = insert url (new_p - 1) new_p "%2F" in
-      aux new_url new_p
-    with
-      Not_found -> url
-  in
-  aux url 0
+  replace_all "/" "%2F" url
+
+let slash_decode url =
+  replace_all "%2F" "/" url
 
 let link_id (origin_uri:uri) (target_uri:uri) = origin_uri, target_uri
 
@@ -443,7 +452,8 @@ let get_triple_contents tags_uri =
   in
   let query = "SELECT ?content ?title ?summary WHERE
   { ?content <" ^ content_title_r ^ "> ?title .
-    ?content <" ^ content_summary_r ^ "> ?summary . " ^ half_query ^ " }"
+    ?content <" ^ content_summary_r ^ "> ?summary .
+    " ^ half_query ^ " }"
   in
   lwt solutions = get_from_4store query in
   let triple_contents = List.map triple_content_from solutions in

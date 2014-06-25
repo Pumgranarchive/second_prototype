@@ -36,6 +36,9 @@ val is_pumgrana_uri: string -> bool
 (** Encode all slash of the given string url  *)
 val slash_encode : string -> string
 
+(** Decode all slash of the given string url  *)
+val slash_decode : string -> string
+
 (** Create a link_id from a string
     @raise Invalid_link_id *)
 val link_id_of_string : string -> link_id
