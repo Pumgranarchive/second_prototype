@@ -144,7 +144,7 @@ let delete_contents content_uris =
 
 (*** Getters *)
 
-let link_format (uri, subject) =
+let tag_format (uri, subject) =
   `Assoc [(API_tools.uri_field, `String (Rdf_store.string_of_uri uri));
           (API_tools.subject_field, `String subject)]
 
@@ -159,7 +159,7 @@ let get_tags_by_type type_name =
   let aux () =
     let tag_type = to_tag_type type_name in
     lwt tags = Rdf_store.get_tags tag_type [] in
-    let result = `List (List.map link_format tags) in
+    let result = `List (List.map tag_format tags) in
     Lwt.return result
   in
   API_tools.check_return ~param_name:API_tools.tags_ret_name aux
@@ -168,7 +168,7 @@ let get_tags_from_content content_str_uri =
   let aux () =
     let content_uri = uri_of_string content_str_uri in
     lwt tags = Rdf_store.get_tags_from_content content_uri in
-    let result = `List (List.map link_format tags) in
+    let result = `List (List.map tag_format tags) in
     Lwt.return result
   in
   API_tools.check_return ~param_name:API_tools.tags_ret_name aux
@@ -177,7 +177,7 @@ let get_tags_from_content_link content_str_uri =
   let aux () =
     let content_uri = uri_of_string content_str_uri in
     lwt tags = Rdf_store.get_tags_from_content_link content_uri in
-    let result = `List (List.map link_format tags) in
+    let result = `List (List.map tag_format tags) in
     Lwt.return result
   in
   API_tools.check_return ~param_name:API_tools.tags_ret_name aux

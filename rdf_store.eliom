@@ -477,7 +477,7 @@ let update_content content_id ?title ?summary ?tags_uri () =
   let d_query, i_query =
     match title with
     | Some t ->
-      "{<"^c_str_uri^"> <"^content_title_r^"> ?o . {?s ?p ?o.} UNION {?x ?y ?z}}",
+      "{<"^c_str_uri^"> <"^content_title_r^"> ?o. {?s ?p ?o.} UNION {?x ?y ?z}}",
       "<" ^ c_str_uri ^ "> <" ^ content_title_r ^ "> \"" ^ t ^ "\" . "
     | None -> "", ""
   in
@@ -485,12 +485,13 @@ let update_content content_id ?title ?summary ?tags_uri () =
     match summary with
     | Some s ->
       let dq = next_query d_query " UNION " in
-      dq^"{<"^c_str_uri^"> <"^content_summary_r^"> ?o . {?s ?p ?o.} UNION {?x ?y ?z}}",
+      dq^"{<"^c_str_uri^"> <"^content_summary_r^"> ?o. {?s ?p ?o.} UNION {?x ?y ?z}}",
       i_query ^ "<"^c_str_uri^"> <" ^ content_summary_r ^ "> \"" ^ s ^ "\" . "
     | None -> d_query, i_query
   in
   lwt d_query'', i_query'' =
     match tags_uri with
+    | None          -> Lwt.return(d_query', i_query')
     | Some tags_uri ->
       lwt old_tuple_tags = get_tags_from_content content_uri in
       let old_tags = List.map (fun (x, _) -> string_of_uri x) old_tuple_tags in
@@ -502,20 +503,20 @@ let update_content content_id ?title ?summary ?tags_uri () =
       let deleting_list = List.fold_left (build_list new_tags) [] old_tags in
       let adding_list = List.fold_left (build_list old_tags) [] new_tags in
       let build_delete q uri =
-        let dq = next_query d_query " UNION " in
-        dq^"{<"^c_str_uri^"> <"^tagged_content_r^"> <"^uri^">. {?s ?p ?o.} UNION {?x ?y ?z}}"
+        q ^ "<"^c_str_uri^"> <"^tagged_content_r^"> <"^uri^"> . "
       in
       let build_insert q uri =
         q ^ "<"^ c_str_uri ^"> <"^ tagged_content_r ^"> <"^ uri ^"> . "
       in
-      let delete_query_tags = List.fold_left build_delete d_query' deleting_list in
+      let delete_query_tags = List.fold_left build_delete "" deleting_list in
       let insert_query_tags = List.fold_left build_insert i_query' adding_list in
       Lwt.return (delete_query_tags, insert_query_tags)
-    | None -> Lwt.return(d_query', i_query')
   in
-  let delete_query = "DELETE {?s ?p ?o.} WHERE { " ^ d_query'' ^ " }" in
+  let delete_query = "DELETE {?s ?p ?o.} WHERE { " ^ d_query' ^ " }" in
+  let delete_data_query = "DELETE DATA { " ^ d_query'' ^ " }" in
   let insert_query = "INSERT DATA { " ^ i_query'' ^ " }" in
   lwt () = post_on_4store delete_query in
+  lwt () = post_on_4store delete_data_query in
   post_on_4store insert_query
 
 let update_content_tags content_uri tags_uri =
