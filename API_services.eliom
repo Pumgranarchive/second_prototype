@@ -205,19 +205,6 @@ let _ =
 *)
 
 
-(* List_tag *)
-(* let list_tags = *)
-(*   Eliom_service.Http.service *)
-(*     ~path:["api"; "tag"; "list_tag"] *)
-(*     ~get_params:Eliom_parameter.(suffix (list "tags" (string "id"))) *)
-(*     () *)
-
-(* let _ = *)
-(*   Eliom_registration.String.register *)
-(*     ~service:list_tags *)
-(*     (fun (tags_id) () -> *)
-(*       return_of_json (API_core.get_tags tags_id)) *)
-
 (* Get_tags_by_type *)
 let get_tags_by_type =
   Eliom_service.Http.service
@@ -351,6 +338,19 @@ let _ =
 (*
 ** links
 *)
+
+(* Get_link_detail *)
+let get_link_detail =
+  Eliom_service.Http.service
+    ~path:["api"; "link"; "detail"]
+    ~get_params:Eliom_parameter.(suffix (string "link_uri"))
+    ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:get_link_detail
+    (fun link_uri () ->
+      return_of_json (API_core.get_link_detail link_uri))
 
 (* Get_links_from_content *)
 let get_links_from_content =

@@ -217,6 +217,26 @@ let delete_tags tags_str_uri =
 *)
 
 (*** Getters *)
+
+let get_link_detail str_link_id =
+  let aux () =
+    let link_id = Rdf_store.link_id_of_string str_link_id in
+    lwt result = Rdf_store.get_link_detail link_id in
+    let build_json (link_id, origin_uri, target_uri, tags) =
+      let str_link_id = Rdf_store.string_of_link_id link_id in
+      let origin_str_uri = Rdf_store.string_of_uri origin_uri in
+      let target_str_uri = Rdf_store.string_of_uri target_uri in
+      let tags_json = List.map tag_format tags in
+      `Assoc [(API_tools.link_id_ret_name, `String str_link_id);
+              (API_tools.originid_field, `String origin_str_uri);
+              (API_tools.targetid_field, `String target_str_uri);
+              (API_tools.tags_ret_name, `List tags_json)]
+    in
+    let json = build_json result in
+    Lwt.return json
+  in
+  API_tools.check_return ~param_name:API_tools.links_ret_name aux
+
 let get_links_from_content_tags content_uri opt_tags_uri =
   let aux tags_str_uri () =
     let content_uri = Rdf_store.uri_of_string content_uri in
@@ -232,7 +252,7 @@ let get_links_from_content_tags content_uri opt_tags_uri =
     in
     let json = `List (List.map build_json linked_cs) in
     Lwt.return json
-   in
+  in
   let tags_str_uri = match opt_tags_uri with
     | Some x -> x
     | None   -> []

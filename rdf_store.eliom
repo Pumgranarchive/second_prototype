@@ -589,6 +589,11 @@ let update_content_tags content_uri tags_uri =
 ******************************** Links ****************************************
 *******************************************************************************)
 
+let get_link_detail link_id =
+  let origin_uri, target_uri = link_id in
+  lwt tags = get_tags_from_link link_id in
+  Lwt.return (link_id, origin_uri, target_uri, tags)
+
 let build_tags_query content_uri tags =
   let filter_query = if List.length tags == 0 then "" else
       let build_rgx rgx tag_id =

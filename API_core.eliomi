@@ -59,6 +59,9 @@ val delete_tags: string list -> Yojson.Basic.json Lwt.t
 
 (** {6 Link} *)
 
+(** [get_link_detail link_id] *)
+val get_link_detail : string -> Yojson.Basic.json Lwt.t
+
 (** [get_links_from_content content_id]  *)
 val get_links_from_content: string -> Yojson.Basic.json Lwt.t
 

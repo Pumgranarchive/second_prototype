@@ -98,6 +98,9 @@ val update_content_tags : uri -> uri list -> unit Lwt.t
 
 (** {6 Links}  *)
 
+(** [get_link_detail link_id] *)
+val get_link_detail : link_id -> (link_id * uri * uri * tag list) Lwt.t
+
 (** [get_links_from_content content_uri]  *)
 val links_from_content : uri -> linked_content list Lwt.t
 
