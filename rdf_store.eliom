@@ -70,23 +70,7 @@ let update_url = Rdf_uri.append base_url "/update/"
 ********************************** Tools **************************************
 *******************************************************************************)
 
-{server{
-
-let uri_of_string = Rdf_uri.uri ~check:true
-let string_of_uri = Rdf_uri.string
-
-}}
-
-{client{
-
-let uri_of_string str = str
-let string_of_uri uri = uri
-
-}}
-
 {shared{
-
-(* Link's tools *)
 
 let search_forward ~start str1 str2 start_pos =
   let end1 = String.length str1 in
@@ -104,6 +88,38 @@ let search_forward ~start str1 str2 start_pos =
     else raise Not_found
   in
   aux 0 start_pos
+
+}}
+
+{server{
+
+let uri_of_string uri =
+  let _ =
+    try search_forward ~start:true "http://" uri 0
+    with Not_found -> raise (Invalid_uri uri)
+  in
+  Rdf_uri.uri uri
+
+let string_of_uri = Rdf_uri.string
+
+}}
+
+{client{
+
+let uri_of_string str =
+  let _ =
+    try search_forward ~start:true "http://" str 0
+    with Not_found -> raise (Invalid_uri str)
+  in
+  str
+
+let string_of_uri uri = uri
+
+}}
+
+{shared{
+
+(* Link's tools *)
 
 let insert str p_start p_end str2 =
   let str1 = String.sub str 0 p_start in
