@@ -26,8 +26,13 @@ let string_of_id = function
   | Id id   -> Nosql_store.string_of_id id
   | Uri uri -> Rdf_store.string_of_uri uri
 
-let id_of_str_uri uri =
-    Rdf_store.(content_id_of_uri (uri_of_string uri))
+let id_of_str_uri str_uri =
+  let uri = Rdf_store.uri_of_string str_uri in
+  try
+    if Rdf_store.is_pumgrana_uri str_uri
+    then Id (Rdf_store.content_id_of_uri uri)
+    else Uri uri
+  with Nosql_store.Invalid_id s -> Uri uri
 
 (** {6 Pumgrana format deserializer}  *)
 
@@ -63,7 +68,7 @@ let get_content json_content =
       External (Uri (Rdf_store.uri_of_string (to_string uri)),
                 to_string title, to_string summary)
     else
-      Internal (Id (id_of_str_uri (to_string uri)),
+      Internal (id_of_str_uri (to_string uri),
                 to_string title, to_string summary, to_string body)
   with
   | e -> print_endline (Printexc.to_string e);
@@ -75,8 +80,8 @@ let get_short_content json_content =
     let uri = member "uri" json_content in
     let title = member "title" json_content in
     let summary = member "summary" json_content in
-    to_string title, to_string summary,
-    Nosql_store.string_of_id (id_of_str_uri (to_string uri))
+    id_of_str_uri (to_string uri),
+    to_string title, to_string summary
   with
   | _ -> raise (Yojson_exc  "Bad short content format")
 
@@ -88,11 +93,7 @@ let get_link json_link =
     let content_title = member "content_title" json_link in
     let content_summary = member "content_summary" json_link in
     let content_str_uri = to_string content_uri in
-    let uri =
-      if Rdf_store.is_pumgrana_uri content_str_uri
-      then Id (id_of_str_uri content_str_uri)
-      else Uri (Rdf_store.uri_of_string content_str_uri)
-    in
+    let uri = id_of_str_uri content_str_uri in
     Rdf_store.link_id_of_string (to_string link_id), uri,
     to_string content_title, to_string content_summary
   with
@@ -102,11 +103,25 @@ let get_link json_link =
 (** deserialize tag from yojson to ocaml format *)
 let get_tag json_tag =
   try
-    let uri = member "uri" json_tag in
-    let subject = member "subject" json_tag in
-    to_string subject, to_string uri
+    let uri = to_string (member "uri" json_tag) in
+    let subject = to_string (member "subject" json_tag) in
+    Rdf_store.uri_of_string uri, subject
   with
   | _ -> raise (Yojson_exc  "Bad tag format")
+
+(** deserialize json link detail to ocaml  *)
+let get_link_detail json_detail =
+  try
+    let link_uri = to_string (member "link_uri" json_detail) in
+    let origin_uri = to_string (member "origin_uri" json_detail) in
+    let target_uri = to_string (member "target_uri" json_detail) in
+    let tags = to_list (member "tags" json_detail) in
+    Rdf_store.link_id_of_string link_uri,
+    Rdf_store.uri_of_string origin_uri,
+    Rdf_store.uri_of_string target_uri,
+    List.map get_tag tags
+  with
+  | _ -> raise (Yojson_exc  "Bad link detail format")
 
 (** deserialize tag list from yojson to ocaml *)
 let get_tag_list tl =

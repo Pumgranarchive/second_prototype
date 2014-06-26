@@ -9,7 +9,6 @@ open GUI_deserialize
 let content_str_uri_of_str_id id =
   Rdf_store.(string_of_uri (uri_of_content_id (Nosql_store.id_of_string id)))
 
-(** Get all data for get_detail html service. *)
 let get_detail_content content_id =
   try_lwt
     let content_uri = content_str_uri_of_str_id content_id in
@@ -30,10 +29,14 @@ let get_detail_content content_id =
                           "title", "", "Internal server error")),
       [], [], [])
 
-(** Get all data for get_contents html service. *)
-let get_contents filter tags_id =
-  lwt contents_json = API_core.get_contents filter tags_id in
+let get_contents filter tags_uri =
+  lwt contents_json = API_core.get_contents filter tags_uri in
   lwt tags_json = API_core.get_tags_by_type API_conf.content_tag in
   let contents = get_service_return get_short_content_list contents_json in
   let tags = get_service_return get_tag_list tags_json in
   Lwt.return (contents, tags)
+
+let get_link_detail link_uri =
+  lwt json_detail = API_core.get_link_detail link_uri in
+  let detail = get_link_detail json_detail in
+  Lwt.return detail

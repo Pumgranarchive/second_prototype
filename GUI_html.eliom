@@ -56,7 +56,7 @@ let home_html (contents, tags) =
 (** Display the content detail html service *)
 let content_detail (content, tags_id, links, tags_link) =
   try
-    let aux (subject, id) =  div [pcdata subject] in
+    let aux (id, subject) =  div [pcdata subject] in
     let tags_subjects = List.map aux tags_id in
     let links_html = D.div (GUI_tools.build_links_list links) in
     let submit, links_tags_inputs, links_tags_html =
@@ -200,6 +200,32 @@ let content_insert () =
               span [pcdata "Select to unadd"];
               div_tags_html;
               div add_tag_html]]])
+  with
+  | e ->
+    let err_msg = Printexc.to_string e in
+    print_endline err_msg;
+    empty_html ~msg:err_msg ()
+
+(** Insert link html service *)
+let link_insert opt_origin_uri opt_target_uri =
+  try
+    Eliom_tools.F.html
+      ~title:"Pumgrana"
+      ~css:[["css";"pumgrana.css"]]
+      Html5.F.(body [])
+  with
+  | e ->
+    let err_msg = Printexc.to_string e in
+    print_endline err_msg;
+    empty_html ~msg:err_msg ()
+
+(** Update link html service *)
+let update_insert (link_uri, origin_uri, target_uri, tags) =
+  try
+    Eliom_tools.F.html
+      ~title:"Pumgrana"
+      ~css:[["css";"pumgrana.css"]]
+      Html5.F.(body [])
   with
   | e ->
     let err_msg = Printexc.to_string e in

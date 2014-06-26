@@ -57,8 +57,9 @@ let build_update_content_header () =
 let build_ck_tags_list tags =
   let rec aux inputs full_html = function
     | []                -> inputs, List.rev full_html
-    | (subject, id)::t  ->
-      let input = D.raw_input ~input_type:`Checkbox ~name:id () in
+    | (uri, subject)::t  ->
+      let str_uri = Rdf_store.string_of_uri uri in
+      let input = D.raw_input ~input_type:`Checkbox ~name:str_uri () in
       let html = div [input; pcdata subject] in
       aux (input::inputs) (html::full_html) t
   in
@@ -72,7 +73,7 @@ let build_tags_form tags =
 
 (** Build a simple tags list html *)
 let build_tags_list tags =
-  let aux (subject, _) = div [pcdata subject] in
+  let aux (uri, subject) = div [pcdata subject] in
   List.map aux tags
 
 (** Build the links list with checkbox *)
@@ -98,9 +99,10 @@ let build_links_list links =
   List.map aux links
 
 let build_contents_list contents =
-  let aux (title, summary, id) =
+  let aux (id, title, summary) =
+    let str_id = GUI_deserialize.string_of_id id in
     div ~a:[a_class ["content"]]
-      [a ~service:%GUI_services.content_detail_service [pcdata title] id;
+      [a ~service:%GUI_services.content_detail_service [pcdata title] str_id;
        br ();
        span [pcdata summary]]
   in

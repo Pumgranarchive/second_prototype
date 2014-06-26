@@ -45,3 +45,15 @@ let _ =
   Pumgrana.App.register
     ~service:GUI_services.content_insert_service
     (fun () () -> Lwt.return (GUI_html.content_insert ()))
+
+(* let _ = *)
+(*   Pumgrana.App.register *)
+(*     ~service:GUI_services.link_insert_service *)
+(*     (fun (origin_uri, target_uri) () -> *)
+(*       Lwt.return (GUI_html.link_insert origin_uri target_uri)) *)
+
+(* let _ = *)
+(*   Pumgrana.App.register *)
+(*     ~service:GUI_services.link_update_service *)
+(*     (fun link_uri () -> *)
+(*       Lwt.return (GUI_html.link_update link_uri)) *)

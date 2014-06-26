@@ -7,22 +7,25 @@
 *)
 
 (** Display the home html service *)
-val home_html: (string * string * string) list * (string * string) list -> Html5_types.html Eliom_content.Html5.elt
+val home_html:
+  (GUI_deserialize.id * string * string) list *
+  (Rdf_store.uri * string) list ->
+  Html5_types.html Eliom_content.Html5.elt
 
 (** Display the content detail html service *)
 val content_detail:
   GUI_deserialize.content *
-  (string * string) list *
+  (Rdf_store.uri * string) list *
   (Rdf_store.link_id * GUI_deserialize.id * string * string) list *
-  (string * string) list ->
+  (Rdf_store.uri * string) list ->
   Html5_types.html Eliom_content.Html5.elt
 
 (** Update content detail html service *)
 val content_update:
   GUI_deserialize.content *
-  (string * string) list *
+  (Rdf_store.uri * string) list *
   (Rdf_store.link_id * GUI_deserialize.id * string * string) list *
-  (string * string) list ->
+  (Rdf_store.uri * string) list ->
   Html5_types.html Eliom_content.Html5.elt
 
 (** Insert content html service *)

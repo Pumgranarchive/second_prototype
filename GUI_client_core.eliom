@@ -63,6 +63,22 @@ let cancel_update_content id =
   Eliom_client.change_page
     ~service:%GUI_services.content_detail_service str_id ()
 
+let rec get_uri_of name = function
+  | []                -> raise Not_found
+  | (uri, sub)::t     ->
+    if String.compare sub name == 0
+    then Rdf_store.string_of_uri uri
+    else get_uri_of name t
+
+let rec build_tags_list all_tags nl not_found_list = function
+  | []                -> nl, not_found_list
+  | subject::t        ->
+    let new_list, nf_list =
+      try (get_uri_of subject all_tags)::nl, not_found_list
+      with | Not_found -> nl, subject::not_found_list
+    in
+    build_tags_list all_tags new_list nf_list t
+
 let save_update_content id title summary body tags remove_links new_tags =
   let uri = GUI_deserialize.uri_of_id id in
   let str_id = GUI_deserialize.string_of_id id in
@@ -70,25 +86,9 @@ let save_update_content id title summary body tags remove_links new_tags =
     %API_conf.content_tag ()
   in
   let all_tags = get_service_return get_tag_list (Yojson.from_string res) in
-  let rec get_uri_of name = function
-    | []                -> raise Not_found
-    | (sub, uri)::t     ->
-      if String.compare sub name == 0
-      then uri
-      else get_uri_of name t
-  in
-  let rec build_tags_list nl not_found_list = function
-    | []                -> nl, not_found_list
-    | subject::t        ->
-      let new_list, nf_list =
-        try (get_uri_of subject all_tags)::nl, not_found_list
-        with | Not_found        -> nl, subject::not_found_list
-      in
-      build_tags_list new_list nf_list t
-  in
-  let full_tags_list, not_found_list = build_tags_list tags [] new_tags in
+  let new_tags_list, not_found_list = build_tags_list all_tags tags [] new_tags in
   lwt _ = Eliom_client.call_service ~service:%API_services.update_content ()
-      (uri, (Some title, (Some summary, (Some body, Some full_tags_list))))
+      (uri, (Some title, (Some summary, (Some body, Some new_tags_list))))
   in
   lwt res = Eliom_client.call_service ~service:%API_services.insert_tags ()
       (%API_conf.content_tag, (Some uri, not_found_list))
@@ -103,23 +103,7 @@ let save_insert_content title summary body new_tags =
     %API_conf.content_tag ()
   in
   let all_tags = get_service_return get_tag_list (Yojson.from_string res) in
-  let rec get_uri_of name = function
-    | []                -> raise Not_found
-    | (sub, uri)::t     ->
-      if String.compare sub name == 0
-      then uri
-      else get_uri_of name t
-  in
-  let rec build_tags_list nl not_found_list = function
-    | []                -> nl, not_found_list
-    | subject::t        ->
-      let new_list, nf_list =
-        try (get_uri_of subject all_tags)::nl, not_found_list
-        with | Not_found        -> nl, subject::not_found_list
-      in
-      build_tags_list new_list nf_list t
-  in
-  let tags_list, not_found_list = build_tags_list [] [] new_tags in
+  let tags_list, not_found_list = build_tags_list all_tags [] [] new_tags in
   lwt res = Eliom_client.call_service ~service:%API_services.insert_content ()
       (title, (summary, (body, Some tags_list)))
   in
