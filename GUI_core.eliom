@@ -38,5 +38,5 @@ let get_contents filter tags_uri =
 
 let get_link_detail link_uri =
   lwt json_detail = API_core.get_link_detail link_uri in
-  let detail = get_link_detail json_detail in
+  let detail = List.hd (get_service_return get_detail_link_list json_detail) in
   Lwt.return detail

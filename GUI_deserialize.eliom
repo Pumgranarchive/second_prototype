@@ -45,7 +45,8 @@ let get_service_return func json =
       let name, data = List.nth assoc_list idx_last_element in
       data
     with
-    | _ -> raise (Yojson_exc "Bad service return format")
+    | e -> print_endline (Printexc.to_string e);
+      raise (Yojson_exc "Bad service return format")
   in
   func data
 
@@ -55,7 +56,8 @@ let get_content_uri_return json =
     let json_content_uri = member "content_uri" json in
     to_string (List.hd (to_list json_content_uri))
   with
-  | _ -> raise (Yojson_exc "Bad content_uri format")
+  | e -> print_endline (Printexc.to_string e);
+    raise (Yojson_exc "Bad content_uri format")
 
 (** deserialize content from yojson to ocaml format *)
 let get_content json_content =
@@ -83,7 +85,8 @@ let get_short_content json_content =
     id_of_str_uri (to_string uri),
     to_string title, to_string summary
   with
-  | _ -> raise (Yojson_exc  "Bad short content format")
+  | e -> print_endline (Printexc.to_string e);
+    raise (Yojson_exc  "Bad short content format")
 
 (** deserialize link from yojson to ocaml format *)
 let get_link json_link =
@@ -107,7 +110,8 @@ let get_tag json_tag =
     let subject = to_string (member "subject" json_tag) in
     Rdf_store.uri_of_string uri, subject
   with
-  | _ -> raise (Yojson_exc  "Bad tag format")
+  | e -> print_endline (Printexc.to_string e);
+    raise (Yojson_exc  "Bad tag format")
 
 (** deserialize json link detail to ocaml  *)
 let get_link_detail json_detail =
@@ -121,7 +125,8 @@ let get_link_detail json_detail =
     Rdf_store.uri_of_string target_uri,
     List.map get_tag tags
   with
-  | _ -> raise (Yojson_exc  "Bad link detail format")
+  | e -> print_endline (Printexc.to_string e);
+    raise (Yojson_exc  "Bad link detail format")
 
 (** deserialize tag list from yojson to ocaml *)
 let get_tag_list tl =
@@ -138,5 +143,10 @@ let get_short_content_list tl =
 (** deserialize link list from yojson to ocaml *)
 let get_link_list tl =
   List.map get_link (to_list tl)
+
+(** deserialize detail link list from yojson to ocaml *)
+let get_detail_link_list tl =
+  List.map get_link_detail (to_list tl)
+
 
 }}

@@ -49,16 +49,16 @@ let content_insert_service =
     ()
 
 (* Insert link *)
-(* let link_insert_service = *)
-(*   Eliom_service.Http.service *)
-(*     ~path:["link"; "insert"] *)
-(*     ~get_params:Eliom_parameter.(suffix (opt (string "origin_uri") ** *)
-(*                                            opt (string "target_uri"))) *)
-(*     () *)
+let link_insert_service =
+  Eliom_service.Http.service
+    ~path:["link"; "insert"]
+    ~get_params:Eliom_parameter.(suffix (opt (string "origin_uri") **
+                                           opt (string "target_uri")))
+    ()
 
 (* Update link *)
-(* let link_update_service = *)
-(*   Eliom_service.Http.service *)
-(*     ~path:["link"; "update"] *)
-(*     ~get_params:Eliom_parameter.(suffix (string "link_uri")) *)
-(*     () *)
+let link_update_service =
+  Eliom_service.Http.service
+    ~path:["link"; "update"]
+    ~get_params:Eliom_parameter.(suffix (string "link_uri"))
+    ()

@@ -220,7 +220,7 @@ let link_insert opt_origin_uri opt_target_uri =
     empty_html ~msg:err_msg ()
 
 (** Update link html service *)
-let update_insert (link_uri, origin_uri, target_uri, tags) =
+let link_update (link_uri, origin_uri, target_uri, tags) =
   try
     Eliom_tools.F.html
       ~title:"Pumgrana"
