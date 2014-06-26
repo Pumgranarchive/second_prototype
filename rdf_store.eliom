@@ -469,7 +469,7 @@ let get_triple_contents tags_uri =
   let query = "SELECT ?content ?title ?summary WHERE
   { ?content <" ^ content_title_r ^ "> ?title .
     ?content <" ^ content_summary_r ^ "> ?summary .
-    " ^ half_query ^ " }"
+    " ^ half_query ^ " } GROUP BY ?content"
   in
   lwt solutions = get_from_4store query in
   let triple_contents = List.map triple_content_from solutions in
@@ -600,10 +600,10 @@ let build_tags_query content_uri tags =
       ". FILTER regex(str(?tag), \"" ^ regex ^ "\")"
   in
   let content_str_uri = string_of_uri content_uri in
-  "SELECT ?tag ?target ?title ?summary WHERE
+  "SELECT ?target ?title ?summary WHERE
   { <"^content_str_uri^"> ?tag ?target "^filter_query^" .
     ?target <"^content_title_r^"> ?title .
-    ?target <"^content_summary_r^"> ?summary }"
+    ?target <"^content_summary_r^"> ?summary } GROUP BY ?target"
 
 let links_from_content_tags content_uri tags_uri =
   let query = build_tags_query content_uri tags_uri in
