@@ -5,30 +5,15 @@ module SMap = Map.Make(String)
 
 {shared{
 
-exception Invalid_link_id of string
+open Ptype
+
+exception Invalid_uri = Ptype.Invalid_uri
+exception Invalid_link_id = Ptype.Invalid_link_id
 exception Internal_error of string
 
-}}
+type uri = Ptype.uri
+type link_id = Ptype.link_id
 
-{server{
-
-exception Invalid_uri = Rdf_uri.Invalid_uri
-
-type uri = Rdf_uri.uri
-
-}}
-
-{client{
-
-exception Invalid_uri of string
-
-type uri = string
-
-}}
-
-{shared{
-
-type link_id = uri * uri
 type linked_content = link_id * uri * string * string
 
 type content = Nosql_store.id * string * string
@@ -72,73 +57,12 @@ let update_url = Rdf_uri.append base_url "/update/"
 
 {shared{
 
-let search_forward ~start str1 str2 start_pos =
-  let end1 = String.length str1 in
-  let end2 = String.length str2 in
-  let rec aux pos1 pos2 =
-    if pos1 == end1 then pos2
-    else if pos2 < end2 then
-      let c1 = String.get str1 pos1 in
-      let c2 = String.get str2 pos2 in
-      if Char.compare c1 c2 == 0
-      then aux (pos1 + 1) (pos2 + 1)
-      else if start
-      then raise Not_found
-      else aux 0 (pos2 + 1)
-    else raise Not_found
-  in
-  aux 0 start_pos
-
-}}
-
-{server{
-
-let uri_of_string uri =
-  let _ =
-    try search_forward ~start:true "http://" uri 0
-    with Not_found -> raise (Invalid_uri uri)
-  in
-  Rdf_uri.uri uri
-
-let string_of_uri = Rdf_uri.string
-
-}}
-
-{client{
-
-let uri_of_string str =
-  let _ =
-    try search_forward ~start:true "http://" str 0
-    with Not_found -> raise (Invalid_uri str)
-  in
-  str
-
-let string_of_uri uri = uri
-
-}}
-
-{shared{
-
-(* Link's tools *)
-
-let insert str p_start p_end str2 =
-  let str1 = String.sub str 0 p_start in
-  let str3 = String.sub str p_end ((String.length str) - p_end) in
-  str1 ^ str2 ^ str3
-
-let replace_all remove_str replace_str str =
-  let remove_length = String.length remove_str in
-  let rec aux str start =
-    try
-      let p = search_forward ~start:false remove_str str start in
-      let new_p = p - remove_length in
-      let new_url = insert str new_p p replace_str in
-      aux new_url new_p
-    with
-      Not_found -> str
-  in
-  aux str 0
-
+let uri_of_string = Ptype.uri_of_string
+let string_of_uri = Ptype.string_of_uri
+let link_id_of_string = Ptype.link_id_of_string
+let string_of_link_id = Ptype.string_of_link_id
+let slash_encode = Ptype.slash_encode
+let slash_decode = Ptype.slash_decode
 
 let is_pumgrana_uri str =
   let d_length = String.length domain in
@@ -148,36 +72,17 @@ let is_pumgrana_uri str =
     let sub = String.sub str 0 d_length in
     (String.compare sub domain) == 0
 
-let slash_encode url =
-  replace_all "/" "%2F" url
-
-let slash_decode url =
-  replace_all "%2F" "/" url
-
-let link_id (origin_uri:uri) (target_uri:uri) = origin_uri, target_uri
-
-let str_tuple_of_link_id (origin_uri, target_uri) =
+let str_tuple_of_link_id link_id =
+  let (origin_uri, target_uri) = tuple_of_link_id link_id in
   string_of_uri origin_uri, string_of_uri target_uri
 
-let string_of_link_id link_id =
-  let origin_uri, target_uri = str_tuple_of_link_id link_id in
-  origin_uri ^ "@" ^ target_uri
+let target_uri_from_link_id link_id =
+  let (origin_uri, target_uri) = tuple_of_link_id link_id in
+  target_uri
 
-let link_id_of_string link_id =
-  let regexp = Str.regexp "@" in
-  try
-    let strings = Str.split regexp link_id in
-    if List.length strings > 2 then raise (Invalid_argument "Too many @");
-    let origin_str_uri = List.hd strings in
-    let target_str_uri = List.hd (List.tl strings) in
-    let origin_uri = uri_of_string origin_str_uri in
-    let target_uri = uri_of_string target_str_uri in
-    origin_uri, target_uri
-  with e ->
-    raise (Invalid_link_id (link_id ^ ": is not a valid link_id"))
-
-let target_uri_from_link_id (origin_uri, target_uri) = target_uri
-let origin_uri_from_link_id (origin_uri, target_uri) = origin_uri
+let origin_uri_from_link_id link_id =
+  let (origin_uri, target_uri) = tuple_of_link_id link_id in
+  origin_uri
 
 (* Id's tools *)
 
@@ -187,20 +92,6 @@ let uri_of_content_id id =
 let uri_of_tag_id_link id = uri_of_string (base_tag_link_url ^ id)
 let uri_of_tag_id_content id = uri_of_string (base_tag_content_url ^ id)
 
-let pumgrana_id_of_uri base uri =
-  let str = string_of_uri uri in
-  let pos =
-    try search_forward ~start:true base str 0
-    with Not_found -> raise (Invalid_uri (str ^ ": is not a Pumgrana URI."))
-  in
-  let _ =
-    try
-      let _ = search_forward ~start:false base str pos in
-      raise (Invalid_uri (str ^ ": looks to be an invalid URI."))
-    with Not_found -> ()
-  in
-  String.sub str pos ((String.length str) - pos)
-
 let content_id_of_uri uri =
   Nosql_store.id_of_string (pumgrana_id_of_uri base_content_url uri)
 
@@ -208,7 +99,7 @@ let content_id_of_uri uri =
 
 let uri_of_subject base subject =
   let encode_subject = Netencoding.Url.encode subject in
-  Rdf_uri.uri (base ^ encode_subject)
+  uri_of_string (base ^ encode_subject)
 
 let uri_of_tag_link_subject = uri_of_subject base_tag_link_url
 let uri_of_tag_content_subject = uri_of_subject base_tag_content_url
@@ -590,7 +481,7 @@ let update_content_tags content_uri tags_uri =
 *******************************************************************************)
 
 let get_link_detail link_id =
-  let origin_uri, target_uri = link_id in
+  let origin_uri, target_uri = tuple_of_link_id link_id in
   lwt tags = get_tags_from_link link_id in
   Lwt.return (link_id, origin_uri, target_uri, tags)
 
@@ -720,7 +611,7 @@ let insert_links triple_list =
 
 let update_links tuple_list =
   let triple_from_tuple (link_id, tags_uri) =
-    let origin_uri, target_uri = link_id in
+    let origin_uri, target_uri = tuple_of_link_id link_id in
     (origin_uri, target_uri, tags_uri)
   in
   let triple_list = List.map triple_from_tuple tuple_list in

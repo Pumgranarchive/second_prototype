@@ -8,9 +8,9 @@
 exception Invalid_uri of string
 exception Invalid_link_id of string
 
-type uri
+type uri = Ptype.uri
 
-type link_id
+type link_id = Ptype.link_id
 
 (** link_id * target_uri * title * summary  *)
 type linked_content = link_id * uri * string * string
@@ -33,12 +33,6 @@ val string_of_uri : uri -> string
 (** If the given string URI is a pumgrana one, return true *)
 val is_pumgrana_uri: string -> bool
 
-(** Encode all slash of the given string url  *)
-val slash_encode : string -> string
-
-(** Decode all slash of the given string url  *)
-val slash_decode : string -> string
-
 (** Create a link_id from a string
     @raise Invalid_link_id *)
 val link_id_of_string : string -> link_id
@@ -56,21 +50,13 @@ val uri_of_content_id : Nosql_store.id -> uri
     may @raise Nosql_store.Invalid_id *)
 val content_id_of_uri : uri -> Nosql_store.id
 
+(** Encode all slash of the given string url  *)
+val slash_encode : string -> string
+
+(** Decode all slash of the given string url  *)
+val slash_decode : string -> string
+
 }}
-
-(* To remove in the futur *)
-
-(** Create a URI from a tag_id link string. *)
-val uri_of_tag_id_link : string -> uri
-
-(** Create a URI from a tag_id content string. *)
-val uri_of_tag_id_content : string -> uri
-
-val tag_id_link_of_uri : uri -> string
-
-val tag_id_content_of_uri : uri -> string
-
-(* End area of removing *)
 
 (** {6 Contents}  *)
 

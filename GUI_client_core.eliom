@@ -12,7 +12,8 @@ open Eliom_content.Html5.F
 
 module Yojson = Yojson.Basic
 
-open Intern_yj_util
+open Pjson
+open Pdeserialize
 open GUI_deserialize
 
 (** Get all name of checked dom_inputs and return them in a list. *)

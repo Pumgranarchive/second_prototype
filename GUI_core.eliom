@@ -4,6 +4,7 @@
   it GUI html
 *)
 
+open Pdeserialize
 open GUI_deserialize
 
 let content_str_uri_of_str_id id =
