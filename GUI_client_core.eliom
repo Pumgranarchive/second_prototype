@@ -108,22 +108,14 @@ let save_insert_content title summary body new_tags =
   lwt res = Eliom_client.call_service ~service:%API_services.insert_content ()
       (title, (summary, (body, Some tags_list)))
   in
-  Eliom_lib.debug "before uri";
   let uri = get_content_uri_return (Yojson.from_string res) in
-  Eliom_lib.debug "after uri";
-  let id =
-    Nosql_store.string_of_id Rdf_store.(content_id_of_uri (uri_of_string uri))
-  in
-  Eliom_lib.debug "after id %s" id;
+  let str_uri = Rdf_store.string_of_uri uri in
+  let id = Nosql_store.string_of_id Rdf_store.(content_id_of_uri uri) in
   lwt _ = Eliom_client.call_service ~service:%API_services.insert_tags ()
-      (%API_conf.content_tag, (Some uri, not_found_list))
+      (%API_conf.content_tag, (Some str_uri, not_found_list))
   in
-  Eliom_lib.debug "after insert";
-  let x = Eliom_client.change_page
+  Eliom_client.change_page
     ~service:%GUI_services.content_detail_service id ()
-  in
-  Eliom_lib.debug "after all";
-  x
 
 let submit_tag_content dom_tags_html tag input_list =
   let input = D.raw_input ~input_type:`Checkbox ~name:tag () in
