@@ -123,8 +123,7 @@ val get_tags_from_content_link : uri -> tag list Lwt.t
 (** [insert_tags tag_type ?link_id ?content_uri subjects]
     @param [link_id] and [content_uri] have to correspond with the tag_type,
     @param [link_id] or [content_uri] can be setted to associate all new tags on,
-    @raise Invalid_argument if at least one subject already exist.
-    return a list of created tags_uri *)
+    return a list of existing + created tags_uri *)
 val insert_tags : tag_type -> ?link_id:link_id -> ?content_uri:uri ->
   string list -> uri list Lwt.t
 

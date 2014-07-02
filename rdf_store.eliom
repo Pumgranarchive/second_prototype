@@ -206,6 +206,24 @@ let post_on_4store query =
 ******************************** Tags *****************************************
 *******************************************************************************)
 
+let get_tags_by_subject tag_type subjects =
+  let r_url = match tag_type with
+    | TagLink    -> tag_link_r
+    | TagContent -> tag_content_r
+  in
+  let build_regexp query str =
+    let q = next_query query "|" in
+    q ^ "(" ^ str ^ ")"
+  in
+  let regexp = List.fold_left build_regexp "" subjects in
+  let query = "SELECT ?tag ?subject WHERE
+          { ?tag <" ^ r_url ^ "> ?subject .
+            FILTER regex(?subject, \"" ^ regexp ^ "\" ) }"
+  in
+  lwt solutions = get_from_4store query in
+  let tuple_tags = List.map tuple_tag_from solutions in
+  Lwt.return tuple_tags
+
 let get_tags tag_type tags_uri =
   let r_url = match tag_type with
     | TagLink    -> tag_link_r
@@ -272,22 +290,13 @@ let insert_tags tag_type ?link_id ?content_uri subjects =
     | None      -> None
   in
 
-  (* Check if subject does not already exist *)
-  let build_ask query subject =
-    let q = next_query query "|" in
-    q ^ "(" ^ subject ^ ")"
+  (* Filter given subjects in function of existing tags *)
+  lwt tags = get_tags_by_subject tag_type subjects in
+  let not_exist sub =
+    List.for_all (fun (uri, s) -> String.compare sub s != 0) tags
   in
-  lwt () =
-      if List.length subjects == 0 then Lwt.return () else
-        let half_ask = List.fold_left build_ask "" subjects in
-        let ask_query =
-          "ASK { ?tag ?res ?sub . FILTER regex(?sub, \"" ^ half_ask ^ "\" ) }"
-        in
-        lwt exist = ask_to_4store ask_query in
-        if exist then
-          raise (Invalid_argument "One subject or more already exist.");
-        Lwt.return ()
-  in
+  let existing_uris = List.map (fun (uri, s) -> uri) tags in
+  let subjects = List.filter not_exist subjects in
 
   let insert_tag_on query tag_uri =
     let q = next_query query " . " in
@@ -308,7 +317,7 @@ let insert_tags tag_type ?link_id ?content_uri subjects =
   let half_query = List.fold_left2 insert_tag "" tags_str_uri subjects in
   let query = "INSERT DATA { " ^ half_query ^ " }" in
   lwt () = post_on_4store query in
-  Lwt.return (tags_uri)
+  Lwt.return (existing_uris@tags_uri)
 
 let delete_tags tags_uri =
   let build_query q tag_uri =
