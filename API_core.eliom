@@ -46,8 +46,16 @@ let link_id_of_string str =
 *)
 
 let clean_body body =
+  let replace str str1 str2 =
+    let regexp = Str.regexp str1 in
+    Str.global_replace regexp str2 str
+  in
   let regexp = Str.regexp "[\n \t]+" in
-  Str.global_replace regexp " " body
+  let body' = Str.global_replace regexp " " body in
+  List.fold_left2 replace body'
+    ["\""; "'"] ["\\\""; "\\'"]
+    (* ["&";"<";">";"\"";"'";"/"] *)
+    (* ["&amp;";"&lt;";"&gt;";"&quot;";"&#39;";"&#x2F;"] *)
 
 let get_full_readability uri =
   let ruri = Rdf_uri.uri (Rdf_store.string_of_uri uri) in
@@ -344,10 +352,11 @@ let insert_links data =
     in
     let triple_list = List.map triple_uri data in
     lwt links_id = Rdf_store.insert_links triple_list in
-    let json_of_link_id link_id =
-      `String (Rdf_store.string_of_link_id link_id)
+    let format link_id =
+      let str_link_id = Rdf_store.string_of_link_id link_id in
+      `Assoc [(API_tools.uri_field, `String str_link_id)]
     in
-    let json_link_id = List.map json_of_link_id links_id in
+    let json_link_id = List.map format links_id in
     Lwt.return (`List json_link_id)
   in
   API_tools.check_return
