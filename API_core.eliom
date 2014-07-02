@@ -202,6 +202,16 @@ let update_content content_str_uri title summary body tags_str_uri =
 (* Insert on rdf store only *)
 let update_content_tags content_str_uri tags_str_uri =
   let aux () =
+    let uri = uri_of_string content_str_uri in
+    let tags_uri = List.map uri_of_string tags_str_uri in
+    lwt () = Rdf_store.update_content_tags uri tags_uri in
+    Lwt.return `Null
+  in
+  API_tools.check_return aux
+
+(* Insert on rdf store only *)
+let update_content_tags content_str_uri tags_str_uri =
+  let aux () =
     let content_uri = uri_of_string content_str_uri in
     let tags_uri = List.map uri_of_string tags_str_uri in
     lwt () = Rdf_store.update_content_tags content_uri tags_uri in

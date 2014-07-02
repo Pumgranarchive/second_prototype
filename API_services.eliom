@@ -24,29 +24,29 @@ let map func = function
 let get_detail =
   Eliom_service.Http.service
     ~path:["api"; "content"; "detail"]
-    ~get_params:Eliom_parameter.(suffix (string "content_id"))
+    ~get_params:Eliom_parameter.(suffix (string "content_uri"))
     ()
 
 let _ =
   Eliom_registration.String.register
     ~service:get_detail
-    (fun content_id () -> return_of_json (API_core.get_detail content_id))
+    (fun content_uri () -> return_of_json (API_core.get_detail content_uri))
 
 (* get_contents *)
 let get_contents =
   Eliom_service.Http.service
     ~path:["api"; "content"; "list_content"]
     ~get_params:Eliom_parameter.(suffix (opt (string "filter") **
-                                           opt (list "tags" (string "id"))))
+                                           opt (list "tags" (string "uri"))))
     ()
 
 (** Simple contents service  *)
 let _ =
   Eliom_registration.String.register
     ~service:get_contents
-    (fun (filter, tags_ids) () ->
-      let tags_id_dcd = map (List.map Rdf_store.slash_decode) tags_ids in
-      return_of_json (API_core.get_contents filter tags_id_dcd))
+    (fun (filter, tags_uris) () ->
+      let tags_uri_dcd = map (List.map Rdf_store.slash_decode) tags_uris in
+      return_of_json (API_core.get_contents filter tags_uri_dcd))
 
 (** This service allow a simpler matching url without superfluous slashs,
     due by the two optional parameters. *)
@@ -82,7 +82,7 @@ let insert_content =
     ~post_params:Eliom_parameter.(string "title" **
                                   string "summary" **
                                   string "text" **
-                                  opt (list "tags" (string "id")))
+                                  opt (list "tags" (string "uri")))
     ()
 
 let _ =
@@ -91,18 +91,18 @@ let _ =
     (fun () (input_type, ostream) ->
       let aux () =
         lwt yojson = API_tools.json_of_ocsigen_string_stream input_type ostream in
-        let title, summary, text, tags_id =
+        let title, summary, text, tags_uri =
           API_deserialize.get_insert_content_data yojson
         in
-          return_of_json (API_core.insert_content title summary text tags_id)
+          return_of_json (API_core.insert_content title summary text tags_uri)
       in
       API_tools.manage_bad_request aux)
 
 let _ =
   Eliom_registration.String.register
     ~service:insert_content
-    (fun () (title, (summary, (text, tags_id))) ->
-      return_of_json (API_core.insert_content title summary text tags_id)
+    (fun () (title, (summary, (text, tags_uri))) ->
+      return_of_json (API_core.insert_content title summary text tags_uri)
   )
 
 (* Update content *)
@@ -117,7 +117,7 @@ let _ =
     ~service:fallback_update_content
     (fun () () ->
       return_of_error (API_tools.bad_request
-                          "content_id parameter is mandatory"))
+                          "content_uri parameter is mandatory"))
 
 let update_content_json =
   Eliom_service.Http.post_service
@@ -128,11 +128,11 @@ let update_content_json =
 let update_content =
   Eliom_service.Http.post_service
     ~fallback:fallback_update_content
-    ~post_params:Eliom_parameter.(string "content_id" **
+    ~post_params:Eliom_parameter.(string "content_uri" **
                                   opt (string "title") **
                                   opt (string "summary") **
                                   opt (string "text") **
-                                  opt (list "tags" (string "id")))
+                                  opt (list "tags" (string "uri")))
     ()
 
 let _ =
@@ -141,20 +141,67 @@ let _ =
     (fun () (input_type, ostream) ->
       let aux () =
         lwt yojson = API_tools.json_of_ocsigen_string_stream input_type ostream in
-        let content_id, title, summary, text, tags_id =
+        let content_uri, title, summary, text, tags_uri =
           API_deserialize.get_update_content_data yojson
         in
-        return_of_json (API_core.update_content content_id
-                          title summary text tags_id)
+        return_of_json (API_core.update_content content_uri
+                          title summary text tags_uri)
       in
       API_tools.manage_bad_request aux)
 
 let _ =
   Eliom_registration.String.register
     ~service:update_content
-    (fun () (content_id, (title, (summary, (text, tags_id)))) ->
-      return_of_json (API_core.update_content content_id
-                        title summary text tags_id))
+    (fun () (content_uri, (title, (summary, (text, tags_uri)))) ->
+      return_of_json (API_core.update_content content_uri
+                        title summary text tags_uri))
+
+(* Update content tags *)
+let fallback_update_content_tags =
+  Eliom_service.Http.service
+    ~path:["api"; "content"; "update_tags"]
+    ~get_params:Eliom_parameter.unit
+    ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:fallback_update_content_tags
+    (fun () () ->
+      return_of_error (API_tools.bad_request
+                          "content_uri parameter is mandatory"))
+
+let update_content_tags_json =
+  Eliom_service.Http.post_service
+    ~fallback:fallback_update_content_tags
+    ~post_params:Eliom_parameter.raw_post_data
+    ()
+
+let update_content_tags =
+  Eliom_service.Http.post_service
+    ~fallback:fallback_update_content_tags
+    ~post_params:Eliom_parameter.(string "content_uri" **
+                                  (list "tags" (string "uri")))
+    ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:update_content_tags_json
+    (fun () (input_type, ostream) ->
+      let aux () =
+        lwt yojson = API_tools.json_of_ocsigen_string_stream input_type ostream in
+        let content_uri, tags_uri =
+          API_deserialize.get_update_content_tags_data yojson
+        in
+        return_of_json (API_core.update_content_tags content_uri tags_uri)
+      in
+      API_tools.manage_bad_request aux)
+
+let _ =
+  Eliom_registration.String.register
+    ~service:update_content_tags
+    (fun () (content_uri, tags_uri) ->
+      return_of_json (API_core.update_content_tags content_uri tags_uri))
+
 
 (* Delete content *)
 let fallback_delete_contents =
@@ -168,7 +215,7 @@ let _ =
     ~service:fallback_delete_contents
     (fun () () ->
       return_of_error (API_tools.bad_request
-                          "contents_id parameter is mandatory"))
+                          "contents_uri parameter is mandatory"))
 
 let delete_contents_json =
   Eliom_service.Http.post_service
@@ -179,7 +226,7 @@ let delete_contents_json =
 let delete_contents =
   Eliom_service.Http.post_service
     ~fallback:fallback_delete_contents
-    ~post_params:Eliom_parameter.(list "contents" (string "id"))
+    ~post_params:Eliom_parameter.(list "contents" (string "uri"))
     ()
 
 let _ =
@@ -188,16 +235,16 @@ let _ =
     (fun () (input_type, ostream) ->
       let aux () =
         lwt yojson = API_tools.json_of_ocsigen_string_stream input_type ostream in
-        let contents_id = API_deserialize.get_delete_contents_data yojson in
-        return_of_json (API_core.delete_contents contents_id)
+        let contents_uri = API_deserialize.get_delete_contents_data yojson in
+        return_of_json (API_core.delete_contents contents_uri)
       in
       API_tools.manage_bad_request aux)
 
 let _ =
   Eliom_registration.String.register
     ~service:delete_contents
-    (fun () (contents_id) ->
-      return_of_json (API_core.delete_contents contents_id))
+    (fun () (contents_uri) ->
+      return_of_json (API_core.delete_contents contents_uri))
 
 
 (*
@@ -222,28 +269,28 @@ let _ =
 let get_tags_from_content =
   Eliom_service.Http.service
     ~path:["api"; "tag"; "list_from_content"]
-    ~get_params:Eliom_parameter.(suffix (string "content_id"))
+    ~get_params:Eliom_parameter.(suffix (string "content_uri"))
     ()
 
 let _ =
   Eliom_registration.String.register
     ~service:get_tags_from_content
-    (fun (content_id) () ->
-      return_of_json (API_core.get_tags_from_content content_id))
+    (fun (content_uri) () ->
+      return_of_json (API_core.get_tags_from_content content_uri))
 
 
 (* Get_tag_from_content_link *)
 let get_tags_from_content_link =
   Eliom_service.Http.service
     ~path:["api"; "tag"; "list_from_content_links"]
-    ~get_params:Eliom_parameter.(suffix (string "content_id"))
+    ~get_params:Eliom_parameter.(suffix (string "content_uri"))
     ()
 
 let _ =
   Eliom_registration.String.register
     ~service:get_tags_from_content_link
-    (fun (content_id) () ->
-      return_of_json (API_core.get_tags_from_content_link content_id))
+    (fun (content_uri) () ->
+      return_of_json (API_core.get_tags_from_content_link content_uri))
 
 
 (* Insert tags *)
@@ -270,7 +317,7 @@ let insert_tags =
   Eliom_service.Http.post_service
     ~fallback:fallback_insert_tags
     ~post_params:Eliom_parameter.(string "type_name" **
-                                  opt (string "id") **
+                                  opt (string "uri") **
                                   list "tags" (string "subject"))
     ()
 
@@ -280,18 +327,18 @@ let _ =
     (fun () (input_type, ostream) ->
       let aux () =
         lwt yojson = API_tools.json_of_ocsigen_string_stream input_type ostream in
-        let type_name, id, tags_subject =
+        let type_name, uri, tags_subject =
           API_deserialize.get_insert_tags_data yojson
         in
-        return_of_json (API_core.insert_tags type_name id tags_subject)
+        return_of_json (API_core.insert_tags type_name uri tags_subject)
       in
       API_tools.manage_bad_request aux)
 
 let _ =
   Eliom_registration.String.register
     ~service:insert_tags
-    (fun () (type_name, (id, tags_subject)) ->
-      return_of_json (API_core.insert_tags type_name id tags_subject))
+    (fun () (type_name, (uri, tags_subject)) ->
+      return_of_json (API_core.insert_tags type_name uri tags_subject))
 
 (* Delete tags *)
 let fallback_delete_tags =
@@ -304,7 +351,7 @@ let _ =
   Eliom_registration.String.register
     ~service:fallback_delete_tags
     (fun () () ->
-      return_of_error (API_tools.bad_request "tags_id parameter is mandatory"))
+      return_of_error (API_tools.bad_request "tags_uri parameter is mandatory"))
 
 let delete_tags_json =
   Eliom_service.Http.post_service
@@ -315,7 +362,7 @@ let delete_tags_json =
 let delete_tags =
   Eliom_service.Http.post_service
     ~fallback:fallback_delete_tags
-    ~post_params:Eliom_parameter.(list "tags" (string "id"))
+    ~post_params:Eliom_parameter.(list "tags" (string "uri"))
     ()
 
 let _ =
@@ -324,16 +371,16 @@ let _ =
     (fun () (input_type, ostream) ->
       let aux () =
         lwt yojson = API_tools.json_of_ocsigen_string_stream input_type ostream in
-        let tags_id = API_deserialize.get_delete_tags_data yojson in
-        return_of_json (API_core.delete_tags tags_id)
+        let tags_uri = API_deserialize.get_delete_tags_data yojson in
+        return_of_json (API_core.delete_tags tags_uri)
       in
       API_tools.manage_bad_request aux)
 
 let _ =
   Eliom_registration.String.register
     ~service:delete_tags
-    (fun () (tags_id) ->
-      return_of_json (API_core.delete_tags tags_id))
+    (fun () (tags_uri) ->
+      return_of_json (API_core.delete_tags tags_uri))
 
 (*
 ** links
@@ -356,33 +403,33 @@ let _ =
 let get_links_from_content =
   Eliom_service.Http.service
     ~path:["api"; "link"; "list_from_content"]
-    ~get_params:Eliom_parameter.(suffix (string "content_id"))
+    ~get_params:Eliom_parameter.(suffix (string "content_uri"))
     ()
 
 let _ =
   Eliom_registration.String.register
     ~service:get_links_from_content
-    (fun content_id () ->
-      return_of_json (API_core.get_links_from_content content_id))
+    (fun content_uri () ->
+      return_of_json (API_core.get_links_from_content content_uri))
 
 
 (* Get_links_from_content_tags *)
 let get_links_from_content_tags =
      Eliom_service.Http.service
        ~path:["api"; "link"; "list_from_content_tags"]
-       ~get_params:Eliom_parameter.(suffix ((string "content_id") **
-          (opt (list "tags" (string "id")))))
+       ~get_params:Eliom_parameter.(suffix ((string "content_uri") **
+          (opt (list "tags" (string "uri")))))
        ()
 
 (** Simple service registration *)
 let _ =
   Eliom_registration.String.register
    ~service:get_links_from_content_tags
-    (fun (content_uri, tags_ids) () ->
+    (fun (content_uri, tags_uris) () ->
       let content_uri_dcd = Rdf_store.slash_decode content_uri in
-      let tags_id_dcd = map (List.map Rdf_store.slash_decode) tags_ids in
+      let tags_uri_dcd = map (List.map Rdf_store.slash_decode) tags_uris in
       return_of_json
-        (API_core.get_links_from_content_tags content_uri_dcd tags_id_dcd))
+        (API_core.get_links_from_content_tags content_uri_dcd tags_uri_dcd))
 
 (* Insert links *)
 let fallback_insert_links =
@@ -493,7 +540,7 @@ let _ =
     ~service:fallback_delete_links
     (fun () () ->
       return_of_error (API_tools.bad_request
-                          "links_id parameter is mandatory"))
+                          "links_uri parameter is mandatory"))
 
 let delete_links_json =
   Eliom_service.Http.post_service
@@ -504,7 +551,7 @@ let delete_links_json =
 let delete_links =
   Eliom_service.Http.post_service
     ~fallback:fallback_delete_links
-    ~post_params:Eliom_parameter.(list "links" (string "id"))
+    ~post_params:Eliom_parameter.(list "links" (string "uri"))
     ()
 
 let _ =
@@ -513,13 +560,13 @@ let _ =
     (fun () (input_type, ostream) ->
       let aux () =
         lwt yojson = API_tools.json_of_ocsigen_string_stream input_type ostream in
-        let links_id = API_deserialize.get_delete_links_data yojson in
-        return_of_json (API_core.delete_links links_id)
+        let links_uri = API_deserialize.get_delete_links_data yojson in
+        return_of_json (API_core.delete_links links_uri)
       in
       API_tools.manage_bad_request aux)
 
 let _ =
   Eliom_registration.String.register
     ~service:delete_links
-    (fun () (links_id) ->
-      return_of_json (API_core.delete_links links_id))
+    (fun () (links_uri) ->
+      return_of_json (API_core.delete_links links_uri))

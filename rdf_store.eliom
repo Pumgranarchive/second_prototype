@@ -143,8 +143,11 @@ let tuple_tag_from solution =
   uri_of_string (from_solution "tag" solution),
   from_solution "subject" solution
 
+let content_from solution =
+  uri_of_string (from_solution "content" solution)
+
 let triple_content_from solution =
-  content_id_of_uri (uri_of_string (from_solution "content" solution)),
+  content_id_of_uri (content_from solution),
   from_solution "title" solution,
   from_solution "summary" solution
 
@@ -365,17 +368,19 @@ let delete_tags_on_content content_uri tags_uri =
 ******************************* Contents ***************************************
 *******************************************************************************)
 
-let get_triple_contents tags_uri =
+let get_contents_base_query tags_uri =
   let build_regexp query tag_uri =
     let q = next_query query "|" in
     q ^ "(" ^ (string_of_uri tag_uri) ^ ")"
   in
-  let half_query =
-    if List.length tags_uri == 0 then "" else
-      let regexp = List.fold_left build_regexp "" tags_uri in
-      "?content <" ^ tagged_content_r ^ "> ?tag .
-       FILTER regex(str(?tag), \"" ^ regexp ^ "\")"
-  in
+  if List.length tags_uri == 0 then "" else
+    let regexp = List.fold_left build_regexp "" tags_uri in
+    "?content <" ^ tagged_content_r ^ "> ?tag .
+     FILTER (str(?tag), \"" ^ regexp ^ "\") . "
+
+
+let get_triple_contents tags_uri =
+  let half_query = get_contents_base_query tags_uri in
   let query = "SELECT ?content ?title ?summary WHERE
   { ?content <" ^ content_title_r ^ "> ?title .
     ?content <" ^ content_summary_r ^ "> ?summary .
@@ -384,6 +389,25 @@ let get_triple_contents tags_uri =
   lwt solutions = get_from_4store query in
   let triple_contents = List.map triple_content_from solutions in
   Lwt.return (triple_contents)
+
+let get_external_contents tags_uri =
+  let half_query = get_contents_base_query tags_uri in
+  let query = "SELECT ?content WHERE
+  { { { ?origin ?res ?content } UNION { ?content ?res ?target } } .
+    " ^ half_query ^ "
+    FILTER regex(str(?res), \"^"^base_tag_link_url^"\") .
+    FILTER (!regex(str(?content), \"^"^domain^"\"))
+    } GROUP BY ?content"
+  in
+  print_endline query;
+  lwt solutions = get_from_4store query in
+  let contents = List.map content_from solutions in
+  Lwt.return (contents)
+
+lwt _ =
+   lwt res = get_external_contents [] in
+   List.iter (fun x -> print_endline (string_of_uri x)) res;
+   Lwt.return ()
 
 let insert_content content_id title summary tags_uri =
   let content_str_uri = string_of_uri (uri_of_content_id content_id) in

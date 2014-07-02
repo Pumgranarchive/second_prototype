@@ -34,6 +34,15 @@ let get_update_content_data json_content =
   with
   | _ -> raise (Pum_exc (return_not_found, "Bad update_content format"))
 
+(** Get update content tags input data *)
+let get_update_content_tags_data json_content =
+  try
+    let content_uri = member "content_uri" json_content in
+    let tags_uri = to_list (member "tags_uri" json_content) in
+    to_string content_uri, List.map to_string tags_uri
+  with
+  | _ -> raise (Pum_exc (return_not_found, "Bad update_content_tags format"))
+
 (** Get delete contents input data *)
 let get_delete_contents_data json_content =
   try
