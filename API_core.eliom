@@ -9,6 +9,18 @@ open Yojson.Util
 
 (* Tools *)
 
+let get_token () =
+  let ic = open_in "token" in
+  try
+    let token = input_line ic in
+    close_in ic;
+    token
+  with e ->
+    close_in_noerr ic;
+    raise Not_found
+
+let _ = Readability.set_token (get_token ())
+
 let id_of_string_uri uri =
   try Rdf_store.(content_id_of_uri (uri_of_string uri))
   with
