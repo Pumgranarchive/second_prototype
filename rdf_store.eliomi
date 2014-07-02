@@ -31,7 +31,7 @@ val uri_of_string : string -> uri
 val string_of_uri : uri -> string
 
 (** If the given string URI is a pumgrana one, return true *)
-val is_pumgrana_uri: string -> bool
+val is_pumgrana_uri: uri -> bool
 
 (** Create a link_id from a string
     @raise Invalid_link_id *)

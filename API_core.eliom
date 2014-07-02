@@ -3,6 +3,10 @@
   This Module do request to data base and format well to return it in service
  *)
 
+module Yojson = Yojson.Basic
+
+open Yojson.Util
+
 (* Tools *)
 
 let id_of_string_uri uri =
@@ -29,18 +33,71 @@ let link_id_of_string str =
 ** Content
 *)
 
+let get_full_readability uri =
+  let ruri = Rdf_uri.uri (Rdf_store.string_of_uri uri) in
+  lwt json = Readability.get_parser ruri in
+  let title = to_string (member "title" json) in
+  let summary = to_string (member "excerpt" json) in
+  let body = to_string (member "content" json) in
+  Lwt.return (uri, title, summary, body)
+
+let get_readability_body uri =
+  let uri = Rdf_uri.uri (Rdf_store.string_of_uri uri) in
+  lwt json = Readability.get_parser uri in
+  Lwt.return (to_string (member "content" json))
+
+let is_youtube_uri uri =
+  let str_uri = Rdf_store.string_of_uri uri in
+  try ignore (Youtube_http.get_id_from_url str_uri); true
+  with _ -> false
+
+let get_youtube uri =
+  let id = Youtube_http.get_id_from_url (Rdf_store.string_of_uri uri) in
+  lwt videos = Youtube_http.get_videos_from_ids [id] in
+  let (title, _, summary, _) = List.hd videos in
+  lwt body = get_readability_body uri in
+  Lwt.return (uri, title, summary, body)
+
+let get_nosql_store uri =
+  let id = Rdf_store.content_id_of_uri uri in
+  lwt (id, title, summary, body) = Nosql_store.get_detail id in
+  Lwt.return (uri, title, summary, body)
+
+let is_something_else uri = true
+
+(* let get_rdf_store uri = *)
+(*   lwt contents = Rdf_store.get_triple_contents [uri] in *)
+(*   let (id, title, summary) = List.hd contents in *)
+(*   lwt body = get_readability_body uri in *)
+(*   Lwt.return (uri, title, summary, body) *)
+
+(* let get_somewhere uri = *)
+(*   try_lwt get_rdf_store uri *)
+(*   with _ -> get_full_readability uri *)
+
+let platforms =
+  [(Rdf_store.is_pumgrana_uri,  get_nosql_store);
+   (is_youtube_uri,             get_youtube);
+   (is_something_else,          get_full_readability)]
+
+let rec get_detail_data uri = function
+  | (condiction, getter)::next ->
+    if condiction uri
+    then getter uri
+    else get_detail_data uri next
+  | [] -> raise Not_found
+
 (*** Getters *)
 let get_detail content_str_uri =
   let aux () =
-    (* Lack the implementation of external content *)
-    let content_id = id_of_string_uri content_str_uri in
+    let uri = Rdf_store.uri_of_string content_str_uri in
     try_lwt
-      lwt (id, title, summary, body) = Nosql_store.get_detail content_id in
+      lwt (uri, title, summary, body) = get_detail_data uri platforms in
       Lwt.return (`Assoc [(API_tools.uri_field, `String content_str_uri);
                           (API_tools.title_field, `String title);
                           (API_tools.summary_field, `String summary);
                           (API_tools.body_field, `String body)])
-    with Not_found -> Lwt.return `Null
+    with _ -> Lwt.return `Null
   in
   API_tools.check_return ~param_name:API_tools.contents_ret_name aux
 

@@ -64,7 +64,8 @@ let string_of_link_id = Ptype.string_of_link_id
 let slash_encode = Ptype.slash_encode
 let slash_decode = Ptype.slash_decode
 
-let is_pumgrana_uri str =
+let is_pumgrana_uri uri =
+  let str = string_of_uri uri in
   let d_length = String.length domain in
   if (String.length str) < d_length then
     false

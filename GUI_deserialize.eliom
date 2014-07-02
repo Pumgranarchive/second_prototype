@@ -28,9 +28,8 @@ let string_of_id = function
   | Uri uri -> Rdf_store.string_of_uri uri
 
 let id_of_uri uri =
-  let str_uri = Rdf_store.string_of_uri uri in
   try
-    if Rdf_store.is_pumgrana_uri str_uri
+    if Rdf_store.is_pumgrana_uri uri
     then Id (Rdf_store.content_id_of_uri uri)
     else Uri uri
   with Nosql_store.Invalid_id s -> Uri uri
