@@ -64,6 +64,15 @@ let string_of_link_id = Ptype.string_of_link_id
 let slash_encode = Ptype.slash_encode
 let slash_decode = Ptype.slash_decode
 
+let clean_for_rgx str =
+  let replace str str1 str2 =
+    let regexp = Str.regexp str1 in
+    Str.global_replace regexp str2 str
+  in
+  List.fold_left2 replace str
+    [".";"*";"+";"?";"[";"]";"^";"$"]
+    ["\\.";"\\*";"\\+";"\\?";"\\[";"\\]";"\\^";"\\$"]
+
 let is_pumgrana_uri uri =
   let str = string_of_uri uri in
   let d_length = String.length domain in
@@ -232,7 +241,7 @@ let get_tags tag_type tags_uri =
   in
   let build_query q tag_uri =
     let uri = string_of_uri tag_uri in
-    q^"{?tag  <"^r_url^"> ?subject . FILTER regex(str(?tag), \""^uri^"\")} . "
+    q^"{?tag  <"^r_url^"> ?subject . FILTER (str(?tag) = \""^uri^"\")} . "
   in
   let half_query =
     if List.length tags_uri != 0
@@ -572,11 +581,11 @@ let internal_update_links mode triple_list =
   (* Getting part *)
   let build_select s (origin_str_uri, target_str_uri, _) =
     s ^"{ ?origin ?tag ?target .
-          FILTER regex(str(origin), \"" ^ origin_str_uri ^ "\") .
-          FILTER regex(str(target), \"" ^ target_str_uri ^ "\") } . "
+          FILTER (str(?origin) = \"" ^ origin_str_uri ^ "\") .
+          FILTER (str(?target) = \"" ^ target_str_uri ^ "\") } . "
   in
   let half_select = List.fold_left build_select "" str_triple_list in
-  let select = "SELECT {?origin ?target ?tag} WHERE { " ^ half_select ^ " }" in
+  let select = "SELECT ?origin ?target ?tag WHERE { " ^ half_select ^ " }" in
   lwt solutions = get_from_4store select in
   let existing_l = List.map triple_link_from solutions in
 
