@@ -19,6 +19,8 @@ val id_of_string : string -> id
 (** Create a string from an id *)
 val string_of_id : id -> string
 
+val is_nosql_id : string -> bool
+
 }}
 
 (** {6 Contents} *)

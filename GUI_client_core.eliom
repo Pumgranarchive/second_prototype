@@ -16,6 +16,13 @@ open Pjson
 open Pdeserialize
 open GUI_deserialize
 
+let insert_html id html =
+  let js_line = "document.getElementById('"^id^"').innerHTML='"^html^"'"
+  in
+  (* let js_ = Js.string html in *)
+  Eliom_lib.debug "%s" js_line;
+  ignore (Js.Unsafe.eval_string js_line)
+
 (** Get all name of checked dom_inputs and return them in a list. *)
 let get_checked_inputs dom_inputs =
   let rec aux n = function

@@ -132,6 +132,10 @@ let id_of_string str =
 
 let string_of_id id = reformat_id (Bson.get_objectId id)
 
+let is_nosql_id str =
+  try ignore (id_of_string str); true
+  with _ -> false
+
 }}
 
 let yojson_of_bson bson =

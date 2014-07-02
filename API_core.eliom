@@ -45,18 +45,22 @@ let link_id_of_string str =
 ** Content
 *)
 
+let clean_body body =
+  let regexp = Str.regexp "[\n \t]+" in
+  Str.global_replace regexp " " body
+
 let get_full_readability uri =
   let ruri = Rdf_uri.uri (Rdf_store.string_of_uri uri) in
   lwt json = Readability.get_parser ruri in
   let title = to_string (member "title" json) in
   let summary = to_string (member "excerpt" json) in
   let body = to_string (member "content" json) in
-  Lwt.return (uri, title, summary, body)
+  Lwt.return (uri, title, summary, clean_body body)
 
 let get_readability_body uri =
   let uri = Rdf_uri.uri (Rdf_store.string_of_uri uri) in
   lwt json = Readability.get_parser uri in
-  Lwt.return (to_string (member "content" json))
+  Lwt.return (clean_body (to_string (member "content" json)))
 
 let is_youtube_uri uri =
   let str_uri = Rdf_store.string_of_uri uri in

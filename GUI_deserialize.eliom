@@ -17,7 +17,7 @@ type id =
 
 type content =
 | Internal of (id * string * string * string)
-| External of (id * string * string)
+| External of (id * string * string * string)
 
 let uri_of_id = function
   | Id id   -> Rdf_store.(string_of_uri (uri_of_content_id id))
@@ -38,10 +38,10 @@ let id_of_uri uri =
 
 (** deserialize content from yojson to ocaml format *)
 let get_content json_content =
-  let (uri, title, summary, opt_body) = get_content json_content in
-  match opt_body with
-  | None      -> External (Uri uri, title, summary)
-  | Some body -> Internal (id_of_uri uri, title, summary, body)
+  let (uri, title, summary, body) = get_content json_content in
+  if Rdf_store.is_pumgrana_uri uri
+  then Internal (id_of_uri uri, title, summary, body)
+  else External (Uri uri, title, summary, body)
 
 (** deserialize short content from yojson to ocaml format *)
 let get_short_content json_content =

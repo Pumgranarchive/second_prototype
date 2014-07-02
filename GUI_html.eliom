@@ -68,9 +68,12 @@ let content_detail (content, tags_id, links, tags_link) =
     let c_id, content_elt = match content with
       | GUI_deserialize.Internal (c_id, c_title, c_summary, c_body) ->
         c_id, div [h3 [pcdata c_title]; p [pcdata c_summary]; p [pcdata c_body]]
-      | GUI_deserialize.External (c_id, c_title, c_summary) ->
-        let uri = Xml.uri_of_string (GUI_deserialize.uri_of_id c_id) in
-        c_id, div [iframe ~a:[a_src uri] []]
+      | GUI_deserialize.External (c_id, c_title, c_summary, c_html_body) ->
+        let div_id = "html_body" in
+        ignore {unit{ GUI_client_core.insert_html %div_id %c_html_body }};
+        c_id, div ~a:[a_id div_id] []
+        (* let uri = Xml.uri_of_string (GUI_deserialize.uri_of_id c_id) in *)
+        (* c_id, div [iframe ~a:[a_src uri] []] *)
     in
     ignore {unit{ GUI_client_core.bind_back %backb }};
     ignore {unit{ GUI_client_core.bind_forward %forwardb }};
@@ -107,7 +110,7 @@ let content_update (content, tags, links, tags_link) =
     let c_id, c_title, c_summary, c_body = match content with
       | GUI_deserialize.Internal (c_id, c_title, c_summary, c_body) ->
         c_id, c_title, c_summary, c_body
-      | GUI_deserialize.External (c_id, c_title, c_summary) ->
+      | GUI_deserialize.External (c_id, c_title, c_summary, c_body) ->
         failwith "Not allow on External content"
     in
     let tags_inputs, tags_html = GUI_tools.build_ck_tags_list tags in
