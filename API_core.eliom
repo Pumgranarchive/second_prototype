@@ -57,7 +57,38 @@ let clean_body body =
     (* ["&";"<";">";"\"";"'";"/"] *)
     (* ["&amp;";"&lt;";"&gt;";"&quot;";"&#39;";"&#x2F;"] *)
 
-let get_full_readability uri =
+let is_youtube_uri uri =
+  let str_uri = Rdf_store.string_of_uri uri in
+  try ignore (Youtube_http.get_id_from_url str_uri); true
+  with _ -> false
+
+let get_readability_triple uris =
+  let aux uri =
+    let ruri = Rdf_uri.uri (Rdf_store.string_of_uri uri) in
+    lwt json = Readability.get_parser ruri in
+    let title = to_string (member "title" json) in
+    let summary = to_string (member "excerpt" json) in
+    Lwt.return (uri, title, summary)
+  in
+  let build lwt_list uri =
+    lwt list = lwt_list in
+    lwt data = aux uri in
+    Lwt.return (data::list)
+  in
+  List.fold_left build (Lwt.return []) uris
+
+let get_youtube_triple uris =
+  let id_of_uri uri =
+    Youtube_http.get_id_from_url (Rdf_store.string_of_uri uri)
+  in
+  let ids = List.map id_of_uri uris in
+  lwt videos = Youtube_http.get_videos_from_ids ids in
+  let format uri (title, _, summary, _) =
+    uri, title, summary
+  in
+  Lwt.return (List.map2 format uris videos)
+
+let get_readability_detail uri =
   let ruri = Rdf_uri.uri (Rdf_store.string_of_uri uri) in
   lwt json = Readability.get_parser ruri in
   let title = to_string (member "title" json) in
@@ -70,53 +101,56 @@ let get_readability_body uri =
   lwt json = Readability.get_parser uri in
   Lwt.return (clean_body (to_string (member "content" json)))
 
-let is_youtube_uri uri =
-  let str_uri = Rdf_store.string_of_uri uri in
-  try ignore (Youtube_http.get_id_from_url str_uri); true
-  with _ -> false
-
-let get_youtube uri =
-  let id = Youtube_http.get_id_from_url (Rdf_store.string_of_uri uri) in
-  lwt videos = Youtube_http.get_videos_from_ids [id] in
-  let (title, _, summary, _) = List.hd videos in
+let get_youtube_detail uri =
+  lwt ret = get_youtube_triple [uri] in
+  let (_, title, summary) = List.hd ret in
   lwt body = get_readability_body uri in
   Lwt.return (uri, title, summary, body)
 
-let get_nosql_store uri =
+let get_nosql_store_detail uri =
   let id = Rdf_store.content_id_of_uri uri in
   lwt (id, title, summary, body) = Nosql_store.get_detail id in
   Lwt.return (uri, title, summary, body)
 
 let is_something_else uri = true
 
-(* let get_rdf_store uri = *)
-(*   lwt contents = Rdf_store.get_triple_contents [uri] in *)
-(*   let (id, title, summary) = List.hd contents in *)
-(*   lwt body = get_readability_body uri in *)
-(*   Lwt.return (uri, title, summary, body) *)
+let detail_platforms =
+  [(Rdf_store.is_pumgrana_uri,  get_nosql_store_detail);
+   (is_youtube_uri,             get_youtube_detail);
+   (is_something_else,          get_readability_detail)]
 
-(* let get_somewhere uri = *)
-(*   try_lwt get_rdf_store uri *)
-(*   with _ -> get_full_readability uri *)
-
-let platforms =
-  [(Rdf_store.is_pumgrana_uri,  get_nosql_store);
-   (is_youtube_uri,             get_youtube);
-   (is_something_else,          get_full_readability)]
-
-let rec get_detail_data uri = function
+let rec get_data_from uri = function
   | (condiction, getter)::next ->
     if condiction uri
     then getter uri
-    else get_detail_data uri next
+    else get_data_from uri next
   | [] -> raise Not_found
+
+let triple_platforms =
+  [(is_youtube_uri,             get_youtube_triple);
+   (is_something_else,          get_readability_triple)]
+
+let get_data_list_from uris platforms =
+  let aux lwt_data (condiction, getter) =
+    lwt uris, results = lwt_data in
+    let plt_uris = List.filter condiction uris in
+    let not_know uri =
+      not (List.exists (fun x -> Ptype.compare_uri uri x = 0) plt_uris)
+    in
+    let other_uris = List.filter not_know uris in
+    lwt plt_res = getter plt_uris in
+    Lwt.return (other_uris, results@plt_res)
+  in
+  lwt uris, result = List.fold_left aux (Lwt.return (uris,[])) platforms in
+  if List.length uris != 0 then raise Not_found;
+  Lwt.return result
 
 (*** Getters *)
 let get_detail content_str_uri =
   let aux () =
     let uri = Rdf_store.uri_of_string content_str_uri in
     try_lwt
-      lwt (uri, title, summary, body) = get_detail_data uri platforms in
+      lwt (uri, title, summary, body) = get_data_from uri detail_platforms in
       Lwt.return (`Assoc [(API_tools.uri_field, `String content_str_uri);
                           (API_tools.title_field, `String title);
                           (API_tools.summary_field, `String summary);
@@ -141,14 +175,20 @@ let get_contents filter tags_str_uri =
       | Some t -> List.map uri_of_string t
       | None   -> []
     in
-    lwt res = Rdf_store.get_triple_contents tags_uri in
-    let aux_format (id, title, summary) =
-      `Assoc [(API_tools.uri_field, `String (string_uri_of_id id));
+    lwt i_res = Rdf_store.get_triple_contents tags_uri in
+    lwt e_res = Rdf_store.get_external_contents tags_uri in
+    let format (uri, title, summary) =
+      `Assoc [(API_tools.uri_field, `String (Rdf_store.string_of_uri uri));
               (API_tools.title_field, `String title);
               (API_tools.summary_field, `String summary)]
     in
-    let json = `List (List.map aux_format res) in
-    Lwt.return json
+    let i_format (id, title, summary) =
+      format (Rdf_store.uri_of_content_id id, title, summary)
+    in
+    let i_json = List.map i_format i_res in
+    lwt triples = get_data_list_from e_res triple_platforms in
+    let e_json = List.map format triples in
+    Lwt.return (`List (i_json@e_json))
   in
   API_tools.check_return ~param_name:API_tools.contents_ret_name aux
 
@@ -332,17 +372,35 @@ let get_links_from_content_tags content_uri opt_tags_uri =
   let aux tags_str_uri () =
     let content_uri = Rdf_store.uri_of_string content_uri in
     let tags_uri = List.map Rdf_store.uri_of_string tags_str_uri in
-    lwt linked_cs = Rdf_store.links_from_content_tags content_uri tags_uri in
-    let build_json (link_id, content_uri, title, summary) =
+    lwt i_ret = Rdf_store.links_from_content_tags
+        Rdf_store.Internal content_uri tags_uri in
+    lwt e_ret = Rdf_store.links_from_content_tags
+        Rdf_store.External content_uri tags_uri in
+    let build_assoc (link_id, uri, title, summary) =
       let str_link_id = Rdf_store.string_of_link_id link_id in
-      let content_str_uri = Rdf_store.string_of_uri content_uri in
+      let str_uri = Rdf_store.string_of_uri uri in
       `Assoc [(API_tools.link_id_ret_name, `String str_link_id);
-              (API_tools.content_id_ret_name, `String content_str_uri);
+              (API_tools.content_id_ret_name, `String str_uri);
               (API_tools.content_title_ret_name, `String title);
               (API_tools.content_summary_ret_name, `String summary)]
     in
-    let json = `List (List.map build_json linked_cs) in
-    Lwt.return json
+    let extract_uri (link_id, uri) = uri in
+    let extract_link_id (link_id, uri) = link_id in
+    let format link_id (uri, title, summary) =
+      build_assoc (link_id, uri, title, summary)
+    in
+    let build_json = function
+      | Rdf_store.Rinternal l ->
+        Lwt.return (List.map build_assoc l)
+      | Rdf_store.Rexternal l ->
+        let uris = List.map extract_uri l in
+        let link_ids = List.map extract_link_id l in
+        lwt ret = get_data_list_from uris triple_platforms in
+        Lwt.return (List.map2 format link_ids ret)
+    in
+    lwt i_json = build_json i_ret in
+    lwt e_json = build_json e_ret in
+    Lwt.return (`List (i_json@e_json))
   in
   let tags_str_uri = match opt_tags_uri with
     | Some x -> x

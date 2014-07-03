@@ -12,14 +12,17 @@ type uri = Ptype.uri
 
 type link_id = Ptype.link_id
 
-(** link_id * target_uri * title * summary  *)
-type linked_content = link_id * uri * string * string
-
 type content = Nosql_store.id * string * string
 
 (** uri * subject  *)
 type tag = uri * string
 type tag_type = TagLink | TagContent
+
+type content_type = Internal | External
+type content_ret =
+(** link_id * target_uri * title * summary  *)
+| Rinternal of (link_id * uri * string * string) list
+| Rexternal of (link_id * uri) list
 
 (** {6 Utils}  *)
 
@@ -64,6 +67,10 @@ val slash_decode : string -> string
     if [tags_uri] is an empty list, return all contents' triple. *)
 val get_triple_contents : uri list -> content list Lwt.t
 
+(** [get_external_contents tags_uri]
+    if [tags_uri] is an empty list, return all contents' triple. *)
+val get_external_contents : uri list -> uri list Lwt.t
+
 (** [insert_content content_id title summary tags_uri]
     [tags_uri] can be an empty list
     @raise Invalid_argument if the content is already registred. *)
@@ -88,10 +95,10 @@ val update_content_tags : uri -> uri list -> unit Lwt.t
 val get_link_detail : link_id -> (link_id * uri * uri * tag list) Lwt.t
 
 (** [get_links_from_content content_uri]  *)
-val links_from_content : uri -> linked_content list Lwt.t
+val links_from_content : content_type -> uri -> content_ret Lwt.t
 
 (** [get_links_from_content_tags content_id tags_uri]  *)
-val links_from_content_tags : uri -> uri list -> linked_content list Lwt.t
+val links_from_content_tags : content_type -> uri -> uri list -> content_ret Lwt.t
 
 (** [insert_links (origin_uri, targets_uri, tag_uri list) list]
     @raise Invalid_argument if at least one tags list is empty. *)

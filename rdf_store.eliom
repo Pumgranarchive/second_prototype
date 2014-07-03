@@ -14,14 +14,18 @@ exception Internal_error of string
 type uri = Ptype.uri
 type link_id = Ptype.link_id
 
-type linked_content = link_id * uri * string * string
-
 type content = Nosql_store.id * string * string
 
 type tag = uri * string
 type tag_type = TagLink | TagContent
 
 type update_mode = Adding | Replacing
+
+type content_type = Internal | External
+type content_ret =
+| Rinternal of (link_id * uri * string * string) list
+| Rexternal of (link_id * uri) list
+
 
 }}
 
@@ -128,6 +132,11 @@ let string_of_term = function
 let from_solution name solution =
   try string_of_term (Rdf_sparql.get_term solution name)
   with Not_found -> raise (Internal_error (name ^ ": Not found into the solution"))
+
+let external_linked_content_from origin_uri solution =
+  let target_uri = uri_of_string (from_solution "target" solution) in
+  let link_id = link_id origin_uri target_uri in
+  link_id, target_uri
 
 let triple_link_from solution =
   from_solution "origin" solution,
@@ -378,7 +387,6 @@ let get_contents_base_query tags_uri =
     "?content <" ^ tagged_content_r ^ "> ?tag .
      FILTER (str(?tag), \"" ^ regexp ^ "\") . "
 
-
 let get_triple_contents tags_uri =
   let half_query = get_contents_base_query tags_uri in
   let query = "SELECT ?content ?title ?summary WHERE
@@ -393,21 +401,17 @@ let get_triple_contents tags_uri =
 let get_external_contents tags_uri =
   let half_query = get_contents_base_query tags_uri in
   let query = "SELECT ?content WHERE
-  { { { ?origin ?res ?content } UNION { ?content ?res ?target } } .
+  { { { ?content ?res_link ?target } UNION
+      { ?origin ?res_link ?content } .
+      FILTER regex(str(?res_link), \"^"^base_tag_link_url^"\") } UNION
+    { ?content <"^tagged_content_r^"> ?tag } .
     " ^ half_query ^ "
-    FILTER regex(str(?res), \"^"^base_tag_link_url^"\") .
     FILTER (!regex(str(?content), \"^"^domain^"\"))
     } GROUP BY ?content"
   in
-  print_endline query;
   lwt solutions = get_from_4store query in
   let contents = List.map content_from solutions in
-  Lwt.return (contents)
-
-lwt _ =
-   lwt res = get_external_contents [] in
-   List.iter (fun x -> print_endline (string_of_uri x)) res;
-   Lwt.return ()
+  Lwt.return contents
 
 let insert_content content_id title summary tags_uri =
   let content_str_uri = string_of_uri (uri_of_content_id content_id) in
@@ -528,7 +532,7 @@ let get_link_detail link_id =
   lwt tags = get_tags_from_link link_id in
   Lwt.return (link_id, origin_uri, target_uri, tags)
 
-let build_tags_query content_uri tags =
+let build_tags_query content_type content_uri tags =
   let filter_query = if List.length tags == 0 then "" else
       let build_rgx rgx tag_id =
         let rgx' = next_query rgx "|" in
@@ -536,22 +540,37 @@ let build_tags_query content_uri tags =
         rgx' ^ "(" ^ tag_uri ^ ")"
       in
       let regex = List.fold_left build_rgx "" tags in
-      ". FILTER regex(str(?tag), \"" ^ regex ^ "\")"
+      "FILTER regex(str(?tag), \"" ^ regex ^ "\") . "
   in
   let content_str_uri = string_of_uri content_uri in
-  "SELECT ?target ?title ?summary WHERE
-  { <"^content_str_uri^"> ?tag ?target "^filter_query^" .
-    ?target <"^content_title_r^"> ?title .
-    ?target <"^content_summary_r^"> ?summary } GROUP BY ?target"
+  let select, half_query = match content_type with
+    | Internal ->
+      "?target ?title ?summary",
+      "?target <"^content_title_r^"> ?title .
+       ?target <"^content_summary_r^"> ?summary . "
+    | External ->
+      "?target",
+      "FILTER (!regex(str(?target), \"^"^domain^"\"))"
+  in
+  "SELECT " ^ select ^ " WHERE
+  { <"^content_str_uri^"> ?tag ?target .
+    "^filter_query^"
+    FILTER regex(str(?tag), \"^"^base_tag_url^"\") .
+    " ^ half_query ^ " } GROUP BY ?target"
 
-let links_from_content_tags content_uri tags_uri =
-  let query = build_tags_query content_uri tags_uri in
+let links_from_content_tags content_type content_uri tags_uri =
+  let query = build_tags_query content_type content_uri tags_uri in
   lwt solutions = get_from_4store query in
-  let linked_contents = linked_contents_of_solutions content_uri solutions in
-  Lwt.return (linked_contents)
+  match content_type with
+  | Internal ->
+    let res = linked_contents_of_solutions content_uri solutions in
+    Lwt.return (Rinternal res)
+  | External ->
+    let res = List.map (external_linked_content_from content_uri) solutions in
+    Lwt.return (Rexternal res)
 
-let links_from_content content_uri =
-  links_from_content_tags content_uri []
+let links_from_content content_type content_uri =
+  links_from_content_tags content_type content_uri []
 
 let build_query origin_str_uri target_str_uri q tag_uri =
   let tag_str_uri = string_of_uri tag_uri in
