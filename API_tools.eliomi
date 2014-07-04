@@ -45,6 +45,9 @@ val subject_field: string
 (** Value of the type field in the database *)
 val type_field: string
 
+(** External field name in the API json return *)
+val external_field: string
+
 
 (** {6 Configuration string } *)
 

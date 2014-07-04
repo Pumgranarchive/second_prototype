@@ -51,9 +51,9 @@ let clean_body body =
     Str.global_replace regexp str2 str
   in
   let regexp = Str.regexp "[\n \t]+" in
-  let body' = Str.global_replace regexp " " body in
-  List.fold_left2 replace body'
-    ["\""; "'"] ["\\\""; "\\'"]
+  (* let body' =  *)Str.global_replace regexp " " body (* in *)
+  (* List.fold_left2 replace body' *)
+  (*   ["\""; "'"] ["\\\""; "\\'"] *)
     (* ["&";"<";">";"\"";"'";"/"] *)
     (* ["&amp;";"&lt;";"&gt;";"&quot;";"&#39;";"&#x2F;"] *)
 
@@ -94,7 +94,7 @@ let get_readability_detail uri =
   let title = to_string (member "title" json) in
   let summary = to_string (member "excerpt" json) in
   let body = to_string (member "content" json) in
-  Lwt.return (uri, title, summary, clean_body body)
+  Lwt.return (uri, title, summary, clean_body body, true)
 
 let get_readability_body uri =
   let uri = Rdf_uri.uri (Rdf_store.string_of_uri uri) in
@@ -105,12 +105,12 @@ let get_youtube_detail uri =
   lwt ret = get_youtube_triple [uri] in
   let (_, title, summary) = List.hd ret in
   lwt body = get_readability_body uri in
-  Lwt.return (uri, title, summary, body)
+  Lwt.return (uri, title, summary, body, true)
 
 let get_nosql_store_detail uri =
   let id = Rdf_store.content_id_of_uri uri in
   lwt (id, title, summary, body) = Nosql_store.get_detail id in
-  Lwt.return (uri, title, summary, body)
+  Lwt.return (uri, title, summary, body, false)
 
 let is_something_else uri = true
 
@@ -150,11 +150,14 @@ let get_detail content_str_uri =
   let aux () =
     let uri = Rdf_store.uri_of_string content_str_uri in
     try_lwt
-      lwt (uri, title, summary, body) = get_data_from uri detail_platforms in
+      lwt (uri, title, summary, body, v_external) =
+        get_data_from uri detail_platforms
+      in
       Lwt.return (`Assoc [(API_tools.uri_field, `String content_str_uri);
                           (API_tools.title_field, `String title);
                           (API_tools.summary_field, `String summary);
-                          (API_tools.body_field, `String body)])
+                          (API_tools.body_field, `String body);
+                          (API_tools.external_field, `Bool v_external)])
     with _ -> Lwt.return `Null
   in
   API_tools.check_return ~param_name:API_tools.contents_ret_name aux

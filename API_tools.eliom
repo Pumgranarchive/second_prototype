@@ -23,6 +23,7 @@ let text_field = "text"
 let body_field = "body"
 let subject_field = "subject"
 let type_field = "type"
+let external_field = "external"
 
 let contents_ret_name = "contents"
 let tags_ret_name = "tags"
