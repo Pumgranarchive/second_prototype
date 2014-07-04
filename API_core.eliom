@@ -51,8 +51,9 @@ let clean_body body =
     Str.global_replace regexp str2 str
   in
   let regexp = Str.regexp "[\n \t]+" in
-  (* let body' =  *)Str.global_replace regexp " " body (* in *)
-  (* List.fold_left2 replace body' *)
+  let body' = Str.global_replace regexp " " body in
+  List.fold_left2 replace body'
+    ["allowfullscreen"] ["allowfullscreen=\"allowfullscreen\""]
   (*   ["\""; "'"] ["\\\""; "\\'"] *)
     (* ["&";"<";">";"\"";"'";"/"] *)
     (* ["&amp;";"&lt;";"&gt;";"&quot;";"&#39;";"&#x2F;"] *)
