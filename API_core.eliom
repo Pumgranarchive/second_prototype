@@ -127,7 +127,10 @@ let get_data_list_from uris platforms =
       not (List.exists (fun x -> Ptype.compare_uri uri x = 0) plt_uris)
     in
     let other_uris = List.filter not_know uris in
-    lwt plt_res = getter plt_uris in
+    lwt plt_res = if List.length plt_uris = 0
+      then Lwt.return []
+      else getter plt_uris
+    in
     Lwt.return (other_uris, results@plt_res)
   in
   lwt uris, result = List.fold_left aux (Lwt.return (uris,[])) platforms in
