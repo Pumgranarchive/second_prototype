@@ -16,12 +16,16 @@ open Pjson
 open Pdeserialize
 open GUI_deserialize
 
-let insert_html id html =
-  let js_line = "document.getElementById('"^id^"').innerHTML='"^html^"'"
-  in
-  (* let js_ = Js.string html in *)
-  Eliom_lib.debug "%s" js_line;
-  ignore (Js.Unsafe.eval_string js_line)
+let insert_html div html =
+  (* let dom_div = Eliom_content.Html5.To_dom.of_div div in *)
+  (* let html = "<div>un truc</div>" in *)
+  let html = "<figure class=\"video blockFigure\"><iframe width=\"640\" height=\"360\" src=\"http://www.youtube.com/embed/DaFu3AoDXPY\" frameborder=\"0\" allowfullscreen></iframe><figcaption>Troisieme chronique du Fossoyeur qui propose, a l\'occasion de la sortie du Hobbit de Peter Jackson le 12 Decembre prochain, une petite seance de rattrapage c...</figcaption></figure>" in
+  Eliom_lib.debug "%s" html;
+  let line = "jQuery('body').html('"^html^"')" in
+  Js.Unsafe.eval_string line
+  (* dom_div##innerHTML <- Js.string html *)
+  (* let js_line = "jQuery('#"^id^"').html('"^html^"');" in *)
+  (* ignore (Js.Unsafe.eval_string js_line) *)
 
 (** Get all name of checked dom_inputs and return them in a list. *)
 let get_checked_inputs dom_inputs =
@@ -262,8 +266,8 @@ let handle_refresh_links content_id html_elt inputs_elt submit_elt =
       (get_service_return get_link_list r))
     (fun () ->
       let list = get_checked_inputs dom_inputs in
-      let encoded_uri = Rdf_store.slash_encode uri in
-      let encoded_list = List.map Rdf_store.slash_encode list in
+      let encoded_uri = Rdf_store.uri_encode uri in
+      let encoded_list = List.map Rdf_store.uri_encode list in
       Eliom_client.call_service
         ~service:%API_services.get_links_from_content_tags
         (encoded_uri, Some encoded_list) ())
@@ -276,7 +280,7 @@ let handle_refresh_contents html_elt inputs_elt submit_elt =
       (get_service_return get_short_content_list r))
     (fun () ->
       let list = get_checked_inputs dom_inputs in
-      let encoded_list = List.map Rdf_store.slash_encode list in
+      let encoded_list = List.map Rdf_store.uri_encode list in
       Eliom_client.call_service
         ~service:%API_services.get_contents
         (None, Some encoded_list) ())

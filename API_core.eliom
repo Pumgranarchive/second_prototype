@@ -83,7 +83,7 @@ let get_youtube_triple uris =
   in
   let ids = List.map id_of_uri uris in
   lwt videos = Youtube_http.get_videos_from_ids ids in
-  let format uri (title, _, summary, _) =
+  let format uri (_, title, _, summary, _) =
     uri, title, summary
   in
   Lwt.return (List.map2 format uris videos)

@@ -54,10 +54,10 @@ val uri_of_content_id : Nosql_store.id -> uri
 val content_id_of_uri : uri -> Nosql_store.id
 
 (** Encode all slash of the given string url  *)
-val slash_encode : string -> string
+val uri_encode : string -> string
 
 (** Decode all slash of the given string url  *)
-val slash_decode : string -> string
+val uri_decode : string -> string
 
 }}
 

@@ -69,9 +69,10 @@ let content_detail (content, tags_id, links, tags_link) =
       | GUI_deserialize.Internal (c_id, c_title, c_summary, c_body) ->
         c_id, div [h3 [pcdata c_title]; p [pcdata c_summary]; p [pcdata c_body]]
       | GUI_deserialize.External (c_id, c_title, c_summary, c_html_body) ->
-        let div_id = "html_body" in
-        ignore {unit{ GUI_client_core.insert_html %div_id %c_html_body }};
-        c_id, div ~a:[a_id div_id] []
+        (* let div_id = "html_body" in *)
+        let div = D.div [] in
+        ignore {unit{ GUI_client_core.insert_html %div %c_html_body }};
+        c_id, div
         (* let uri = Xml.uri_of_string (GUI_deserialize.uri_of_id c_id) in *)
         (* c_id, div [iframe ~a:[a_src uri] []] *)
     in
@@ -83,6 +84,7 @@ let content_detail (content, tags_id, links, tags_link) =
                   %links_tags_inputs %submit }};
     Eliom_tools.F.html
       ~title:"Pumgrana"
+      ~js:[["js";"jquery-2.1.1.min.js"]]
       ~css:[["css";"pumgrana.css"]]
       Html5.F.(body [
         header_elt;

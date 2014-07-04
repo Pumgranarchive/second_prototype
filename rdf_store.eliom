@@ -65,8 +65,8 @@ let uri_of_string = Ptype.uri_of_string
 let string_of_uri = Ptype.string_of_uri
 let link_id_of_string = Ptype.link_id_of_string
 let string_of_link_id = Ptype.string_of_link_id
-let slash_encode = Ptype.slash_encode
-let slash_decode = Ptype.slash_decode
+let uri_encode = Ptype.uri_encode
+let uri_decode = Ptype.uri_decode
 
 let clean_for_rgx str =
   let replace str str1 str2 =

@@ -45,7 +45,7 @@ let _ =
   Eliom_registration.String.register
     ~service:get_contents
     (fun (filter, tags_uris) () ->
-      let tags_uri_dcd = map (List.map Rdf_store.slash_decode) tags_uris in
+      let tags_uri_dcd = map (List.map Rdf_store.uri_decode) tags_uris in
       return_of_json (API_core.get_contents filter tags_uri_dcd))
 
 (** This service allow a simpler matching url without superfluous slashs,
@@ -426,8 +426,8 @@ let _ =
   Eliom_registration.String.register
    ~service:get_links_from_content_tags
     (fun (content_uri, tags_uris) () ->
-      let content_uri_dcd = Rdf_store.slash_decode content_uri in
-      let tags_uri_dcd = map (List.map Rdf_store.slash_decode) tags_uris in
+      let content_uri_dcd = Rdf_store.uri_decode content_uri in
+      let tags_uri_dcd = map (List.map Rdf_store.uri_decode) tags_uris in
       return_of_json
         (API_core.get_links_from_content_tags content_uri_dcd tags_uri_dcd))
 
