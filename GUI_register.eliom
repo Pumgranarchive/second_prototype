@@ -20,25 +20,32 @@ let _ =
       lwt data = GUI_core.get_contents filter None in
       Lwt.return (GUI_html.home_html data))
 
+let map f = function
+  | Some x -> Some (f x)
+  | None   -> None
+
 let _ =
   Pumgrana.App.register
     ~service:GUI_services.home_service
-    (fun (filter, tags_id) () ->
-      lwt data = GUI_core.get_contents filter tags_id in
+    (fun (filter, tags_uri) () ->
+      let uris = map (List.map Rdf_store.uri_decode) tags_uri in
+      lwt data = GUI_core.get_contents filter uris in
       Lwt.return (GUI_html.home_html data))
 
 let _ =
   Pumgrana.App.register
     ~service:GUI_services.content_detail_service
-    (fun content_id () ->
-      lwt data = GUI_core.get_detail_content content_id in
+    (fun content_uri () ->
+      let uri = Rdf_store.uri_decode content_uri in
+      lwt data = GUI_core.get_detail_content uri in
       Lwt.return (GUI_html.content_detail data))
 
 let _ =
   Pumgrana.App.register
     ~service:GUI_services.content_update_service
-    (fun content_id () ->
-      lwt data = GUI_core.get_detail_content content_id in
+    (fun content_uri () ->
+      let uri = Rdf_store.uri_decode content_uri in
+      lwt data = GUI_core.get_detail_content uri in
       Lwt.return (GUI_html.content_update data))
 
 let _ =
@@ -50,11 +57,14 @@ let _ =
   Pumgrana.App.register
     ~service:GUI_services.link_insert_service
     (fun (origin_uri, target_uri) () ->
-      Lwt.return (GUI_html.link_insert origin_uri target_uri))
+      let o_uri = map Rdf_store.uri_decode origin_uri in
+      let t_uri = map Rdf_store.uri_decode target_uri in
+      Lwt.return (GUI_html.link_insert o_uri t_uri))
 
 let _ =
   Pumgrana.App.register
     ~service:GUI_services.link_update_service
     (fun link_uri () ->
-      lwt link_detail = GUI_core.get_link_detail link_uri in
+      let uri = Rdf_store.uri_decode link_uri in
+      lwt link_detail = GUI_core.get_link_detail uri in
       Lwt.return (GUI_html.link_update link_detail))

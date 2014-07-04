@@ -51,7 +51,7 @@ let go_forward () =
   Dom_html.window##history##forward()
 
 let go_update_content id =
-  let str_id = GUI_deserialize.string_of_id id in
+  let str_id = Rdf_store.uri_encode (GUI_deserialize.string_of_id id) in
   Eliom_client.change_page
     ~service:%GUI_services.content_update_service str_id ()
 
@@ -60,7 +60,7 @@ let go_insert_content () =
     ~service:%GUI_services.content_insert_service () ()
 
 let cancel_update_content id =
-  let str_id = GUI_deserialize.string_of_id id in
+  let str_id = Rdf_store.uri_encode (GUI_deserialize.string_of_id id) in
   Eliom_client.change_page
     ~service:%GUI_services.content_detail_service str_id ()
 
@@ -81,7 +81,7 @@ let rec build_tags_list all_tags nl not_found_list = function
     build_tags_list all_tags new_list nf_list t
 
 let save_update_content id title summary body tags remove_links new_tags =
-  let uri = GUI_deserialize.uri_of_id id in
+  let uri = Rdf_store.uri_encode (GUI_deserialize.uri_of_id id) in
   let str_id = GUI_deserialize.string_of_id id in
   lwt res = Eliom_client.call_service ~service:%API_services.get_tags_by_type
     %API_conf.content_tag ()
