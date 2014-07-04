@@ -16,17 +16,6 @@ open Pjson
 open Pdeserialize
 open GUI_deserialize
 
-let insert_html div html =
-  (* let dom_div = Eliom_content.Html5.To_dom.of_div div in *)
-  (* let html = "<div>un truc</div>" in *)
-  let html = "<figure class=\"video blockFigure\"><iframe width=\"640\" height=\"360\" src=\"http://www.youtube.com/embed/DaFu3AoDXPY\" frameborder=\"0\" allowfullscreen></iframe><figcaption>Troisieme chronique du Fossoyeur qui propose, a l\'occasion de la sortie du Hobbit de Peter Jackson le 12 Decembre prochain, une petite seance de rattrapage c...</figcaption></figure>" in
-  Eliom_lib.debug "%s" html;
-  let line = "jQuery('body').html('"^html^"')" in
-  Js.Unsafe.eval_string line
-  (* dom_div##innerHTML <- Js.string html *)
-  (* let js_line = "jQuery('#"^id^"').html('"^html^"');" in *)
-  (* ignore (Js.Unsafe.eval_string js_line) *)
-
 (** Get all name of checked dom_inputs and return them in a list. *)
 let get_checked_inputs dom_inputs =
   let rec aux n = function

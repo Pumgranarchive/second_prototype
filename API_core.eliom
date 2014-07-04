@@ -45,19 +45,6 @@ let link_id_of_string str =
 ** Content
 *)
 
-let clean_body body =
-  let replace str str1 str2 =
-    let regexp = Str.regexp str1 in
-    Str.global_replace regexp str2 str
-  in
-  let regexp = Str.regexp "[\n \t]+" in
-  let body' = Str.global_replace regexp " " body in
-  List.fold_left2 replace body'
-    ["allowfullscreen"] ["allowfullscreen=\"allowfullscreen\""]
-  (*   ["\""; "'"] ["\\\""; "\\'"] *)
-    (* ["&";"<";">";"\"";"'";"/"] *)
-    (* ["&amp;";"&lt;";"&gt;";"&quot;";"&#39;";"&#x2F;"] *)
-
 let is_youtube_uri uri =
   let str_uri = Rdf_store.string_of_uri uri in
   try ignore (Youtube_http.get_id_from_url str_uri); true
@@ -94,13 +81,14 @@ let get_readability_detail uri =
   lwt json = Readability.get_parser ruri in
   let title = to_string (member "title" json) in
   let summary = to_string (member "excerpt" json) in
-  let body = to_string (member "content" json) in
-  Lwt.return (uri, title, summary, clean_body body, true)
+  lwt body = Tidy.xhtml_of_html (to_string (member "content" json)) in
+  Lwt.return (uri, title, summary, body, true)
 
 let get_readability_body uri =
   let uri = Rdf_uri.uri (Rdf_store.string_of_uri uri) in
   lwt json = Readability.get_parser uri in
-  Lwt.return (clean_body (to_string (member "content" json)))
+  lwt body = Tidy.xhtml_of_html (to_string (member "content" json)) in
+  Lwt.return body
 
 let get_youtube_detail uri =
   lwt ret = get_youtube_triple [uri] in
