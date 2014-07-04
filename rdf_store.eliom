@@ -379,13 +379,13 @@ let delete_tags_on_content content_uri tags_uri =
 
 let get_contents_base_query tags_uri =
   let build_regexp query tag_uri =
-    let q = next_query query "|" in
-    q ^ "(" ^ (string_of_uri tag_uri) ^ ")"
+    let q = next_query query " || " in
+    q ^ "str(?tag) = \"" ^ (string_of_uri tag_uri) ^ "\""
   in
   if List.length tags_uri == 0 then "" else
     let regexp = List.fold_left build_regexp "" tags_uri in
     "?content <" ^ tagged_content_r ^ "> ?tag .
-     FILTER (str(?tag), \"" ^ regexp ^ "\") . "
+     FILTER (" ^ regexp ^ ") . "
 
 let get_triple_contents tags_uri =
   let half_query = get_contents_base_query tags_uri in
