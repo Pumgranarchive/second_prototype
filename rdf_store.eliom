@@ -534,13 +534,13 @@ let get_link_detail link_id =
 
 let build_tags_query content_type content_uri tags =
   let filter_query = if List.length tags == 0 then "" else
-      let build_rgx rgx tag_id =
-        let rgx' = next_query rgx "|" in
+      let build_filter filter tag_id =
+        let filter' = next_query filter " || " in
         let tag_uri = string_of_uri tag_id in
-        rgx' ^ "(" ^ tag_uri ^ ")"
+        filter' ^ "str(?tag) = \"" ^ tag_uri ^ "\""
       in
-      let regex = List.fold_left build_rgx "" tags in
-      "FILTER regex(str(?tag), \"" ^ regex ^ "\") . "
+      let filter = List.fold_left build_filter "" tags in
+      "FILTER (" ^ filter ^ ") . "
   in
   let content_str_uri = string_of_uri content_uri in
   let select, half_query = match content_type with
@@ -560,6 +560,7 @@ let build_tags_query content_type content_uri tags =
 
 let links_from_content_tags content_type content_uri tags_uri =
   let query = build_tags_query content_type content_uri tags_uri in
+  print_endline query;
   lwt solutions = get_from_4store query in
   match content_type with
   | Internal ->
