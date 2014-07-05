@@ -38,10 +38,10 @@ let id_of_uri uri =
 
 (** deserialize content from yojson to ocaml format *)
 let get_content json_content =
-  let (uri, title, summary, body) = get_content json_content in
-  if Rdf_store.is_pumgrana_uri uri
-  then Internal (id_of_uri uri, title, summary, body)
-  else External (Uri uri, title, summary, body)
+  let (uri, title, summary, body, v_external) = get_content json_content in
+  if v_external
+  then External (Uri uri, title, summary, body)
+  else Internal (id_of_uri uri, title, summary, body)
 
 (** deserialize short content from yojson to ocaml format *)
 let get_short_content json_content =
