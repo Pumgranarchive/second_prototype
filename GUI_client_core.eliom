@@ -50,6 +50,17 @@ let go_back () =
 let go_forward () =
   Dom_html.window##history##forward()
 
+let map f = function
+  | Some x -> Some (f x)
+  | None    -> None
+
+let go_insert_link id =
+  let str_id =
+    map (fun x -> Rdf_store.uri_encode (GUI_deserialize.string_of_id x)) id
+  in
+  Eliom_client.change_page
+    ~service:%GUI_services.link_insert_service (str_id, None) ()
+
 let go_update_content id =
   let str_id = Rdf_store.uri_encode (GUI_deserialize.string_of_id id) in
   Eliom_client.change_page
@@ -145,6 +156,9 @@ let bind_back back_button =
     on click event to call go_forward each time. *)
 let bind_forward forward_button =
   bind_button forward_button (fun () -> Lwt.return (go_forward ()))
+
+let bind_insert_link button_elt id =
+  bind_button button_elt (fun () -> go_insert_link id)
 
 (** [bind_update button_elt] bind the button
     on click event to call go_update_content each time. *)

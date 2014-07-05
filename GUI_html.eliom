@@ -131,11 +131,13 @@ let content_update (content, tags, links, tags_link) =
     let cancelb, saveb, header_elt = GUI_tools.build_update_content_header () in
     let links_tags_html = GUI_tools.build_tags_list tags_link in
     let div_tags_html = D.div tags_html in
+    let link_insert_elt = GUI_tools.build_link_header () in
     ignore {unit{ GUI_client_core.bind_save_update_content %saveb %c_id
                   %content_elt %tags_inputs %links_inputs %tags_input_list}};
     ignore {unit{ GUI_client_core.bind_cancel_update_content %cancelb %c_id}};
     ignore {unit{ GUI_client_core.bind_add_tag_content %submit_tag
                   %div_tags_html %add_tag_input %tags_input_list}};
+    ignore {unit{ GUI_client_core.bind_insert_link %link_insert_elt (Some %c_id)}};
     Eliom_tools.F.html
       ~title:"Pumgrana"
       ~css:[["css";"pumgrana.css"]]
@@ -150,6 +152,7 @@ let content_update (content, tags, links, tags_link) =
               div add_tag_html]];
         div ~a:[a_class["links"]]
           [h4 [pcdata "Links"];
+           link_insert_elt; br ();
            span [pcdata "Select to remove"];
            div links_html;
            div ~a:[a_class["links_tags"]]
@@ -183,11 +186,13 @@ let content_insert () =
       D.raw_textarea ~a:[a_class ["body_update"]]
         ~name:"body" ()
     in
+    let link_insert_elt = GUI_tools.build_link_header () in
     ignore {unit{ GUI_client_core.bind_back %cancelb}};
     ignore {unit{ GUI_client_core.bind_add_tag_content %submit_tag
                     %div_tags_html %add_tag_input %tags_input_list}};
     ignore {unit{ GUI_client_core.bind_save_insert_content %saveb
                     %title_elt %summary_elt %body_elt %tags_input_list}};
+    ignore {unit{ GUI_client_core.bind_insert_link %link_insert_elt None}};
     Eliom_tools.F.html
       ~title:"Pumgrana"
       ~css:[["css";"pumgrana.css"]]
@@ -199,7 +204,11 @@ let content_insert () =
              [h5 [pcdata "Tags"];
               span [pcdata "Select to unadd"];
               div_tags_html;
-              div add_tag_html]]])
+              div add_tag_html]];
+        div ~a:[a_class["links"]]
+          [h4 [pcdata "Links"];
+           link_insert_elt]
+      ])
   with
   | e ->
     let err_msg = Printexc.to_string e in

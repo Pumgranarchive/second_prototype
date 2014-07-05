@@ -32,7 +32,7 @@ let build_header_back_forward elt_list =
 
 let build_contents_header () =
   let insert_button =
-    D.raw_input ~input_type:`Submit ~value:"Add new content" ()
+    D.raw_input ~input_type:`Submit ~value:"New" ()
   in
   let back_button, forward_button, header_elt =
     build_header_back_forward [insert_button]
@@ -40,7 +40,7 @@ let build_contents_header () =
   insert_button, back_button, forward_button, header_elt
 
 let build_detail_content_header () =
-  let update_button = D.raw_input ~input_type:`Submit ~value:"Update" () in
+  let update_button = D.raw_input ~input_type:`Submit ~value:"Edit" () in
   let delete_button = D.raw_input ~input_type:`Submit ~value:"Delete" () in
   let back_button, forward_button, header_elt =
     build_header_back_forward [update_button; delete_button]
@@ -52,6 +52,10 @@ let build_update_content_header () =
   let save_button = D.raw_input ~input_type:`Submit ~value:"Save" () in
   let header_elt = build_header [cancel_button; save_button] in
   cancel_button, save_button, header_elt
+
+let build_link_header () =
+  let insert = D.raw_input ~input_type:`Submit ~value:"New" () in
+  insert
 
 (** Build tags list with checkbox *)
 let build_ck_tags_list tags =
@@ -83,24 +87,29 @@ let build_ck_links_list links =
     | (link_id, content_id, title, summary)::t ->
       let str_link_id = Rdf_store.string_of_link_id link_id in
       let input = D.raw_input ~input_type:`Checkbox ~name:str_link_id () in
-      let html = div [input; pcdata title; br (); pcdata summary] in
+      let html =
+        div [input;
+             a ~service:%GUI_services.link_update_service
+               [pcdata title] (Rdf_store.uri_encode str_link_id);
+             br (); pcdata summary]
+      in
       aux (input::inputs) (html::full_html) t
   in
   aux [] [] links
 
 (** Build a links list html *)
 let build_links_list links =
-  let aux (link_id, content_id, title, summary) =
-    let content_str_id = GUI_deserialize.string_of_id content_id in
+  let aux (link_id, id, title, summary) =
+    let str_id = Rdf_store.uri_encode (GUI_deserialize.string_of_id id) in
     div [a ~service:%GUI_services.content_detail_service
-            [pcdata title] content_str_id;
+            [pcdata title] str_id;
          br (); pcdata summary]
   in
   List.map aux links
 
 let build_contents_list contents =
   let aux (id, title, summary) =
-    let str_id = GUI_deserialize.string_of_id id in
+    let str_id = Rdf_store.uri_encode (GUI_deserialize.string_of_id id) in
     div ~a:[a_class ["content"]]
       [a ~service:%GUI_services.content_detail_service [pcdata title] str_id;
        br ();
