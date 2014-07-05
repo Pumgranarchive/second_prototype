@@ -14,7 +14,7 @@
 <http://pumgrana.com/tag/link/provide> <http://pumgrana.com/ressource/tag_link> "provide" .
 <https://www.youtube.com/watch?v=kqjeNSNuNPM> <http://pumgrana.com/ressource/content/tagged> <http://pumgrana.com/tag/content/Youtube> .
 <http://pumgrana.com/tag/content/UK> <http://pumgrana.com/ressource/tag_content> "UK" .
-<http://www.youtube.com/watch?v=qb8ToOlkRjI&list=PLDAF46D1B249186DD> <http://pumgrana.com/tag/link/No+sense+link> <http://pumgrana.com/content/detail/52d9e042ce9e8b2e314c4634> .
+<http://www.youtube.com/watch?v=qb8ToOlkRjI> <http://pumgrana.com/tag/link/No+sense+link> <http://pumgrana.com/content/detail/52d9e042ce9e8b2e314c4634> .
 <http://pumgrana.com/content/detail/52d9bef60fccc10db9fc8e57> <http://pumgrana.com/ressource/content/title> "MSc computer science IA" .
 <http://pumgrana.com/content/detail/52d9bef60fccc10db9fc8e57> <http://pumgrana.com/ressource/content/tagged> <http://pumgrana.com/tag/content/Degree> .
 <http://pumgrana.com/content/detail/52d9bef60fccc10db9fc8e57> <http://pumgrana.com/ressource/content/tagged> <http://pumgrana.com/tag/content/UK> .
