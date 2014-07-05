@@ -80,16 +80,21 @@ let rec build_tags_list all_tags nl not_found_list = function
     in
     build_tags_list all_tags new_list nf_list t
 
-let save_update_content id title summary body tags remove_links new_tags =
+let save_update_content id content_v tags remove_links new_tags =
   let uri = Rdf_store.uri_encode (GUI_deserialize.uri_of_id id) in
-  let str_id = GUI_deserialize.string_of_id id in
+  let str_id = Rdf_store.uri_encode (GUI_deserialize.string_of_id id) in
   lwt res = Eliom_client.call_service ~service:%API_services.get_tags_by_type
     %API_conf.content_tag ()
   in
   let all_tags = get_service_return get_tag_list (Yojson.from_string res) in
   let new_tags_list, not_found_list = build_tags_list all_tags tags [] new_tags in
-  lwt _ = Eliom_client.call_service ~service:%API_services.update_content ()
+  lwt _ = match content_v with
+  | (Some title, Some summary, Some body) ->
+    Eliom_client.call_service ~service:%API_services.update_content ()
       (uri, (Some title, (Some summary, (Some body, Some new_tags_list))))
+  | _ ->
+    Eliom_client.call_service ~service:%API_services.update_content_tags ()
+      (uri, new_tags_list)
   in
   lwt res = Eliom_client.call_service ~service:%API_services.insert_tags ()
       (%API_conf.content_tag, (Some uri, not_found_list))
@@ -154,22 +159,30 @@ let bind_insert_content button_elt =
 (** [bind_save_update button_elt] bind the button
     on click event to call save_update_content each time. *)
 let bind_save_update_content save_update_button content_id
-    title_elt summary_elt body_elt tags_inputs links_inputs tags_input_list =
-  let dom_title = To_dom.of_input title_elt in
-  let dom_summary = To_dom.of_input summary_elt in
-  let dom_body = To_dom.of_textarea body_elt in
+    content_elt tags_inputs links_inputs tags_input_list =
+  let dom_content = match content_elt with
+    | (Some title_elt, Some summary_elt, Some body_elt) ->
+      (Some (To_dom.of_input title_elt),
+       Some (To_dom.of_input summary_elt),
+       Some (To_dom.of_textarea body_elt))
+    | _ -> (None, None, None)
+  in
   let dom_tagsi = List.map To_dom.of_input tags_inputs in
   let dom_linksi = List.map To_dom.of_input links_inputs in
   bind_button save_update_button
     (fun () ->
-      let title = Js.to_string dom_title##value in
-      let summary = Js.to_string dom_summary##value in
-      let body = Js.to_string dom_body##value in
+      let content_v = match dom_content with
+        | (Some dom_title, Some dom_summary, Some dom_body) ->
+          (Some (Js.to_string dom_title##value),
+           Some (Js.to_string dom_summary##value),
+           Some (Js.to_string dom_body##value))
+        | _ -> (None, None, None)
+      in
       let tags_list = get_no_checked_inputs dom_tagsi in
       let removelist_links = get_checked_inputs dom_linksi in
       let dom_new_tagsi = List.map To_dom.of_input !tags_input_list in
       let newlist_tags = get_no_checked_inputs dom_new_tagsi in
-      save_update_content content_id title summary body tags_list
+      save_update_content content_id content_v tags_list
         removelist_links newlist_tags)
 
 (** [bind_cancel_update button_elt] bind the button

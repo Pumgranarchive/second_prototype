@@ -153,8 +153,10 @@ let _ =
   Eliom_registration.String.register
     ~service:update_content
     (fun () (content_uri, (title, (summary, (text, tags_uri)))) ->
-      return_of_json (API_core.update_content content_uri
-                        title summary text tags_uri))
+      let uri = Rdf_store.uri_decode content_uri in
+      let uris = map (List.map Rdf_store.uri_decode) tags_uri in
+      return_of_json (API_core.update_content uri
+                        title summary text uris))
 
 (* Update content tags *)
 let fallback_update_content_tags =
@@ -200,7 +202,9 @@ let _ =
   Eliom_registration.String.register
     ~service:update_content_tags
     (fun () (content_uri, tags_uri) ->
-      return_of_json (API_core.update_content_tags content_uri tags_uri))
+      let uri = Rdf_store.uri_decode content_uri in
+      let uris = List.map Rdf_store.uri_decode tags_uri in
+      return_of_json (API_core.update_content_tags uri uris))
 
 
 (* Delete content *)
@@ -244,7 +248,8 @@ let _ =
   Eliom_registration.String.register
     ~service:delete_contents
     (fun () (contents_uri) ->
-      return_of_json (API_core.delete_contents contents_uri))
+      let uris = List.map Rdf_store.uri_decode contents_uri in
+      return_of_json (API_core.delete_contents uris))
 
 
 (*
@@ -276,7 +281,8 @@ let _ =
   Eliom_registration.String.register
     ~service:get_tags_from_content
     (fun (content_uri) () ->
-      return_of_json (API_core.get_tags_from_content content_uri))
+      let uri = Rdf_store.uri_decode content_uri in
+      return_of_json (API_core.get_tags_from_content uri))
 
 
 (* Get_tag_from_content_link *)
@@ -338,6 +344,7 @@ let _ =
   Eliom_registration.String.register
     ~service:insert_tags
     (fun () (type_name, (uri, tags_subject)) ->
+      let uri = map Rdf_store.uri_decode uri in
       return_of_json (API_core.insert_tags type_name uri tags_subject))
 
 (* Delete tags *)
@@ -380,7 +387,8 @@ let _ =
   Eliom_registration.String.register
     ~service:delete_tags
     (fun () (tags_uri) ->
-      return_of_json (API_core.delete_tags tags_uri))
+      let uris = List.map Rdf_store.uri_decode tags_uri in
+      return_of_json (API_core.delete_tags uris))
 
 (*
 ** links
@@ -397,7 +405,8 @@ let _ =
   Eliom_registration.String.register
     ~service:get_link_detail
     (fun link_uri () ->
-      return_of_json (API_core.get_link_detail link_uri))
+      let uri = Rdf_store.uri_decode link_uri in
+      return_of_json (API_core.get_link_detail uri))
 
 (* Get_links_from_content *)
 let get_links_from_content =
@@ -476,7 +485,9 @@ let _ =
     (fun () data ->
       let aux () =
         let to_triple (origin_uri, (target_uri, tags_uri)) =
-          (origin_uri, target_uri, tags_uri)
+          (Rdf_store.uri_decode origin_uri,
+           Rdf_store.uri_decode target_uri,
+           List.map Rdf_store.uri_decode tags_uri)
         in
         let formated_data = List.map to_triple data in
         return_of_json (API_core.insert_links formated_data)
@@ -525,7 +536,12 @@ let _ =
   Eliom_registration.String.register
     ~service:update_links
     (fun () data ->
-      let aux () = return_of_json (API_core.update_links data) in
+      let decode (link_uri, tags_uri) =
+        (Rdf_store.uri_decode link_uri,
+         List.map Rdf_store.uri_decode tags_uri)
+      in
+      let data_decoded = List.map decode data in
+      let aux () = return_of_json (API_core.update_links data_decoded) in
       API_tools.manage_bad_request aux)
 
 (* Delete links *)
@@ -569,4 +585,5 @@ let _ =
   Eliom_registration.String.register
     ~service:delete_links
     (fun () (links_uri) ->
-      return_of_json (API_core.delete_links links_uri))
+      let uris = List.map Rdf_store.uri_decode links_uri in
+      return_of_json (API_core.delete_links uris))

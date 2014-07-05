@@ -104,13 +104,7 @@ let content_detail (content, tags_id, links, tags_link) =
 (** Update content detail html service *)
 let content_update (content, tags, links, tags_link) =
   try
-    let links_inputs, links_html = GUI_tools.build_ck_links_list links in
-    let tags_inputs, tags_html = GUI_tools.build_ck_tags_list tags in
-    let add_tag_input, submit_tag, tags_input_list, add_tag_html =
-      GUI_tools.build_add_tag ()
-    in
-    let cancelb, saveb, header_elt = GUI_tools.build_update_content_header () in
-    let c_id, content_elt = match content with
+    let c_id, content_elt, content_html = match content with
       | GUI_deserialize.Internal (c_id, c_title, c_summary, c_body) ->
         let title_elt =
           D.raw_input ~a:[a_class ["title_update"]]
@@ -124,16 +118,21 @@ let content_update (content, tags, links, tags_link) =
           D.raw_textarea ~a:[a_class ["body_update"]]
             ~name:"body" ~value:c_body ()
         in
-        ignore {unit{ GUI_client_core.bind_save_update_content %saveb %c_id
-                      %title_elt %summary_elt %body_elt %tags_inputs
-                      %links_inputs %tags_input_list}};
-
-        c_id, span [title_elt; br (); summary_elt; br (); body_elt]
+        c_id, (Some title_elt, Some summary_elt, Some body_elt),
+        span [title_elt; br (); summary_elt; br (); body_elt]
       | GUI_deserialize.External (c_id, c_title, c_summary, c_html_body) ->
-        c_id, span [F.Unsafe.data c_html_body]
+        c_id, (None, None, None), span [F.Unsafe.data c_html_body]
     in
+    let links_inputs, links_html = GUI_tools.build_ck_links_list links in
+    let tags_inputs, tags_html = GUI_tools.build_ck_tags_list tags in
+    let add_tag_input, submit_tag, tags_input_list, add_tag_html =
+      GUI_tools.build_add_tag ()
+    in
+    let cancelb, saveb, header_elt = GUI_tools.build_update_content_header () in
     let links_tags_html = GUI_tools.build_tags_list tags_link in
     let div_tags_html = D.div tags_html in
+    ignore {unit{ GUI_client_core.bind_save_update_content %saveb %c_id
+                  %content_elt %tags_inputs %links_inputs %tags_input_list}};
     ignore {unit{ GUI_client_core.bind_cancel_update_content %cancelb %c_id}};
     ignore {unit{ GUI_client_core.bind_add_tag_content %submit_tag
                   %div_tags_html %add_tag_input %tags_input_list}};
@@ -143,7 +142,7 @@ let content_update (content, tags, links, tags_link) =
       Html5.F.(body [
         header_elt;
         div ~a:[a_class["detail"]]
-          [content_elt;
+          [content_html;
            div ~a:[a_class["detail_tags"]]
              [h5 [pcdata "Tags"];
               span [pcdata "Select to remove"];
