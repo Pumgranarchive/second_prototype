@@ -206,7 +206,11 @@ let lwt_ignore l =
 let half_get_from_4store query =
   let base = Rdf_iri.iri domain in
   let msg = {in_query = query; in_dataset = empty_dataset} in
-  Rdf_4s_lwt.get ~base get_url msg
+  try Rdf_4s_lwt.get ~base get_url msg
+  with e ->
+    print_endline query;
+    raise e
+
 
 let get_from_4store query =
   lwt results = half_get_from_4store query in
@@ -221,8 +225,13 @@ let ask_to_4store query =
 let post_on_4store query =
   let fake_base = Rdf_iri.iri ~check:false domain in
   let msg = {in_query = query; in_dataset = empty_dataset} in
-  lwt res = Rdf_4s_lwt.post_update ~base:fake_base update_url msg in
-  Lwt.return (check_ok res)
+  try
+    lwt res = Rdf_4s_lwt.post_update ~base:fake_base update_url msg in
+    Lwt.return (check_ok res)
+  with e ->
+    print_endline query;
+    raise e
+
 
 (******************************************************************************
 ******************************** Tags *****************************************
@@ -320,25 +329,34 @@ let insert_tags tag_type ?link_id ?content_uri subjects =
   let existing_uris = List.map (fun (uri, s) -> uri) tags in
   let subjects = List.filter not_exist subjects in
 
-  let insert_tag_on query tag_uri =
-    let q = next_query query " . " in
-    match link_str_uri, content_str_uri with
-    | None, Some content_str_uri ->
+  (* Inserting not existing tags *)
+  let insert_data subjects =
+    let insert_tag_on query tag_uri =
+      let q = next_query query " . " in
+      match link_str_uri, content_str_uri with
+      | None, Some content_str_uri ->
         q ^ "<"^ content_str_uri ^">  <"^ tagged_content_r ^"> <"^ tag_uri ^">"
-    | Some (o_uri, t_uri), None  ->
+      | Some (o_uri, t_uri), None  ->
         q ^ "<" ^ o_uri ^ ">  <" ^ tag_uri ^ "> <" ^ t_uri ^ ">"
-    | _, _ -> query
+      | _, _ -> query
+    in
+    let insert_tag query uri subject =
+      let q = next_query query " . " in
+      let str_uri = string_of_uri uri in
+      let q' = q^"<"^str_uri^">  <"^ressource_url^"> \""^subject^"\"" in
+      insert_tag_on q' str_uri
+    in
+    let tags_uri = List.map uri_of_subject subjects in
+    let half_query = List.fold_left2 insert_tag "" tags_uri subjects in
+    let query = "INSERT DATA { " ^ half_query ^ " }" in
+    lwt () = post_on_4store query in
+    Lwt.return tags_uri
   in
-  let insert_tag query uri subject =
-    let q = next_query query " . " in
-    let q' = q ^ "<" ^ uri ^ ">  <" ^ ressource_url ^ "> \"" ^ subject ^ "\"" in
-    insert_tag_on q' uri
+  lwt tags_uri =
+    if List.length subjects > 0
+    then insert_data subjects
+    else Lwt.return []
   in
-  let tags_uri = List.map uri_of_subject subjects in
-  let tags_str_uri = List.map string_of_uri tags_uri in
-  let half_query = List.fold_left2 insert_tag "" tags_str_uri subjects in
-  let query = "INSERT DATA { " ^ half_query ^ " }" in
-  lwt () = post_on_4store query in
   Lwt.return (existing_uris@tags_uri)
 
 let delete_tags tags_uri =
@@ -560,7 +578,6 @@ let build_tags_query content_type content_uri tags =
 
 let links_from_content_tags content_type content_uri tags_uri =
   let query = build_tags_query content_type content_uri tags_uri in
-  print_endline query;
   lwt solutions = get_from_4store query in
   match content_type with
   | Internal ->
