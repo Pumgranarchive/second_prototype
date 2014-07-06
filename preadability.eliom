@@ -4,6 +4,12 @@ open Yojson.Util
 
 let cash = Pcash.new_cash ()
 
+let get_short_summary str =
+  let length = String.length str in
+  if length > 50
+  then (String.sub str 0 50) ^ "..."
+  else  str
+
 let get_readability_data uris =
   let aux uri =
     if Pcash.exists cash uri
@@ -13,7 +19,7 @@ let get_readability_data uris =
         (let ruri = Rdf_uri.uri (Rdf_store.string_of_uri uri) in
          lwt json = Readability.get_parser ruri in
          let title = to_string (member "title" json) in
-         let summary = to_string (member "excerpt" json) in
+         let summary = get_short_summary (to_string (member "excerpt" json)) in
          lwt body = Tidy.xhtml_of_html (to_string (member "content" json)) in
          let data = (uri, title, summary, body, true) in
          Pcash.save cash uri data;
