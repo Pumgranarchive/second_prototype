@@ -3,12 +3,6 @@
   This Module do request to data base and format well to return it in service
  *)
 
-module Yojson = Yojson.Basic
-
-open Yojson.Util
-
-module Map = Map.Make(String)
-
 (* Tools *)
 
 let get_token () =
@@ -47,81 +41,17 @@ let link_id_of_string str =
 ** Content
 *)
 
-let is_youtube_uri uri =
-  let str_uri = Rdf_store.string_of_uri uri in
-  try ignore (Youtube_http.get_id_from_url str_uri); true
-  with _ -> false
-
-let readability_cash = ref Map.empty
-
-let get_readability uris =
-  let aux uri =
-    let str_uri = Rdf_store.string_of_uri uri in
-    if Map.exists (fun k v -> String.compare k str_uri = 0) !readability_cash
-    then Lwt.return (Map.find str_uri !readability_cash)
-    else
-      try_lwt
-        (let ruri = Rdf_uri.uri (Rdf_store.string_of_uri uri) in
-         lwt json = Readability.get_parser ruri in
-         let title = to_string (member "title" json) in
-         let summary = to_string (member "excerpt" json) in
-         lwt body = Tidy.xhtml_of_html (to_string (member "content" json)) in
-         let data = (uri, title, summary, body, true) in
-         readability_cash := Map.add str_uri data !readability_cash;
-         Lwt.return data)
-      with e ->
-        (print_endline (Printexc.to_string e);
-         Lwt.return (uri, str_uri, "Readability error", "", true))
-  in
-  let build lwt_list uri =
-    lwt list = lwt_list in
-    lwt data = aux uri in
-    Lwt.return (data::list)
-  in
-  List.fold_left build (Lwt.return []) uris
-
-let get_readability_detail uri =
-  lwt results = get_readability [uri] in
-  Lwt.return (List.hd results)
-
-let get_readability_triple uris =
-  lwt results = get_readability uris in
-  let format (uri, title, summary, body, v_external) = uri, title, summary in
-  Lwt.return (List.map format results)
-
-let get_readability_body uri =
-  lwt results = get_readability [uri] in
-  let format (uri, title, summary, body, v_external) = body in
-  Lwt.return (format (List.hd results))
-
-let get_youtube_triple uris =
-  let id_of_uri uri =
-    Youtube_http.get_id_from_url (Rdf_store.string_of_uri uri)
-  in
-  let ids = List.map id_of_uri uris in
-  lwt videos = Youtube_http.get_videos_from_ids ids in
-  let format uri (_, title, _, summary, _) =
-    uri, title, summary
-  in
-  Lwt.return (List.map2 format uris videos)
-
-let get_youtube_detail uri =
-  lwt ret = get_youtube_triple [uri] in
-  let (_, title, summary) = List.hd ret in
-  lwt body = get_readability_body uri in
-  Lwt.return (uri, title, summary, body, true)
+let is_something_else uri = true
 
 let get_nosql_store_detail uri =
   let id = Rdf_store.content_id_of_uri uri in
   lwt (id, title, summary, body) = Nosql_store.get_detail id in
   Lwt.return (uri, title, summary, body, false)
 
-let is_something_else uri = true
-
 let detail_platforms =
   [(Rdf_store.is_pumgrana_uri,  get_nosql_store_detail);
-   (is_youtube_uri,             get_youtube_detail);
-   (is_something_else,          get_readability_detail)]
+   (Pyoutube.is_youtube_uri,    Pyoutube.get_youtube_detail);
+   (is_something_else,          Preadability.get_readability_detail)]
 
 let rec get_data_from uri = function
   | (condiction, getter)::next ->
@@ -131,8 +61,8 @@ let rec get_data_from uri = function
   | [] -> raise Not_found
 
 let triple_platforms =
-  [(is_youtube_uri,             get_youtube_triple);
-   (is_something_else,          get_readability_triple)]
+  [(Pyoutube.is_youtube_uri,    Pyoutube.get_youtube_triple);
+   (is_something_else,          Preadability.get_readability_triple)]
 
 let get_data_list_from uris platforms =
   let aux lwt_data (condiction, getter) =

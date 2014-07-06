@@ -59,6 +59,8 @@ val uri_encode : string -> string
 (** Decode all slash of the given string url  *)
 val uri_decode : string -> string
 
+val compare_uri : uri -> uri -> int
+
 }}
 
 (** {6 Contents}  *)
