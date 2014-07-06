@@ -7,6 +7,8 @@ module Yojson = Yojson.Basic
 
 open Yojson.Util
 
+module Map = Map.Make(String)
+
 (* Tools *)
 
 let get_token () =
@@ -50,13 +52,26 @@ let is_youtube_uri uri =
   try ignore (Youtube_http.get_id_from_url str_uri); true
   with _ -> false
 
-let get_readability_triple uris =
+let readability_cash = ref Map.empty
+
+let get_readability uris =
   let aux uri =
-    let ruri = Rdf_uri.uri (Rdf_store.string_of_uri uri) in
-    lwt json = Readability.get_parser ruri in
-    let title = to_string (member "title" json) in
-    let summary = to_string (member "excerpt" json) in
-    Lwt.return (uri, title, summary)
+    let str_uri = Rdf_store.string_of_uri uri in
+    if Map.exists (fun k v -> String.compare k str_uri = 0) !readability_cash
+    then Lwt.return (Map.find str_uri !readability_cash)
+    else
+      try_lwt
+        (let ruri = Rdf_uri.uri (Rdf_store.string_of_uri uri) in
+         lwt json = Readability.get_parser ruri in
+         let title = to_string (member "title" json) in
+         let summary = to_string (member "excerpt" json) in
+         lwt body = Tidy.xhtml_of_html (to_string (member "content" json)) in
+         let data = (uri, title, summary, body, true) in
+         readability_cash := Map.add str_uri data !readability_cash;
+         Lwt.return data)
+      with e ->
+        (print_endline (Printexc.to_string e);
+         Lwt.return (uri, str_uri, "Readability error", "", true))
   in
   let build lwt_list uri =
     lwt list = lwt_list in
@@ -64,6 +79,20 @@ let get_readability_triple uris =
     Lwt.return (data::list)
   in
   List.fold_left build (Lwt.return []) uris
+
+let get_readability_detail uri =
+  lwt results = get_readability [uri] in
+  Lwt.return (List.hd results)
+
+let get_readability_triple uris =
+  lwt results = get_readability uris in
+  let format (uri, title, summary, body, v_external) = uri, title, summary in
+  Lwt.return (List.map format results)
+
+let get_readability_body uri =
+  lwt results = get_readability [uri] in
+  let format (uri, title, summary, body, v_external) = body in
+  Lwt.return (format (List.hd results))
 
 let get_youtube_triple uris =
   let id_of_uri uri =
@@ -75,20 +104,6 @@ let get_youtube_triple uris =
     uri, title, summary
   in
   Lwt.return (List.map2 format uris videos)
-
-let get_readability_detail uri =
-  let ruri = Rdf_uri.uri (Rdf_store.string_of_uri uri) in
-  lwt json = Readability.get_parser ruri in
-  let title = to_string (member "title" json) in
-  let summary = to_string (member "excerpt" json) in
-  lwt body = Tidy.xhtml_of_html (to_string (member "content" json)) in
-  Lwt.return (uri, title, summary, body, true)
-
-let get_readability_body uri =
-  let uri = Rdf_uri.uri (Rdf_store.string_of_uri uri) in
-  lwt json = Readability.get_parser uri in
-  lwt body = Tidy.xhtml_of_html (to_string (member "content" json)) in
-  Lwt.return body
 
 let get_youtube_detail uri =
   lwt ret = get_youtube_triple [uri] in

@@ -211,7 +211,6 @@ let half_get_from_4store query =
     print_endline query;
     raise e
 
-
 let get_from_4store query =
   lwt results = half_get_from_4store query in
   let solutions = get_solutions (get_result results) in
@@ -231,7 +230,6 @@ let post_on_4store query =
   with e ->
     print_endline query;
     raise e
-
 
 (******************************************************************************
 ******************************** Tags *****************************************
