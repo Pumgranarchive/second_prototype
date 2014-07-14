@@ -36,18 +36,18 @@ type content_ret =
 {shared{
 
 let domain = "http://pumgrana.com/"
-let base_ressouce_url = domain ^ "ressource/"
+let base_ressource_url = domain ^ "ressource/"
 let base_content_url = domain ^ "content/detail/"
 let base_tag_url = domain ^ "tag/"
 let base_tag_link_url = base_tag_url ^ "link/"
 let base_tag_content_url = base_tag_url ^ "content/"
-let base_content_ressource = base_ressouce_url ^ "content/"
+let base_content_ressource = base_ressource_url ^ "content/"
 
 let tagged_content_r = base_content_ressource ^ "tagged"
 let content_title_r = base_content_ressource ^ "title"
 let content_summary_r = base_content_ressource ^ "summary"
-let tag_link_r = base_ressouce_url ^ "tag_link"
-let tag_content_r = base_ressouce_url ^ "tag_content"
+let tag_link_r = base_ressource_url ^ "tag_link"
+let tag_content_r = base_ressource_url ^ "tag_content"
 
 }}
 
@@ -360,15 +360,36 @@ let insert_tags tag_type ?link_id ?content_uri subjects =
   Lwt.return (existing_uris@tags_uri)
 
 let delete_tags tags_uri =
-  let build_query q tag_uri =
-    let uri = string_of_uri tag_uri in
-    q ^ "{ <" ^ uri ^ "> ?res1 ?sub. {?tag ?res1 ?sub.} UNION {?x ?y ?z} }.
-    { ?origin <" ^ uri ^ "> ?target. {?origin ?tag ?target.} UNION {?x ?y ?z} }.
-    { ?content ?res2 <" ^ uri ^ ">. {?content ?res2 ?tag.} UNION {?x ?y ?z} }. "
+  let build_query1 q uri =
+    q ^ "<" ^ uri ^ "> ?res ?subject . "
   in
-  let half_query = List.fold_left build_query "" tags_uri in
-  let query = "DELETE {?x ?y ?z.} WHERE { " ^ half_query ^ " }" in
-  post_on_4store query
+  let build_query2 q uri =
+    q ^ "?origin <" ^ uri ^ "> ?target . "
+  in
+  let build_query3 q uri =
+    q ^ "?content <" ^ tagged_content_r ^ "> <" ^ uri ^ "> . "
+  in
+  let tags_str_uri = List.map string_of_uri tags_uri in
+  let query1 =
+    "DELETE {?tag ?res ?subject.} WHERE
+     { " ^ (List.fold_left build_query1 "" tags_str_uri) ^ "
+       FILTER regex(str(?res), \"^" ^ base_ressource_url ^ "\") .
+       {?tag ?res ?subject.} UNION {?x ?y ?z.} }"
+  in
+  let query2 =
+    "DELETE {?origin ?tag ?target.} WHERE
+     { " ^ (List.fold_left build_query2 "" tags_str_uri) ^ "
+       {?origin ?tag ?target.} UNION {?x ?y ?z.} }"
+  in
+  let query3 =
+    "DELETE {?content ?res ?tag.} WHERE
+     { " ^ (List.fold_left build_query3 "" tags_str_uri) ^ "
+       {?content ?res ?tag.} UNION {?x ?y ?z.} }"
+  in
+  lwt () = post_on_4store query1 in
+  lwt () = post_on_4store query2 in
+  post_on_4store query3
+
 
 let insert_tags_on_content content_uri tags_uri =
   let content_str_uri = string_of_uri content_uri in
