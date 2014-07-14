@@ -207,7 +207,7 @@ let lwt_ignore l =
 let half_get_from_4store query =
   let base = Rdf_iri.iri domain in
   let msg = {in_query = query; in_dataset = empty_dataset} in
-  try Rdf_4s_lwt.get ~base get_url msg
+  try_lwt Rdf_4s_lwt.get ~base ~accept:"application/json" get_url msg
   with e ->
     print_endline query;
     raise e
@@ -225,7 +225,7 @@ let ask_to_4store query =
 let post_on_4store query =
   let fake_base = Rdf_iri.iri ~check:false domain in
   let msg = {in_query = query; in_dataset = empty_dataset} in
-  try
+  try_lwt
     lwt res = Rdf_4s_lwt.post_update ~base:fake_base update_url msg in
     Lwt.return (check_ok res)
   with e ->
@@ -416,7 +416,7 @@ let delete_tags_on_content content_uri tags_uri =
 ******************************* Contents ***************************************
 *******************************************************************************)
 
-let get_contents_base_query tags_uri =
+let contents_filter_query tags_uri =
   let build_regexp query tag_uri =
     let q = next_query query " || " in
     q ^ "str(?tag) = \"" ^ (string_of_uri tag_uri) ^ "\""
@@ -427,7 +427,7 @@ let get_contents_base_query tags_uri =
      FILTER (" ^ regexp ^ ") . "
 
 let get_triple_contents tags_uri =
-  let half_query = get_contents_base_query tags_uri in
+  let half_query = contents_filter_query tags_uri in
   let query = "SELECT ?content ?title ?summary WHERE
   { ?content <" ^ content_title_r ^ "> ?title .
     ?content <" ^ content_summary_r ^ "> ?summary .
@@ -438,7 +438,7 @@ let get_triple_contents tags_uri =
   Lwt.return (triple_contents)
 
 let get_external_contents tags_uri =
-  let half_query = get_contents_base_query tags_uri in
+  let half_query = contents_filter_query tags_uri in
   let query = "SELECT ?content WHERE
   { { { ?content ?res_link ?target } UNION
       { ?origin ?res_link ?content } .
