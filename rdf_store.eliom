@@ -474,14 +474,23 @@ let insert_content content_id title summary tags_uri =
   post_on_4store query
 
 let delete_contents contents_id =
-  let build_query query content_id =
-    let content_uri = string_of_uri (uri_of_content_id content_id) in
-    let q = next_query query " UNION " in
-    q ^ "{ <" ^ content_uri ^ "> ?r ?v. {?u ?r ?v.} UNION {?x ?y ?z} }"
+  let build_filter name query content_uri =
+    let q = next_query query " || " in
+    q ^ "?" ^ name ^ " = <" ^ content_uri ^ ">"
   in
-  let half_query = List.fold_left build_query "" contents_id in
-  let query = "DELETE {?u ?r ?v.} WHERE { " ^ half_query ^ " }" in
-  post_on_4store query
+  let build_query name content_str_uris =
+    let filter = List.fold_left (build_filter name) "" content_str_uris in
+    "DELETE {?s ?p ?o.} WHERE { ?s ?p ?o . FILTER ("^ filter ^") }"
+  in
+  let content_str_uris =
+    List.map (fun x -> string_of_uri (uri_of_content_id x)) contents_id
+  in
+  let query_s = build_query "s" content_str_uris in
+  let query_p = build_query "p" content_str_uris in
+  let query_o = build_query "o" content_str_uris in
+  lwt () = post_on_4store query_s in
+  lwt () = post_on_4store query_p in
+  post_on_4store query_o
 
 let update_content content_id ?title ?summary ?tags_uri () =
   let content_uri = uri_of_content_id content_id in
