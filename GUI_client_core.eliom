@@ -221,8 +221,9 @@ let bind_delete_content button_elt content_id =
   let uri = GUI_deserialize.uri_of_id content_id in
   let action () =
     lwt _ = Eliom_client.call_service
-    ~service:%API_services.delete_contents () [uri] in
-    Lwt.return (go_back ())
+      ~service:%API_services.delete_contents () [uri] in
+    Eliom_client.change_page
+      ~service:%GUI_services.home_service (None, None) ()
   in
   bind_button button_elt action
 
