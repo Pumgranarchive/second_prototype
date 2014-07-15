@@ -113,7 +113,10 @@ let content_id_of_uri uri =
 }}
 
 let uri_of_subject base subject =
-  let encode_subject = Netencoding.Url.encode subject in
+  let regexp = Str.regexp "[ &+]" in
+  let uncap_sub = String.uncapitalize subject in
+  let cleaned_sub = Str.global_replace regexp "" uncap_sub in
+  let encode_subject = Netencoding.Url.encode cleaned_sub in
   uri_of_string (base ^ encode_subject)
 
 let uri_of_tag_link_subject = uri_of_subject base_tag_link_url
