@@ -10,14 +10,14 @@ let cash = Pcash.new_cash ()
 
 let is_youtube_uri uri =
   let str_uri = Rdf_store.string_of_uri uri in
-  try ignore (Youtube_http.get_id_from_url str_uri); true
+  try ignore (Youtube_http.get_video_id_from_url str_uri); true
   with _ -> false
 
 let get_youtube_triple uris =
   let know_uris = List.filter (Pcash.exists cash) uris in
   let know_data = List.map (Pcash.get cash) know_uris in
   let unknow_uris = List.filter (Pcash.not_exists cash) uris in
-  let id_of_uri uri = Youtube_http.get_id_from_url (Rdf_store.string_of_uri uri)
+  let id_of_uri uri = Youtube_http.get_video_id_from_url (Rdf_store.string_of_uri uri)
   in
   let ids = List.map id_of_uri unknow_uris in
   lwt videos =
