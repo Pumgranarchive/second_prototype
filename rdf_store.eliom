@@ -547,12 +547,17 @@ let update_content content_id ?title ?summary ?tags_uri () =
       let insert_query_tags = List.fold_left build_insert i_query' adding_list in
       Lwt.return (delete_query_tags, insert_query_tags)
   in
+  let lwt_secure aux str =
+    if String.length str = 0
+    then Lwt.return ()
+    else aux ()
+  in
   let delete_query = "DELETE {?s ?p ?o.} WHERE { " ^ d_query' ^ " }" in
   let delete_data_query = "DELETE DATA { " ^ d_query'' ^ " }" in
   let insert_query = "INSERT DATA { " ^ i_query'' ^ " }" in
-  lwt () = post_on_4store delete_query in
-  lwt () = post_on_4store delete_data_query in
-  post_on_4store insert_query
+  lwt () = lwt_secure (fun () -> post_on_4store delete_query) d_query'  in
+  lwt () = lwt_secure (fun () -> post_on_4store delete_data_query) d_query'' in
+  lwt_secure (fun () -> post_on_4store insert_query) i_query''
 
 let update_content_tags content_uri tags_uri =
   lwt old_tuple_tags = get_tags_from_content content_uri in
