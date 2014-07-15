@@ -232,6 +232,25 @@ let post_on_4store query =
     print_endline query;
     raise e
 
+(*** Generic delete  *)
+
+let delete_uris str_uris =
+  let build_filter name filter uri =
+    let f = next_query filter " || " in
+    f ^ "?" ^ name ^ " = <" ^ uri ^ ">"
+  in
+  let build_query name uris =
+    let filter = List.fold_left (build_filter name) "" uris in
+    "DELETE {?s ?p ?o.} WHERE { ?s ?p ?o . FILTER ("^ filter ^") }"
+  in
+  let post uris name =
+    let query = build_query name uris in
+    post_on_4store query
+  in
+  if List.length str_uris = 0
+  then Lwt.return ()
+  else Lwt_list.iter_p (post str_uris) ["s"; "p"; "o"]
+
 (******************************************************************************
 ******************************** Tags *****************************************
 *******************************************************************************)
@@ -360,36 +379,8 @@ let insert_tags tag_type ?link_id ?content_uri subjects =
   Lwt.return (existing_uris@tags_uri)
 
 let delete_tags tags_uri =
-  let build_query1 q uri =
-    q ^ "<" ^ uri ^ "> ?res ?subject . "
-  in
-  let build_query2 q uri =
-    q ^ "?origin <" ^ uri ^ "> ?target . "
-  in
-  let build_query3 q uri =
-    q ^ "?content <" ^ tagged_content_r ^ "> <" ^ uri ^ "> . "
-  in
   let tags_str_uri = List.map string_of_uri tags_uri in
-  let query1 =
-    "DELETE {?tag ?res ?subject.} WHERE
-     { " ^ (List.fold_left build_query1 "" tags_str_uri) ^ "
-       FILTER regex(str(?res), \"^" ^ base_ressource_url ^ "\") .
-       {?tag ?res ?subject.} UNION {?x ?y ?z.} }"
-  in
-  let query2 =
-    "DELETE {?origin ?tag ?target.} WHERE
-     { " ^ (List.fold_left build_query2 "" tags_str_uri) ^ "
-       {?origin ?tag ?target.} UNION {?x ?y ?z.} }"
-  in
-  let query3 =
-    "DELETE {?content ?res ?tag.} WHERE
-     { " ^ (List.fold_left build_query3 "" tags_str_uri) ^ "
-       {?content ?res ?tag.} UNION {?x ?y ?z.} }"
-  in
-  lwt () = post_on_4store query1 in
-  lwt () = post_on_4store query2 in
-  post_on_4store query3
-
+  delete_uris tags_str_uri
 
 let insert_tags_on_content content_uri tags_uri =
   let content_str_uri = string_of_uri content_uri in
@@ -474,23 +465,10 @@ let insert_content content_id title summary tags_uri =
   post_on_4store query
 
 let delete_contents contents_id =
-  let build_filter name query content_uri =
-    let q = next_query query " || " in
-    q ^ "?" ^ name ^ " = <" ^ content_uri ^ ">"
-  in
-  let build_query name content_str_uris =
-    let filter = List.fold_left (build_filter name) "" content_str_uris in
-    "DELETE {?s ?p ?o.} WHERE { ?s ?p ?o . FILTER ("^ filter ^") }"
-  in
   let content_str_uris =
     List.map (fun x -> string_of_uri (uri_of_content_id x)) contents_id
   in
-  let query_s = build_query "s" content_str_uris in
-  let query_p = build_query "p" content_str_uris in
-  let query_o = build_query "o" content_str_uris in
-  lwt () = post_on_4store query_s in
-  lwt () = post_on_4store query_p in
-  post_on_4store query_o
+  delete_uris content_str_uris
 
 let update_content content_id ?title ?summary ?tags_uri () =
   let content_uri = uri_of_content_id content_id in
