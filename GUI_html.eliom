@@ -34,7 +34,7 @@ let home_html (contents, tags) =
     D.div ~a:[a_class["contents"]] (GUI_tools.build_contents_list contents)
   in
   let tags_html =
-    div ~a:[a_class["contents_tags"]]
+    div ~a:[a_class["links"]]
       ((h4 [pcdata "Tags"])::tags_html_list)
   in
   let insertb, backb, forwardb, header_elt =
@@ -56,7 +56,7 @@ let home_html (contents, tags) =
     Html5.F.(body [
       header_elt;
       contents_html;
-      tags_html])
+      div [tags_html]])
 
 (** Display the content detail html service *)
 let content_detail (content, tags_id, links, tags_link) =
@@ -78,8 +78,10 @@ let content_detail (content, tags_id, links, tags_link) =
         let regexp = Str.regexp ".*youtube.*" in
         let iframe_bool = Str.string_match regexp id 0 in
         if iframe_bool
-        then c_id, D.div [F.Unsafe.data c_html_body]
-        else c_id, iframe ~a:[a_class ["pum_iframe"]; a_src (Eliom_content.Xml.uri_of_string id)] []
+        then c_id, div [h3 [pcdata c_title]; F.Unsafe.data c_html_body]
+        else
+          c_id, iframe ~a:[a_class ["pum_iframe"];
+                           a_src (Eliom_content.Xml.uri_of_string id)] []
     in
 
     ignore {unit{ GUI_client_core.bind_back
@@ -143,7 +145,16 @@ let content_update (content, tags, links, tags_link) =
         c_id, (Some title_elt, Some summary_elt, Some body_elt),
         span [title_elt; br (); summary_elt; br (); body_elt]
       | GUI_deserialize.External (c_id, c_title, c_summary, c_html_body) ->
-        c_id, (None, None, None), span [F.Unsafe.data c_html_body]
+        let id = (GUI_deserialize.string_of_id c_id) in
+        let regexp = Str.regexp ".*youtube.*" in
+        let iframe_bool = Str.string_match regexp id 0 in
+        if iframe_bool
+        then c_id, (None, None, None),
+          div [h3 [pcdata c_title]; F.Unsafe.data c_html_body]
+        else
+          c_id, (None, None, None),
+          iframe ~a:[a_class ["pum_iframe"];
+                     a_src (Eliom_content.Xml.uri_of_string id)] []
     in
     let links_inputs, links_html = GUI_tools.build_ck_links_list links in
     let tags_inputs, tags_html = GUI_tools.build_ck_tags_list tags in
