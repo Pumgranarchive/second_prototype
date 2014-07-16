@@ -75,11 +75,11 @@ let content_detail (content, tags_id, links, tags_link) =
         c_id, div [h3 [pcdata c_title]; p [pcdata c_summary]; p [pcdata c_body]]
       | GUI_deserialize.External (c_id, c_title, c_summary, c_html_body) ->
         let id = (GUI_deserialize.string_of_id c_id) in
-        let regexp = Str.regexp "\\(wikipedia\\|youtube\\)" in
+        let regexp = Str.regexp ".*youtube.*" in
         let iframe_bool = Str.string_match regexp id 0 in
         if iframe_bool
-        then c_id, div [iframe ~a:[a_src (Eliom_content.Xml.uri_of_string id)] []]
-        else c_id, D.div [F.Unsafe.data c_html_body]
+        then c_id, D.div [F.Unsafe.data c_html_body]
+        else c_id, iframe ~a:[a_class ["pum_iframe"]; a_src (Eliom_content.Xml.uri_of_string id)] []
     in
 
     ignore {unit{ GUI_client_core.bind_back

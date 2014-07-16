@@ -8,6 +8,13 @@ html, body
     width: 98%;
 }
 
+.pum_iframe
+{
+    height: calc(100%);
+    width: calc(100%);
+    border: 0px;
+}
+
 .header
 {
     height: 50px;
