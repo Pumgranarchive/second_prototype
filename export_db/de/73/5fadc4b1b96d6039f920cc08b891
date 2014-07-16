@@ -1,24 +1,74 @@
 ## GRAPH default:
-<http://pumgrana.com/content/detail/52780cbdc21477f7aa5b9107> <http://pumgrana.com/ressource/content/title> "Kent University" .
-<http://pumgrana.com/content/detail/52780cbdc21477f7aa5b9107> <http://pumgrana.com/tag/link/provide> <http://pumgrana.com/content/detail/52d9bef60fccc10db9fc8e57> .
-<http://pumgrana.com/content/detail/52780cbdc21477f7aa5b9107> <http://pumgrana.com/ressource/content/tagged> <http://pumgrana.com/tag/content/UK> .
-<http://pumgrana.com/content/detail/52780cbdc21477f7aa5b9107> <http://pumgrana.com/ressource/content/summary> "Awesome university!" .
-<http://pumgrana.com/tag/link/No+sense+link> <http://pumgrana.com/ressource/tag_link> "No sense link" .
-<http://pumgrana.com/tag/content/Degree> <http://pumgrana.com/ressource/tag_content> "Degree" .
-<http://pumgrana.com/tag/content/Youtube> <http://pumgrana.com/ressource/tag_content> "Youtube" .
-<http://pumgrana.com/content/detail/52780d55c21477f7aa5b9108> <http://pumgrana.com/ressource/content/title> "Kent Region" .
-<http://pumgrana.com/content/detail/52780d55c21477f7aa5b9108> <http://pumgrana.com/ressource/content/tagged> <http://pumgrana.com/tag/content/UK> .
-<http://pumgrana.com/content/detail/52780d55c21477f7aa5b9108> <http://pumgrana.com/ressource/content/summary> "green" .
-<http://pumgrana.com/content/detail/28ab42a181677e83cedca9a4> <http://pumgrana.com/ressource/content/title> "un contenu de test" .
-<http://pumgrana.com/content/detail/28ab42a181677e83cedca9a4> <http://pumgrana.com/ressource/content/summary> "test" .
-<http://pumgrana.com/tag/link/provide> <http://pumgrana.com/ressource/tag_link> "provide" .
-<https://www.youtube.com/watch?v=kqjeNSNuNPM> <http://pumgrana.com/ressource/content/tagged> <http://pumgrana.com/tag/content/Youtube> .
-<http://pumgrana.com/tag/content/UK> <http://pumgrana.com/ressource/tag_content> "UK" .
-<http://www.youtube.com/watch?v=qb8ToOlkRjI> <http://pumgrana.com/tag/link/No+sense+link> <http://pumgrana.com/content/detail/52d9e042ce9e8b2e314c4634> .
-<http://pumgrana.com/content/detail/52d9bef60fccc10db9fc8e57> <http://pumgrana.com/ressource/content/title> "MSc computer science IA" .
-<http://pumgrana.com/content/detail/52d9bef60fccc10db9fc8e57> <http://pumgrana.com/ressource/content/tagged> <http://pumgrana.com/tag/content/Degree> .
-<http://pumgrana.com/content/detail/52d9bef60fccc10db9fc8e57> <http://pumgrana.com/ressource/content/tagged> <http://pumgrana.com/tag/content/UK> .
-<http://pumgrana.com/content/detail/52d9bef60fccc10db9fc8e57> <http://pumgrana.com/ressource/content/summary> "Degree" .
-<http://pumgrana.com/content/detail/52d9e042ce9e8b2e314c4634> <http://pumgrana.com/tag/link/No+sense+link> <http://www.youtube.com/watch?v=DaFu3AoDXPY> .
-<http://pumgrana.com/content/detail/52d9e042ce9e8b2e314c4634> <http://pumgrana.com/ressource/content/title> "Non-sense" .
-<http://pumgrana.com/content/detail/52d9e042ce9e8b2e314c4634> <http://pumgrana.com/ressource/content/summary> "none" .
+<http://en.wikipedia.org/wiki/index.html?curid=30292> <http://pumgrana.com/tag/link/mentionedby> <https://www.youtube.com/watch?v=oiF4KesF9Ag> .
+<http://en.wikipedia.org/wiki/index.html?curid=30292> <http://pumgrana.com/tag/link/mentionedby> <https://www.youtube.com/watch?v=7LJBF5_9-p4> .
+<http://en.wikipedia.org/wiki/index.html?curid=30292> <http://pumgrana.com/tag/link/mentionedby> <https://www.youtube.com/watch?v=DaFu3AoDXPY> .
+<https://www.youtube.com/watch?v=uAOR6ib95kQ> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=04mfKJWDSzI> .
+<https://www.youtube.com/watch?v=uAOR6ib95kQ> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=pls_luhVdAw> .
+<https://www.youtube.com/watch?v=uAOR6ib95kQ> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=nhPaWIeULKk> .
+<https://www.youtube.com/watch?v=uAOR6ib95kQ> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=DonHa4pySsM> .
+<https://www.youtube.com/watch?v=uAOR6ib95kQ> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=d4wkPoVILSQ> .
+<https://www.youtube.com/watch?v=uAOR6ib95kQ> <http://pumgrana.com/tag/link/madeby> <http://en.wikipedia.org/wiki/Gorillaz> .
+<http://pumgrana.com/tag/link/mentionedby> <http://pumgrana.com/ressource/tag_link> "Mentioned by" .
+<http://en.wikipedia.org/wiki/index.html?curid=17608105> <http://pumgrana.com/tag/link/mentionedby> <https://www.youtube.com/watch?v=oiF4KesF9Ag> .
+<http://en.wikipedia.org/wiki/index.html?curid=17608105> <http://pumgrana.com/tag/link/mentionedby> <https://www.youtube.com/watch?v=7LJBF5_9-p4> .
+<http://en.wikipedia.org/wiki/index.html?curid=17608105> <http://pumgrana.com/tag/link/mentionedby> <https://www.youtube.com/watch?v=DaFu3AoDXPY> .
+<http://pumgrana.com/tag/link/talkabout> <http://pumgrana.com/ressource/tag_link> "Talk about" .
+<https://www.youtube.com/watch?v=04mfKJWDSzI> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=uAOR6ib95kQ> .
+<https://www.youtube.com/watch?v=04mfKJWDSzI> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=pls_luhVdAw> .
+<https://www.youtube.com/watch?v=04mfKJWDSzI> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=nhPaWIeULKk> .
+<https://www.youtube.com/watch?v=04mfKJWDSzI> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=DonHa4pySsM> .
+<https://www.youtube.com/watch?v=04mfKJWDSzI> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=d4wkPoVILSQ> .
+<https://www.youtube.com/watch?v=04mfKJWDSzI> <http://pumgrana.com/tag/link/madeby> <http://en.wikipedia.org/wiki/Gorillaz> .
+<http://pumgrana.com/tag/link/made> <http://pumgrana.com/ressource/tag_link> "Made" .
+<http://en.wikipedia.org/wiki/index.html?curid=36914424> <http://pumgrana.com/tag/link/mentionedby> <https://www.youtube.com/watch?v=oiF4KesF9Ag> .
+<https://www.youtube.com/watch?v=oiF4KesF9Ag> <http://pumgrana.com/tag/link/talkabout> <http://en.wikipedia.org/wiki/index.html?curid=30292> .
+<https://www.youtube.com/watch?v=oiF4KesF9Ag> <http://pumgrana.com/tag/link/talkabout> <http://en.wikipedia.org/wiki/index.html?curid=17608105> .
+<https://www.youtube.com/watch?v=oiF4KesF9Ag> <http://pumgrana.com/tag/link/talkabout> <http://en.wikipedia.org/wiki/index.html?curid=36914424> .
+<https://www.youtube.com/watch?v=oiF4KesF9Ag> <http://pumgrana.com/tag/link/talkabout> <http://en.wikipedia.org/wiki/index.html?curid=21555729> .
+<http://en.wikipedia.org/wiki/The_Hobbit:_The_Desolation_of_Smaug> <http://pumgrana.com/tag/link/mentionedby> <https://www.youtube.com/watch?v=7LJBF5_9-p4> .
+<https://www.youtube.com/watch?v=pls_luhVdAw> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=uAOR6ib95kQ> .
+<https://www.youtube.com/watch?v=pls_luhVdAw> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=04mfKJWDSzI> .
+<https://www.youtube.com/watch?v=pls_luhVdAw> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=nhPaWIeULKk> .
+<https://www.youtube.com/watch?v=pls_luhVdAw> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=DonHa4pySsM> .
+<https://www.youtube.com/watch?v=pls_luhVdAw> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=d4wkPoVILSQ> .
+<https://www.youtube.com/watch?v=pls_luhVdAw> <http://pumgrana.com/tag/link/madeby> <http://en.wikipedia.org/wiki/Gorillaz> .
+<https://www.youtube.com/watch?v=7LJBF5_9-p4> <http://pumgrana.com/tag/link/talkabout> <http://en.wikipedia.org/wiki/index.html?curid=30292> .
+<https://www.youtube.com/watch?v=7LJBF5_9-p4> <http://pumgrana.com/tag/link/talkabout> <http://en.wikipedia.org/wiki/index.html?curid=17608105> .
+<https://www.youtube.com/watch?v=7LJBF5_9-p4> <http://pumgrana.com/tag/link/talkabout> <http://en.wikipedia.org/wiki/The_Hobbit:_The_Desolation_of_Smaug> .
+<https://www.youtube.com/watch?v=7LJBF5_9-p4> <http://pumgrana.com/tag/link/talkabout> <http://en.wikipedia.org/wiki/index.html?curid=58101> .
+<https://www.youtube.com/watch?v=7LJBF5_9-p4> <http://pumgrana.com/tag/link/talkabout> <http://en.wikipedia.org/wiki/index.html?curid=853744> .
+<https://www.youtube.com/watch?v=7LJBF5_9-p4> <http://pumgrana.com/tag/link/talkabout> <http://en.wikipedia.org/wiki/index.html?curid=21555729> .
+<https://www.youtube.com/watch?v=nhPaWIeULKk> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=uAOR6ib95kQ> .
+<https://www.youtube.com/watch?v=nhPaWIeULKk> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=04mfKJWDSzI> .
+<https://www.youtube.com/watch?v=nhPaWIeULKk> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=pls_luhVdAw> .
+<https://www.youtube.com/watch?v=nhPaWIeULKk> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=DonHa4pySsM> .
+<https://www.youtube.com/watch?v=nhPaWIeULKk> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=d4wkPoVILSQ> .
+<https://www.youtube.com/watch?v=nhPaWIeULKk> <http://pumgrana.com/tag/link/madeby> <http://en.wikipedia.org/wiki/Gorillaz> .
+<http://pumgrana.com/tag/link/sameBand> <http://pumgrana.com/ressource/tag_link> "Same Band" .
+<https://www.youtube.com/watch?v=DonHa4pySsM> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=uAOR6ib95kQ> .
+<https://www.youtube.com/watch?v=DonHa4pySsM> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=04mfKJWDSzI> .
+<https://www.youtube.com/watch?v=DonHa4pySsM> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=pls_luhVdAw> .
+<https://www.youtube.com/watch?v=DonHa4pySsM> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=nhPaWIeULKk> .
+<https://www.youtube.com/watch?v=DonHa4pySsM> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=d4wkPoVILSQ> .
+<https://www.youtube.com/watch?v=DonHa4pySsM> <http://pumgrana.com/tag/link/madeby> <http://en.wikipedia.org/wiki/Gorillaz> .
+<http://pumgrana.com/tag/link/madeby> <http://pumgrana.com/ressource/tag_link> "Made by" .
+<http://en.wikipedia.org/wiki/index.html?curid=58101> <http://pumgrana.com/tag/link/mentionedby> <https://www.youtube.com/watch?v=7LJBF5_9-p4> .
+<http://en.wikipedia.org/wiki/index.html?curid=853744> <http://pumgrana.com/tag/link/mentionedby> <https://www.youtube.com/watch?v=7LJBF5_9-p4> .
+<http://en.wikipedia.org/wiki/Gorillaz> <http://pumgrana.com/tag/link/made> <https://www.youtube.com/watch?v=uAOR6ib95kQ> .
+<http://en.wikipedia.org/wiki/Gorillaz> <http://pumgrana.com/tag/link/made> <https://www.youtube.com/watch?v=04mfKJWDSzI> .
+<http://en.wikipedia.org/wiki/Gorillaz> <http://pumgrana.com/tag/link/made> <https://www.youtube.com/watch?v=pls_luhVdAw> .
+<http://en.wikipedia.org/wiki/Gorillaz> <http://pumgrana.com/tag/link/made> <https://www.youtube.com/watch?v=nhPaWIeULKk> .
+<http://en.wikipedia.org/wiki/Gorillaz> <http://pumgrana.com/tag/link/made> <https://www.youtube.com/watch?v=DonHa4pySsM> .
+<http://en.wikipedia.org/wiki/Gorillaz> <http://pumgrana.com/tag/link/made> <https://www.youtube.com/watch?v=d4wkPoVILSQ> .
+<https://www.youtube.com/watch?v=DaFu3AoDXPY> <http://pumgrana.com/tag/link/talkabout> <http://en.wikipedia.org/wiki/index.html?curid=30292> .
+<https://www.youtube.com/watch?v=DaFu3AoDXPY> <http://pumgrana.com/tag/link/talkabout> <http://en.wikipedia.org/wiki/index.html?curid=17608105> .
+<https://www.youtube.com/watch?v=DaFu3AoDXPY> <http://pumgrana.com/tag/link/talkabout> <http://en.wikipedia.org/wiki/index.html?curid=21555729> .
+<https://www.youtube.com/watch?v=d4wkPoVILSQ> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=uAOR6ib95kQ> .
+<https://www.youtube.com/watch?v=d4wkPoVILSQ> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=04mfKJWDSzI> .
+<https://www.youtube.com/watch?v=d4wkPoVILSQ> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=pls_luhVdAw> .
+<https://www.youtube.com/watch?v=d4wkPoVILSQ> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=nhPaWIeULKk> .
+<https://www.youtube.com/watch?v=d4wkPoVILSQ> <http://pumgrana.com/tag/link/sameBand> <https://www.youtube.com/watch?v=DonHa4pySsM> .
+<https://www.youtube.com/watch?v=d4wkPoVILSQ> <http://pumgrana.com/tag/link/madeby> <http://en.wikipedia.org/wiki/Gorillaz> .
+<http://en.wikipedia.org/wiki/index.html?curid=21555729> <http://pumgrana.com/tag/link/mentionedby> <https://www.youtube.com/watch?v=oiF4KesF9Ag> .
+<http://en.wikipedia.org/wiki/index.html?curid=21555729> <http://pumgrana.com/tag/link/mentionedby> <https://www.youtube.com/watch?v=7LJBF5_9-p4> .
+<http://en.wikipedia.org/wiki/index.html?curid=21555729> <http://pumgrana.com/tag/link/mentionedby> <https://www.youtube.com/watch?v=DaFu3AoDXPY> .

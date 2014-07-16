@@ -1,5 +1,0 @@
-{ "_id" : { "$oid" : "28ab42a181677e83cedca9a4" }, "title" : "un contenu de test", "summary" : "test", "body" : "blabla" }
-{ "_id" : { "$oid" : "52780cbdc21477f7aa5b9107" }, "title" : "Kent University", "summary" : "Awesome university!", "body" : "un truc test" }
-{ "_id" : { "$oid" : "52780d55c21477f7aa5b9108" }, "title" : "Kent Region", "summary" : "green", "body" : "Region of southern England" }
-{ "_id" : { "$oid" : "52d9bef60fccc10db9fc8e57" }, "title" : "MSc computer science IA", "summary" : "Degree", "body" : "This master is blablabla" }
-{ "_id" : { "$oid" : "52d9e042ce9e8b2e314c4634" }, "title" : "Non-sense", "summary" : "none", "body" : "just a test for list_from_content_tags" }
