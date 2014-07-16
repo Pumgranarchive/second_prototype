@@ -40,11 +40,16 @@ let home_html (contents, tags) =
   let insertb, backb, forwardb, header_elt =
     GUI_tools.build_contents_header ()
   in
-  ignore {unit{ GUI_client_core.bind_back %backb }};
-  ignore {unit{ GUI_client_core.bind_forward %forwardb }};
-  ignore {unit{ GUI_client_core.bind_insert_content %insertb }};
-  ignore {unit{ GUI_client_core.handle_refresh_contents %contents_html
-                %tags_inputs %submit}};
+  ignore {unit{ GUI_client_core.bind_back
+                (%backb:[Html5_types.input] Eliom_content.Html5.elt) }};
+  ignore {unit{ GUI_client_core.bind_forward
+                (%forwardb:[Html5_types.input] Eliom_content.Html5.elt) }};
+  ignore {unit{ GUI_client_core.bind_insert_content
+                (%insertb:[Html5_types.input] Eliom_content.Html5.elt) }};
+  ignore {unit{ GUI_client_core.handle_refresh_contents
+                (%contents_html:[Html5_types.div] Eliom_content.Html5.elt)
+                (%tags_inputs:[Html5_types.input] Eliom_content.Html5.elt list)
+                (%submit:[Html5_types.input] Eliom_content.Html5.elt)}};
   Eliom_tools.F.html
     ~title:"Pumgrana"
     ~css:[["css";"pumgrana.css"]]
@@ -69,14 +74,31 @@ let content_detail (content, tags_id, links, tags_link) =
       | GUI_deserialize.Internal (c_id, c_title, c_summary, c_body) ->
         c_id, div [h3 [pcdata c_title]; p [pcdata c_summary]; p [pcdata c_body]]
       | GUI_deserialize.External (c_id, c_title, c_summary, c_html_body) ->
-        c_id, D.div [F.Unsafe.data c_html_body]
+        let id = (GUI_deserialize.string_of_id c_id) in
+        let regexp = Str.regexp "\\(wikipedia\\|youtube\\)" in
+        let iframe_bool = Str.string_match regexp id 0 in
+        if iframe_bool
+        then c_id, div [iframe ~a:[a_src (Eliom_content.Xml.uri_of_string id)] []]
+        else c_id, D.div [F.Unsafe.data c_html_body]
     in
-    ignore {unit{ GUI_client_core.bind_back %backb }};
-    ignore {unit{ GUI_client_core.bind_forward %forwardb }};
-    ignore {unit{ GUI_client_core.bind_update_content %updateb %c_id }};
-    ignore {unit{ GUI_client_core.bind_delete_content %deleteb %c_id }};
-    ignore {unit{ GUI_client_core.handle_refresh_links %c_id %links_html
-                  %links_tags_inputs %submit }};
+
+    ignore {unit{ GUI_client_core.bind_back
+                  (%backb:[Html5_types.input] Eliom_content.Html5.elt) }};
+    ignore {unit{ GUI_client_core.bind_forward
+                  (%forwardb:[Html5_types.input] Eliom_content.Html5.elt) }};
+    ignore {unit{ GUI_client_core.bind_update_content
+                  (%updateb:[Html5_types.input] Eliom_content.Html5.elt)
+                  (%c_id:GUI_deserialize.id) }};
+    ignore {unit{ GUI_client_core.bind_delete_content
+                  (%deleteb:[Html5_types.input] Eliom_content.Html5.elt)
+                  (%c_id:GUI_deserialize.id) }};
+    ignore {unit{ GUI_client_core.handle_refresh_links
+                  (%c_id:GUI_deserialize.id)
+                  (%links_html:[Html5_types.div] Eliom_content.Html5.elt)
+                  (%links_tags_inputs:
+                      [Html5_types.input] Eliom_content.Html5.elt list)
+                  (%submit:[Html5_types.input] Eliom_content.Html5.elt) }};
+
     Eliom_tools.F.html
       ~title:"Pumgrana"
       ~js:[["js";"jquery-2.1.1.min.js"]]
@@ -132,12 +154,32 @@ let content_update (content, tags, links, tags_link) =
     let links_tags_html = GUI_tools.build_tags_list tags_link in
     let div_tags_html = D.div tags_html in
     let link_insert_elt = GUI_tools.build_link_header () in
-    ignore {unit{ GUI_client_core.bind_save_update_content %saveb %c_id
-                  %content_elt %tags_inputs %links_inputs %tags_input_list}};
-    ignore {unit{ GUI_client_core.bind_cancel_update_content %cancelb %c_id}};
-    ignore {unit{ GUI_client_core.bind_add_tag_content %submit_tag
-                  %div_tags_html %add_tag_input %tags_input_list}};
-    ignore {unit{ GUI_client_core.bind_insert_link %link_insert_elt (Some %c_id)}};
+
+    (* ignore {unit{ GUI_client_core.bind_save_update_content *)
+    (*               (%saveb:[Html5_types.input] Eliom_content.Html5.elt) *)
+    (*               (%c_id:GUI_deserialize.id) *)
+    (*               (%content_elt: *)
+    (*                   [Html5_types.input ] Eliom_content.Html5.D.elt option * *)
+    (*                   [Html5_types.input ] Eliom_content.Html5.D.elt option * *)
+    (*                   [Html5_types.textarea ] Eliom_content.Html5.D.elt option) *)
+    (*               (%tags_inputs:[Html5_types.input] Eliom_content.Html5.elt list) *)
+    (*               (%links_inputs:[Html5_types.input] Eliom_content.Html5.elt list) *)
+    (*               (%tags_input_list:unit) *)
+    (*             }}; *)
+
+    ignore {unit{ GUI_client_core.bind_cancel_update_content
+                  (%cancelb:[Html5_types.input] Eliom_content.Html5.elt)
+                  (%c_id:GUI_deserialize.id)}};
+    (* ignore {unit{ GUI_client_core.bind_add_tag_content *)
+    (*               (%submit_tag:[Html5_types.input] Eliom_content.Html5.elt) *)
+
+    (*               (%div_tags_html:[Html5_types.div] Eliom_content.Html5.elt) *)
+    (*               (%add_tag_input:[Html5_types.input] Eliom_content.Html5.elt) *)
+    (*               (%tags_input_list:[Html5_types.input] Eliom_content.Html5.elt)}}; *)
+    ignore {unit{ GUI_client_core.bind_insert_link
+                  (%link_insert_elt:[Html5_types.input] Eliom_content.Html5.elt)
+                  (Some (%c_id:GUI_deserialize.id))}};
+
     Eliom_tools.F.html
       ~title:"Pumgrana"
       ~css:[["css";"pumgrana.css"]]
@@ -187,12 +229,24 @@ let content_insert () =
         ~name:"body" ()
     in
     let link_insert_elt = GUI_tools.build_link_header () in
-    ignore {unit{ GUI_client_core.bind_back %cancelb}};
-    ignore {unit{ GUI_client_core.bind_add_tag_content %submit_tag
-                    %div_tags_html %add_tag_input %tags_input_list}};
-    ignore {unit{ GUI_client_core.bind_save_insert_content %saveb
-                    %title_elt %summary_elt %body_elt %tags_input_list}};
-    ignore {unit{ GUI_client_core.bind_insert_link %link_insert_elt None}};
+
+    ignore {unit{ GUI_client_core.bind_back
+                  (%cancelb:[Html5_types.input] Eliom_content.Html5.elt)}};
+    (* ignore {unit{ GUI_client_core.bind_add_tag_content *)
+    (*               (%submit_tag:[Html5_types.input] Eliom_content.Html5.elt) *)
+    (*               (%div_tags_html:[Html5_types.input] Eliom_content.Html5.elt) *)
+    (*               (%add_tag_input:[Html5_types.input] Eliom_content.Html5.elt) *)
+    (*               (%tags_input_list:[Html5_types.input] Eliom_content.Html5.elt)}}; *)
+    (* ignore {unit{ GUI_client_core.bind_save_insert_content *)
+    (*               (%saveb:[Html5_types.input] Eliom_content.Html5.elt) *)
+
+    (*               (%title_elt:[Html5_types.input] Eliom_content.Html5.elt) *)
+    (*               (%summary_elt:[Html5_types.input] Eliom_content.Html5.elt) *)
+    (*               (%body_elt:[Html5_types.input] Eliom_content.Html5.elt) *)
+    (*               (%tags_input_list:[Html5_types.input] Eliom_content.Html5.elt)}}; *)
+    ignore {unit{ GUI_client_core.bind_insert_link
+                  (%link_insert_elt:[Html5_types.input] Eliom_content.Html5.elt) None}};
+
     Eliom_tools.F.html
       ~title:"Pumgrana"
       ~css:[["css";"pumgrana.css"]]
