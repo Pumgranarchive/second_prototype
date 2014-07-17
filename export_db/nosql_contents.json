@@ -1,0 +1,14 @@
+{ "_id" : { "$oid" : "002bd26f8f033fbfb17cc13d" }, "title" : "New", "summary" : "", "body" : "Content" }
+{ "_id" : { "$oid" : "2ef084df08119d00d0c1d943" }, "title" : "Test X", "summary" : "", "body" : "Null - edited" }
+{ "_id" : { "$oid" : "363f01483243579ade5ae454" }, "title" : "New content", "summary" : "", "body" : "Test content add" }
+{ "_id" : { "$oid" : "39c06508b761cf6e4ddcabf4" }, "title" : "Test", "summary" : "Summ", "body" : "COntent" }
+{ "_id" : { "$oid" : "41e1aa9535e3871a876db39e" }, "title" : "Nouveau contenu", "summary" : "", "body" : "Infos sur le contenu - EDIT" }
+{ "_id" : { "$oid" : "480d5fcd899d4b4219e18cdf" }, "title" : "TITRE", "summary" : "", "body" : "CONTENT - EDIT" }
+{ "_id" : { "$oid" : "4811ccd385d14ba6645c1b27" }, "title" : "Test", "summary" : "Summ", "body" : "Content" }
+{ "_id" : { "$oid" : "52780cbdc21477f7aa5b9107" }, "title" : "Kent University", "summary" : "Awesome university!", "body" : "un truc test 02" }
+{ "_id" : { "$oid" : "52780d55c21477f7aa5b9108" }, "title" : "Kent Region", "summary" : "green", "body" : "Region of southern England" }
+{ "_id" : { "$oid" : "52d9bef60fccc10db9fc8e57" }, "title" : "MSc computer science IA", "summary" : "Degree", "body" : "This master is blablabla" }
+{ "_id" : { "$oid" : "52d9e042ce9e8b2e314c4634" }, "title" : "Non-sense", "summary" : "none", "body" : "just a test for list_from_content_tags" }
+{ "_id" : { "$oid" : "778c80624cbe6e9995991c09" }, "title" : "Internal content test", "summary" : "", "body" : "This content is used to test the functionality available on internal contents\nEdit : No modification" }
+{ "_id" : { "$oid" : "87a27a38971e22249c7d5dd1" }, "title" : "Test", "summary" : "", "body" : "Test body" }
+{ "_id" : { "$oid" : "d8f1e31cc49eb42e1dc3713f" }, "title" : "Test", "summary" : "Summary", "body" : "Content" }
