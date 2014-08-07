@@ -22,9 +22,14 @@ type tag_type = TagLink | TagContent
 type update_mode = Adding | Replacing
 
 type content_type = Internal | External
-type content_ret =
-| Rinternal of (link_id * uri * string * string) list
-| Rexternal of (link_id * uri) list
+
+type condlink =
+| Cl_internal of (link_id * uri * string * string) list
+| Cl_external of (link_id * uri) list
+
+type condcontent =
+| Cc_internal of (Nosql_store.id * string * string) list
+| Cc_external of uri list
 
 
 }}
@@ -42,12 +47,13 @@ let base_tag_url = domain ^ "tag/"
 let base_tag_link_url = base_tag_url ^ "link/"
 let base_tag_content_url = base_tag_url ^ "content/"
 let base_content_ressource = base_ressource_url ^ "content/"
+let base_tag_ressource = base_ressource_url ^ "tag_"
 
 let tagged_content_r = base_content_ressource ^ "tagged"
 let content_title_r = base_content_ressource ^ "title"
 let content_summary_r = base_content_ressource ^ "summary"
-let tag_link_r = base_ressource_url ^ "tag_link"
-let tag_content_r = base_ressource_url ^ "tag_content"
+let tag_link_r = base_tag_ressource ^ "link"
+let tag_content_r = base_tag_ressource ^ "content"
 
 }}
 
@@ -199,6 +205,24 @@ let build_list ref_list new_list element =
   then new_list
   else (uri_of_string element)::new_list
 
+(*** Research  *)
+
+
+let cut_research str =
+  let regex = Str.regexp "[ \t]+" in
+  Str.split regex str
+
+let build_filter_research research_strings =
+  if List.length research_strings == 0 then "" else
+    let build_filter filter research_string =
+      let filter' = next_query filter " || " in
+      filter' ^ "regex(str(?subject), \"" ^ research_string ^ "\", \"i\")"
+    in
+    let filter = List.fold_left build_filter "" research_strings in
+    "?tag ?res ?subject .
+     FILTER (regex(str(?tag), \"^"^base_tag_url^"\") &&
+             regex(str(?res), \"^"^base_tag_ressource^"\") && ("^ filter ^")) . "
+
 (*** Lwt tools  *)
 
 let lwt_ignore l =
@@ -237,7 +261,7 @@ let post_on_4store query =
 
 (*** Generic delete  *)
 
-let delete_uris str_uris =
+let delete_all_uris str_uris =
   let build_filter name filter uri =
     let f = next_query filter " || " in
     f ^ "?" ^ name ^ " = <" ^ uri ^ ">"
@@ -253,6 +277,31 @@ let delete_uris str_uris =
   if List.length str_uris = 0
   then Lwt.return ()
   else Lwt_list.iter_p (post str_uris) ["s"; "p"; "o"]
+
+(* Custom delete to avoid buging 4store delete where functionality *)
+let delete_where where =
+  let get_query = "SELECT ?s ?p ?o WHERE { " ^ where ^ " }" in
+  lwt solutions = get_from_4store get_query in
+  let tuple_from solution =
+    from_solution "s" solution,
+    from_solution "p" solution,
+    from_solution "o" solution
+  in
+  let tuples = List.map tuple_from solutions in
+  let is_uri x =
+    try (ignore (Ptype.uri_of_string x); true)
+    with Ptype.Invalid_uri _ -> false
+  in
+  let (^^) a b = a ^ " " ^ b in
+  let print_str_uri str_uri = "<" ^ str_uri ^ ">" in
+  let build_delete_query q (s, p, o) =
+    let q' = next_query q " . " in
+    let o = if is_uri o then print_str_uri o else o in
+    q' ^ print_str_uri s ^^ print_str_uri p ^^ o
+  in
+  let half_delete_query = List.fold_left build_delete_query "" tuples in
+  let delete_query = "DELETE DATA {" ^ half_delete_query ^ "}" in
+  post_on_4store delete_query
 
 (******************************************************************************
 ******************************** Tags *****************************************
@@ -383,7 +432,7 @@ let insert_tags tag_type ?link_id ?content_uri subjects =
 
 let delete_tags tags_uri =
   let tags_str_uri = List.map string_of_uri tags_uri in
-  delete_uris tags_str_uri
+  delete_all_uris tags_str_uri
 
 let insert_tags_on_content content_uri tags_uri =
   let content_str_uri = string_of_uri content_uri in
@@ -420,31 +469,51 @@ let contents_filter_query tags_uri =
     "?content <" ^ tagged_content_r ^ "> ?tag .
      FILTER (" ^ regexp ^ ") . "
 
-let get_triple_contents tags_uri =
-  let half_query = contents_filter_query tags_uri in
-  let query = "SELECT ?content ?title ?summary WHERE
-  { ?content <" ^ content_title_r ^ "> ?title .
-    ?content <" ^ content_summary_r ^ "> ?summary .
-    " ^ half_query ^ " } GROUP BY ?content"
-  in
-  lwt solutions = get_from_4store query in
-  let triple_contents = List.map triple_content_from solutions in
-  Lwt.return (triple_contents)
+let get_content_query ~complex content_type =
+  match content_type with
+  | Internal ->
+    "?content ?title ?summary",
+    "?content <" ^ content_title_r ^ "> ?title .
+       ?content <" ^ content_summary_r ^ "> ?summary . "
+  | External ->
+    "?content",
+    if complex then
+      "{ { { ?content ?res_link ?target . } UNION
+           { ?origin ?res_link ?content . } .
+           FILTER regex(str(?res_link), \"^"^base_tag_link_url^"\") } UNION
+         { ?content <" ^ tagged_content_r ^ "> ?tag } } .
+       FILTER (!regex(str(?content), \"^"^domain^"\")) . "
+    else
+      "?content <" ^ tagged_content_r ^ "> ?tag .
+       FILTER (!regex(str(?content), \"^"^domain^"\")) . "
 
-let get_external_contents tags_uri =
+let get_triple_contents content_type tags_uri =
   let half_query = contents_filter_query tags_uri in
-  let query = "SELECT ?content WHERE
-  { { { ?content ?res_link ?target } UNION
-      { ?origin ?res_link ?content } .
-      FILTER regex(str(?res_link), \"^"^base_tag_link_url^"\") } UNION
-    { ?content <"^tagged_content_r^"> ?tag } .
-    " ^ half_query ^ "
-    FILTER (!regex(str(?content), \"^"^domain^"\"))
-    } GROUP BY ?content"
+  let select, where = get_content_query ~complex:true content_type in
+  let query =
+    "SELECT "^ select ^" WHERE {"^ where ^ half_query ^"} GROUP BY ?content"
   in
   lwt solutions = get_from_4store query in
-  let contents = List.map content_from solutions in
-  Lwt.return contents
+  let res = match content_type with
+    | Internal -> Cc_internal (List.map triple_content_from solutions)
+    | External -> Cc_external (List.map content_from solutions)
+  in
+  Lwt.return res
+
+let research_contents content_type research_string =
+  let research_strings = cut_research research_string in
+  let filter_query = build_filter_research research_strings in
+  let select, where = get_content_query ~complex:false content_type in
+  let query =
+    "SELECT "^ select ^" WHERE {"^ where ^ filter_query ^"} GROUP BY ?content"
+  in
+  print_endline query;
+  lwt solutions = get_from_4store query in
+  let res = match content_type with
+    | Internal -> Cc_internal (List.map triple_content_from solutions)
+    | External -> Cc_external (List.map content_from solutions)
+  in
+  Lwt.return res
 
 let insert_content content_id title summary tags_uri =
   let content_str_uri = string_of_uri (uri_of_content_id content_id) in
@@ -471,7 +540,7 @@ let delete_contents contents_id =
   let content_str_uris =
     List.map (fun x -> string_of_uri (uri_of_content_id x)) contents_id
   in
-  delete_uris content_str_uris
+  delete_all_uris content_str_uris
 
 let update_content content_id ?title ?summary ?tags_uri () =
   let content_uri = uri_of_content_id content_id in
@@ -598,19 +667,47 @@ let links_from_content_tags content_type content_uri tags_uri =
   match content_type with
   | Internal ->
     let res = linked_contents_of_solutions content_uri solutions in
-    Lwt.return (Rinternal res)
+    Lwt.return (Cl_internal res)
   | External ->
     let res = List.map (external_linked_content_from content_uri) solutions in
-    Lwt.return (Rexternal res)
+    Lwt.return (Cl_external res)
 
 let links_from_content content_type content_uri =
   links_from_content_tags content_type content_uri []
+
+let build_research_query content_type content_uri research_strings =
+  let filter_query = build_filter_research research_strings in
+  let content_str_uri = string_of_uri content_uri in
+  let select, half_query = match content_type with
+    | Internal ->
+      "?target ?title ?summary",
+      "?target <"^content_title_r^"> ?title .
+       ?target <"^content_summary_r^"> ?summary . "
+    | External ->
+      "?target",
+      "FILTER (!regex(str(?target), \"^"^domain^"\"))"
+  in
+  "SELECT " ^ select ^ " WHERE
+  { <"^content_str_uri^"> ?tag ?target .
+    "^ filter_query ^" "^ half_query ^" } GROUP BY ?target"
+
+let links_from_research content_type content_uri research_string =
+  let research_strings = cut_research research_string in
+  let query = build_research_query content_type content_uri research_strings in
+  lwt solutions = get_from_4store query in
+  match content_type with
+  | Internal ->
+    let res = linked_contents_of_solutions content_uri solutions in
+    Lwt.return (Cl_internal res)
+  | External ->
+    let res = List.map (external_linked_content_from content_uri) solutions in
+    Lwt.return (Cl_external res)
 
 let build_query origin_str_uri target_str_uri q tag_uri =
   let tag_str_uri = string_of_uri tag_uri in
   q ^"<"^ origin_str_uri ^">  <"^ tag_str_uri ^"> <"^ target_str_uri ^"> . "
 
-let build_delete_query_tag links_id tags_uri =
+let internal_delete_links_tag links_id tags_uri =
   let manager query link_id tags_uri =
     let o_str_uri, t_str_uri = str_tuple_of_link_id link_id in
     if List.length tags_uri == 0
@@ -618,24 +715,22 @@ let build_delete_query_tag links_id tags_uri =
     List.fold_left (build_query o_str_uri t_str_uri) query tags_uri
   in
   let half_query = List.fold_left2 manager "" links_id tags_uri in
-  "DELETE DATA { " ^ half_query ^ " }"
+  post_on_4store ("DELETE DATA { " ^ half_query ^ " }")
 
-let build_delete_query links_id =
+let internal_delete_links links_id =
   let build_query query link_id =
     let o_uri, t_uri = str_tuple_of_link_id link_id in
     let q = next_query query " UNION " in
-    q ^ "{ <" ^ o_uri ^ "> ?tag <" ^ t_uri ^ "> . {?origin ?tag ?target.} UNION {?x ?y ?z} }"
+    q ^ " { ?s ?p ?o . FILTER (str(?s) = \"<" ^ o_uri ^ ">\" &&
+                               str(?o) = \"<" ^ t_uri ^ ">\") } "
   in
-  let half_query = List.fold_left build_query "" links_id in
-  "DELETE {?origin ?tag ?target.} WHERE { " ^ half_query ^ " }"
+  let where_query = List.fold_left build_query "" links_id in
+  delete_where where_query
 
 let internal_delete_links links_id tags_uri =
-  let query = if List.length tags_uri == 0
-    then build_delete_query links_id
-    else build_delete_query_tag links_id tags_uri
-  in
-  lwt () = post_on_4store query in
-  Lwt.return ()
+  if List.length tags_uri == 0
+  then internal_delete_links links_id
+  else internal_delete_links_tag links_id tags_uri
 
 let delete_links links_id =
   internal_delete_links links_id []

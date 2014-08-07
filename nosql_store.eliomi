@@ -1,11 +1,10 @@
-
-(**
-   {b rdf_store -
-   This Module do request to the rdf store}
-*)
-
 {shared{
 
+(**
+   {b Nosql_store abstraction module}
+*)
+
+(** Raised in case of invalid id  *)
 exception Invalid_id of string
 
 type id
@@ -22,6 +21,8 @@ val string_of_id : id -> string
 val is_nosql_id : string -> bool
 
 }}
+
+{server{
 
 (** {6 Contents} *)
 
@@ -42,3 +43,5 @@ val update_content: id -> ?title:string -> ?summary:string ->
 
 (** [delete_contents content_ids]  *)
 val delete_contents: id list -> unit Lwt.t
+
+}}

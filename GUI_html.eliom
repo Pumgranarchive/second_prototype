@@ -166,27 +166,27 @@ let content_update (content, tags, links, tags_link) =
     let div_tags_html = D.div tags_html in
     let link_insert_elt = GUI_tools.build_link_header () in
 
-    (* ignore {unit{ GUI_client_core.bind_save_update_content *)
-    (*               (%saveb:[Html5_types.input] Eliom_content.Html5.elt) *)
-    (*               (%c_id:GUI_deserialize.id) *)
-    (*               (%content_elt: *)
-    (*                   [Html5_types.input ] Eliom_content.Html5.D.elt option * *)
-    (*                   [Html5_types.input ] Eliom_content.Html5.D.elt option * *)
-    (*                   [Html5_types.textarea ] Eliom_content.Html5.D.elt option) *)
-    (*               (%tags_inputs:[Html5_types.input] Eliom_content.Html5.elt list) *)
-    (*               (%links_inputs:[Html5_types.input] Eliom_content.Html5.elt list) *)
-    (*               (%tags_input_list:unit) *)
-    (*             }}; *)
+    ignore {unit{ GUI_client_core.bind_save_update_content
+                  (%saveb:[Html5_types.input] Eliom_content.Html5.elt)
+                  (%c_id:GUI_deserialize.id)
+                  (%content_elt:
+                      [Html5_types.input ] Eliom_content.Html5.D.elt option *
+                      [Html5_types.input ] Eliom_content.Html5.D.elt option *
+                      [Html5_types.textarea ] Eliom_content.Html5.D.elt option)
+                  (%tags_inputs:[Html5_types.input] Eliom_content.Html5.elt list)
+                  (%links_inputs:[Html5_types.input] Eliom_content.Html5.elt list)
+                  %tags_input_list
+                }};
 
     ignore {unit{ GUI_client_core.bind_cancel_update_content
                   (%cancelb:[Html5_types.input] Eliom_content.Html5.elt)
                   (%c_id:GUI_deserialize.id)}};
-    (* ignore {unit{ GUI_client_core.bind_add_tag_content *)
-    (*               (%submit_tag:[Html5_types.input] Eliom_content.Html5.elt) *)
+    ignore {unit{ GUI_client_core.bind_add_tag_content
+                  (%submit_tag:[Html5_types.input] Eliom_content.Html5.elt)
 
-    (*               (%div_tags_html:[Html5_types.div] Eliom_content.Html5.elt) *)
-    (*               (%add_tag_input:[Html5_types.input] Eliom_content.Html5.elt) *)
-    (*               (%tags_input_list:[Html5_types.input] Eliom_content.Html5.elt)}}; *)
+                  (%div_tags_html:[Html5_types.div] Eliom_content.Html5.elt)
+                  (%add_tag_input:[Html5_types.input] Eliom_content.Html5.elt)
+                  %tags_input_list}};
     ignore {unit{ GUI_client_core.bind_insert_link
                   (%link_insert_elt:[Html5_types.input] Eliom_content.Html5.elt)
                   (Some (%c_id:GUI_deserialize.id))}};
@@ -243,18 +243,18 @@ let content_insert () =
 
     ignore {unit{ GUI_client_core.bind_back
                   (%cancelb:[Html5_types.input] Eliom_content.Html5.elt)}};
-    (* ignore {unit{ GUI_client_core.bind_add_tag_content *)
-    (*               (%submit_tag:[Html5_types.input] Eliom_content.Html5.elt) *)
-    (*               (%div_tags_html:[Html5_types.input] Eliom_content.Html5.elt) *)
-    (*               (%add_tag_input:[Html5_types.input] Eliom_content.Html5.elt) *)
-    (*               (%tags_input_list:[Html5_types.input] Eliom_content.Html5.elt)}}; *)
-    (* ignore {unit{ GUI_client_core.bind_save_insert_content *)
-    (*               (%saveb:[Html5_types.input] Eliom_content.Html5.elt) *)
+    ignore {unit{ GUI_client_core.bind_add_tag_content
+                  (%submit_tag:[Html5_types.input] Eliom_content.Html5.elt)
+                  %div_tags_html
+                  (%add_tag_input:[Html5_types.input] Eliom_content.Html5.elt)
+                  %tags_input_list}};
+    ignore {unit{ GUI_client_core.bind_save_insert_content
+                  (%saveb:[Html5_types.input] Eliom_content.Html5.elt)
 
-    (*               (%title_elt:[Html5_types.input] Eliom_content.Html5.elt) *)
-    (*               (%summary_elt:[Html5_types.input] Eliom_content.Html5.elt) *)
-    (*               (%body_elt:[Html5_types.input] Eliom_content.Html5.elt) *)
-    (*               (%tags_input_list:[Html5_types.input] Eliom_content.Html5.elt)}}; *)
+                  (%title_elt:[Html5_types.input] Eliom_content.Html5.elt)
+                  (%summary_elt:[Html5_types.input] Eliom_content.Html5.elt)
+                  %body_elt
+                  %tags_input_list}};
     ignore {unit{ GUI_client_core.bind_insert_link
                   (%link_insert_elt:[Html5_types.input] Eliom_content.Html5.elt) None}};
 
