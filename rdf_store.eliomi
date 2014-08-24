@@ -1,11 +1,13 @@
 {shared{
 
 (**
-   {b rdf_store -
-   This Module do request to the rdf store}
+   {b Rdf_store abstraction module}
 *)
 
+(** Raised in case of invalid uri  *)
 exception Invalid_uri of string
+
+(** raised in case ok invalid link_id  *)
 exception Invalid_link_id of string
 
 type uri = Ptype.uri
@@ -19,8 +21,9 @@ type tag = uri * string
 type tag_type = TagLink | TagContent
 
 type content_type = Internal | External
-type content_ret =
+
 (** link_id * target_uri * title * summary  *)
+type content_ret =
 | Rinternal of (link_id * uri * string * string) list
 | Rexternal of (link_id * uri) list
 
@@ -63,6 +66,8 @@ val compare_uri : uri -> uri -> int
 
 }}
 
+{server{
+
 (** {6 Contents}  *)
 
 (** [get_triple_contents tags_uri]
@@ -102,6 +107,9 @@ val links_from_content : content_type -> uri -> content_ret Lwt.t
 (** [get_links_from_content_tags content_id tags_uri]  *)
 val links_from_content_tags : content_type -> uri -> uri list -> content_ret Lwt.t
 
+(** [get_links_from_research content_id research]  *)
+val links_from_research : content_type -> uri -> string -> content_ret Lwt.t
+
 (** [insert_links (origin_uri, targets_uri, tag_uri list) list]
     @raise Invalid_argument if at least one tags list is empty. *)
 val insert_links : (uri * uri * uri list) list -> link_id list Lwt.t
@@ -138,3 +146,5 @@ val insert_tags : tag_type -> ?link_id:link_id -> ?content_uri:uri ->
 
 (** [delete_tags tags_uri]  *)
 val delete_tags : uri list -> unit Lwt.t
+
+}}

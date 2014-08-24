@@ -308,6 +308,33 @@ let get_link_detail str_link_id =
   in
   API_tools.check_return ~param_name:API_tools.links_ret_name aux
 
+let build_assoc (link_id, uri, title, summary) =
+  let str_link_id = Rdf_store.string_of_link_id link_id in
+  let str_uri = Rdf_store.string_of_uri uri in
+  `Assoc [(API_tools.link_id_ret_name, `String str_link_id);
+          (API_tools.content_id_ret_name, `String str_uri);
+          (API_tools.content_title_ret_name, `String title);
+          (API_tools.content_summary_ret_name, `String summary)]
+
+
+let internal_build_assoc l =
+  Lwt.return (List.map build_assoc l)
+
+let external_build_assoc l =
+  let extract_uri (link_id, uri) = uri in
+  let extract_link_id (link_id, uri) = link_id in
+  let format link_id (uri, title, summary) =
+    build_assoc (link_id, uri, title, summary)
+  in
+  let uris = List.map extract_uri l in
+  let link_ids = List.map extract_link_id l in
+  lwt ret = get_data_list_from uris triple_platforms in
+  Lwt.return (List.map2 format link_ids ret)
+
+let build_json = function
+  | Rdf_store.Rinternal l -> internal_build_assoc l
+  | Rdf_store.Rexternal l -> external_build_assoc l
+
 let get_links_from_content_tags content_uri opt_tags_uri =
   let aux tags_str_uri () =
     let content_uri = Rdf_store.uri_of_string content_uri in
@@ -316,28 +343,6 @@ let get_links_from_content_tags content_uri opt_tags_uri =
         Rdf_store.Internal content_uri tags_uri in
     lwt e_ret = Rdf_store.links_from_content_tags
         Rdf_store.External content_uri tags_uri in
-    let build_assoc (link_id, uri, title, summary) =
-      let str_link_id = Rdf_store.string_of_link_id link_id in
-      let str_uri = Rdf_store.string_of_uri uri in
-      `Assoc [(API_tools.link_id_ret_name, `String str_link_id);
-              (API_tools.content_id_ret_name, `String str_uri);
-              (API_tools.content_title_ret_name, `String title);
-              (API_tools.content_summary_ret_name, `String summary)]
-    in
-    let extract_uri (link_id, uri) = uri in
-    let extract_link_id (link_id, uri) = link_id in
-    let format link_id (uri, title, summary) =
-      build_assoc (link_id, uri, title, summary)
-    in
-    let build_json = function
-      | Rdf_store.Rinternal l ->
-        Lwt.return (List.map build_assoc l)
-      | Rdf_store.Rexternal l ->
-        let uris = List.map extract_uri l in
-        let link_ids = List.map extract_link_id l in
-        lwt ret = get_data_list_from uris triple_platforms in
-        Lwt.return (List.map2 format link_ids ret)
-    in
     lwt i_json = build_json i_ret in
     lwt e_json = build_json e_ret in
     Lwt.return (`List (i_json@e_json))
@@ -350,6 +355,19 @@ let get_links_from_content_tags content_uri opt_tags_uri =
 
 let get_links_from_content content_uri =
   get_links_from_content_tags content_uri None
+
+let get_links_from_research content_uri research =
+  let aux () =
+    let content_uri = Rdf_store.uri_of_string content_uri in
+    lwt i_ret = Rdf_store.links_from_research
+        Rdf_store.Internal content_uri research in
+    lwt e_ret = Rdf_store.links_from_research
+        Rdf_store.External content_uri research in
+    lwt i_json = build_json i_ret in
+    lwt e_json = build_json e_ret in
+    Lwt.return (`List (i_json@e_json))
+  in
+  API_tools.check_return ~param_name:API_tools.links_ret_name aux
 
 let insert_links data =
   let aux () =

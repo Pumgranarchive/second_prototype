@@ -430,7 +430,6 @@ let get_links_from_content_tags =
           (opt (list "tags" (string "uri")))))
        ()
 
-(** Simple service registration *)
 let _ =
   Eliom_registration.String.register
    ~service:get_links_from_content_tags
@@ -439,6 +438,21 @@ let _ =
       let tags_uri_dcd = map (List.map Rdf_store.uri_decode) tags_uris in
       return_of_json
         (API_core.get_links_from_content_tags content_uri_dcd tags_uri_dcd))
+
+(* Get_links_from_research *)
+let get_links_from_research =
+     Eliom_service.Http.service
+       ~path:["api"; "link"; "list_from_research"]
+       ~get_params:Eliom_parameter.(suffix ((string "content_uri") **
+          (string "research")))
+       ()
+
+let _ =
+  Eliom_registration.String.register
+   ~service:get_links_from_research
+    (fun (content_uri, research) () ->
+      let uri_dcd = Rdf_store.uri_decode content_uri in
+      return_of_json (API_core.get_links_from_research uri_dcd research))
 
 (* Insert links *)
 let fallback_insert_links =

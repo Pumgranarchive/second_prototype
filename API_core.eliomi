@@ -69,6 +69,10 @@ val get_links_from_content: string -> Yojson.Basic.json Lwt.t
 val get_links_from_content_tags: string -> string list option ->
   Yojson.Basic.json Lwt.t
 
+(** [get_links_from_research content_id research]  *)
+val get_links_from_research: string -> string ->
+  Yojson.Basic.json Lwt.t
+
 (** [insert_links (origin_uri, target_uri, tags_uri) list]  *)
 val insert_links: (string * string * string list) list ->
   Yojson.Basic.json Lwt.t
