@@ -56,6 +56,21 @@ let _ =
     ~get_params:Eliom_parameter.(suffix (opt (string "filter")))
     (fun filter () -> return_of_json (API_core.get_contents filter None))
 
+(* research_contents *)
+let research_contents =
+  Eliom_service.Http.service
+    ~path:["api"; "content"; "research"]
+    ~get_params:Eliom_parameter.(suffix (opt (string "filter") **
+                                           (string "research")))
+    ()
+
+(** Simple contents service  *)
+let _ =
+  Eliom_registration.String.register
+    ~service:research_contents
+    (fun (filter, research) () ->
+      return_of_json (API_core.research_contents filter research))
+
 (* Insert content *)
 let fallback_insert_content =
   Eliom_service.Http.service

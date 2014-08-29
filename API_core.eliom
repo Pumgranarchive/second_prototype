@@ -99,17 +99,36 @@ let get_detail content_str_uri =
   in
   API_tools.check_return ~param_name:API_tools.contents_ret_name aux
 
+let format_content (uri, title, summary) =
+  `Assoc [(API_tools.uri_field, `String (Rdf_store.string_of_uri uri));
+          (API_tools.title_field, `String title);
+          (API_tools.summary_field, `String summary)]
+
+let internal_format_content res =
+  let aux (id, title, summary) =
+    format_content (Rdf_store.uri_of_content_id id, title, summary)
+  in
+  Lwt.return (List.map aux res)
+
+let external_format_content res =
+  lwt triples = get_data_list_from res triple_platforms in
+  Lwt.return (List.map format_content triples)
+
+let build_content_json = function
+  | Rdf_store.Cc_internal r -> internal_format_content r
+  | Rdf_store.Cc_external r -> external_format_content r
+
+let content_filter = function
+  | None                    -> ()
+  | Some "MOST_USED"        -> ()
+  | Some "MOST_VIEW"        -> ()
+  | Some "MOST_RECENT"      -> ()
+  | Some x                  ->
+    raise API_conf.(Pum_exc (return_not_found, errstr_not_expected x))
+
 let get_contents filter tags_str_uri =
   let aux () =
-    let () =
-      match filter with
-      | None                    -> ()
-      | Some "MOST_USED"        -> ()
-      | Some "MOST_VIEW"        -> ()
-      | Some "MOST_RECENT"      -> ()
-      | Some x                  ->
-        raise API_conf.(Pum_exc (return_not_found, errstr_not_expected x))
-    in
+    let () = content_filter filter in
     let tags_uri =
       match tags_str_uri with
       | Some t -> List.map uri_of_string t
@@ -117,27 +136,19 @@ let get_contents filter tags_str_uri =
     in
     lwt i_res = Rdf_store.get_triple_contents Rdf_store.Internal tags_uri in
     lwt e_res = Rdf_store.get_triple_contents Rdf_store.External tags_uri in
-    let format (uri, title, summary) =
-      `Assoc [(API_tools.uri_field, `String (Rdf_store.string_of_uri uri));
-              (API_tools.title_field, `String title);
-              (API_tools.summary_field, `String summary)]
-    in
-    let internal_format res =
-      let aux (id, title, summary) =
-        format (Rdf_store.uri_of_content_id id, title, summary)
-      in
-      Lwt.return (List.map aux res)
-    in
-    let external_format res =
-      lwt triples = get_data_list_from res triple_platforms in
-      Lwt.return (List.map format triples)
-    in
-    let build_json = function
-      | Rdf_store.Cc_internal r -> internal_format r
-      | Rdf_store.Cc_external r -> external_format r
-    in
-    lwt i_json = build_json i_res in
-    lwt e_json = build_json e_res in
+    lwt i_json = build_content_json i_res in
+    lwt e_json = build_content_json e_res in
+    Lwt.return (`List (i_json@e_json))
+  in
+  API_tools.check_return ~param_name:API_tools.contents_ret_name aux
+
+let research_contents filter r_string =
+  let aux () =
+    let () = content_filter filter in
+    lwt i_res = Rdf_store.research_contents Rdf_store.Internal r_string in
+    lwt e_res = Rdf_store.research_contents Rdf_store.External r_string in
+    lwt i_json = build_content_json i_res in
+    lwt e_json = build_content_json e_res in
     Lwt.return (`List (i_json@e_json))
   in
   API_tools.check_return ~param_name:API_tools.contents_ret_name aux

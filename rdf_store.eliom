@@ -205,6 +205,24 @@ let build_list ref_list new_list element =
   then new_list
   else (uri_of_string element)::new_list
 
+(*** Research  *)
+
+
+let cut_research str =
+  let regex = Str.regexp "[ \t]+" in
+  Str.split regex str
+
+let build_filter_research research_strings =
+  if List.length research_strings == 0 then "" else
+    let build_filter filter research_string =
+      let filter' = next_query filter " || " in
+      filter' ^ "regex(str(?subject), \"" ^ research_string ^ "\", \"i\")"
+    in
+    let filter = List.fold_left build_filter "" research_strings in
+    "?tag ?res ?subject .
+     FILTER (regex(str(?tag), \"^"^base_tag_url^"\") &&
+             regex(str(?res), \"^"^base_tag_ressource^"\") && ("^ filter ^")) . "
+
 (*** Lwt tools  *)
 
 let lwt_ignore l =
@@ -451,24 +469,45 @@ let contents_filter_query tags_uri =
     "?content <" ^ tagged_content_r ^ "> ?tag .
      FILTER (" ^ regexp ^ ") . "
 
+let get_content_query ~complex content_type =
+  match content_type with
+  | Internal ->
+    "?content ?title ?summary",
+    "?content <" ^ content_title_r ^ "> ?title .
+       ?content <" ^ content_summary_r ^ "> ?summary . "
+  | External ->
+    "?content",
+    if complex then
+      "{ { { ?content ?res_link ?target . } UNION
+           { ?origin ?res_link ?content . } .
+           FILTER regex(str(?res_link), \"^"^base_tag_link_url^"\") } UNION
+         { ?content <" ^ tagged_content_r ^ "> ?tag } } .
+       FILTER (!regex(str(?content), \"^"^domain^"\")) . "
+    else
+      "?content <" ^ tagged_content_r ^ "> ?tag .
+       FILTER (!regex(str(?content), \"^"^domain^"\")) . "
+
 let get_triple_contents content_type tags_uri =
   let half_query = contents_filter_query tags_uri in
-  let select, where = match content_type with
-    | Internal ->
-      "?content ?title ?summary",
-      "?content <" ^ content_title_r ^ "> ?title .
-       ?content <" ^ content_summary_r ^ "> ?summary . "
-    | External ->
-      "?content",
-      "{ { ?content ?res_link ?target . } UNION
-         { ?origin ?res_link ?content . } .
-         FILTER regex(str(?res_link), \"^"^base_tag_link_url^"\") } UNION
-       { ?content <" ^ tagged_content_r ^ "> ?tag } .
-       FILTER (!regex(str(?content), \"^"^domain^"\")) . "
-  in
+  let select, where = get_content_query ~complex:true content_type in
   let query =
     "SELECT "^ select ^" WHERE {"^ where ^ half_query ^"} GROUP BY ?content"
   in
+  lwt solutions = get_from_4store query in
+  let res = match content_type with
+    | Internal -> Cc_internal (List.map triple_content_from solutions)
+    | External -> Cc_external (List.map content_from solutions)
+  in
+  Lwt.return res
+
+let research_contents content_type research_string =
+  let research_strings = cut_research research_string in
+  let filter_query = build_filter_research research_strings in
+  let select, where = get_content_query ~complex:false content_type in
+  let query =
+    "SELECT "^ select ^" WHERE {"^ where ^ filter_query ^"} GROUP BY ?content"
+  in
+  print_endline query;
   lwt solutions = get_from_4store query in
   let res = match content_type with
     | Internal -> Cc_internal (List.map triple_content_from solutions)
@@ -637,14 +676,7 @@ let links_from_content content_type content_uri =
   links_from_content_tags content_type content_uri []
 
 let build_research_query content_type content_uri research_strings =
-  let filter_query = if List.length research_strings == 0 then "" else
-      let build_filter filter research_string =
-        let filter' = next_query filter " || " in
-        filter' ^ "regex(str(?subject), \"" ^ research_string ^ "\", \"i\")"
-      in
-      let filter = List.fold_left build_filter "" research_strings in
-      "FILTER (" ^ filter ^ ") . "
-  in
+  let filter_query = build_filter_research research_strings in
   let content_str_uri = string_of_uri content_uri in
   let select, half_query = match content_type with
     | Internal ->
@@ -657,20 +689,10 @@ let build_research_query content_type content_uri research_strings =
   in
   "SELECT " ^ select ^ " WHERE
   { <"^content_str_uri^"> ?tag ?target .
-    ?tag ?res ?subject .
-    "^filter_query^"
-    FILTER (regex(str(?res), \"^"^base_tag_ressource^"\")
-         && regex(str(?tag), \"^"^base_tag_url^"\") )
-    " ^ half_query ^ " } GROUP BY ?target"
+    "^ filter_query ^" "^ half_query ^" } GROUP BY ?target"
 
 let links_from_research content_type content_uri research_string =
-  let cut str =
-    let regex = Str.regexp "[ \t]+" in
-    let tmp = Str.split regex str in
-    List.iter print_endline tmp;
-    tmp
-  in
-  let research_strings = cut research_string in
+  let research_strings = cut_research research_string in
   let query = build_research_query content_type content_uri research_strings in
   lwt solutions = get_from_4store query in
   match content_type with

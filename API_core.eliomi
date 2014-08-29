@@ -20,6 +20,11 @@ val get_detail: string -> Yojson.Basic.json Lwt.t
 *)
 val get_contents: string option -> string list option -> Yojson.Basic.json Lwt.t
 
+(** [research_contents filter research]
+    Same as get_contents but with research string rather than a tag list
+*)
+val research_contents: string option -> string -> Yojson.Basic.json Lwt.t
+
 (** [insert_content title summary text tags_uri]  *)
 val insert_content: string -> string -> string -> string list option ->
   Yojson.Basic.json Lwt.t

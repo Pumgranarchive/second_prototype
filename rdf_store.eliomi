@@ -79,6 +79,9 @@ val compare_uri : uri -> uri -> int
     if [tags_uri] is an empty list, return all contents' triple. *)
 val get_triple_contents : content_type -> uri list -> condcontent Lwt.t
 
+(** [research_contents content_type research_string]  *)
+val research_contents : content_type -> string -> condcontent Lwt.t
+
 (** [insert_content content_id title summary tags_uri]
     [tags_uri] can be an empty list
     @raise Invalid_argument if the content is already registred. *)
