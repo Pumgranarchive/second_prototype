@@ -22,9 +22,14 @@ type tag_type = TagLink | TagContent
 type update_mode = Adding | Replacing
 
 type content_type = Internal | External
-type content_ret =
-| Rinternal of (link_id * uri * string * string) list
-| Rexternal of (link_id * uri) list
+
+type condlink =
+| Cl_internal of (link_id * uri * string * string) list
+| Cl_external of (link_id * uri) list
+
+type condcontent =
+| Cc_internal of (Nosql_store.id * string * string) list
+| Cc_external of uri list
 
 
 }}
@@ -446,31 +451,30 @@ let contents_filter_query tags_uri =
     "?content <" ^ tagged_content_r ^ "> ?tag .
      FILTER (" ^ regexp ^ ") . "
 
-let get_triple_contents tags_uri =
+let get_triple_contents content_type tags_uri =
   let half_query = contents_filter_query tags_uri in
-  let query = "SELECT ?content ?title ?summary WHERE
-  { ?content <" ^ content_title_r ^ "> ?title .
-    ?content <" ^ content_summary_r ^ "> ?summary .
-    " ^ half_query ^ " } GROUP BY ?content"
+  let select, where = match content_type with
+    | Internal ->
+      "?content ?title ?summary",
+      "?content <" ^ content_title_r ^ "> ?title .
+       ?content <" ^ content_summary_r ^ "> ?summary . "
+    | External ->
+      "?content",
+      "{ { ?content ?res_link ?target . } UNION
+         { ?origin ?res_link ?content . } .
+         FILTER regex(str(?res_link), \"^"^base_tag_link_url^"\") } UNION
+       { ?content <" ^ tagged_content_r ^ "> ?tag } .
+       FILTER (!regex(str(?content), \"^"^domain^"\")) . "
+  in
+  let query =
+    "SELECT "^ select ^" WHERE {"^ where ^ half_query ^"} GROUP BY ?content"
   in
   lwt solutions = get_from_4store query in
-  let triple_contents = List.map triple_content_from solutions in
-  Lwt.return (triple_contents)
-
-let get_external_contents tags_uri =
-  let half_query = contents_filter_query tags_uri in
-  let query = "SELECT ?content WHERE
-  { { { ?content ?res_link ?target } UNION
-      { ?origin ?res_link ?content } .
-      FILTER regex(str(?res_link), \"^"^base_tag_link_url^"\") } UNION
-    { ?content <"^tagged_content_r^"> ?tag } .
-    " ^ half_query ^ "
-    FILTER (!regex(str(?content), \"^"^domain^"\"))
-    } GROUP BY ?content"
+  let res = match content_type with
+    | Internal -> Cc_internal (List.map triple_content_from solutions)
+    | External -> Cc_external (List.map content_from solutions)
   in
-  lwt solutions = get_from_4store query in
-  let contents = List.map content_from solutions in
-  Lwt.return contents
+  Lwt.return res
 
 let insert_content content_id title summary tags_uri =
   let content_str_uri = string_of_uri (uri_of_content_id content_id) in
@@ -624,10 +628,10 @@ let links_from_content_tags content_type content_uri tags_uri =
   match content_type with
   | Internal ->
     let res = linked_contents_of_solutions content_uri solutions in
-    Lwt.return (Rinternal res)
+    Lwt.return (Cl_internal res)
   | External ->
     let res = List.map (external_linked_content_from content_uri) solutions in
-    Lwt.return (Rexternal res)
+    Lwt.return (Cl_external res)
 
 let links_from_content content_type content_uri =
   links_from_content_tags content_type content_uri []
@@ -672,10 +676,10 @@ let links_from_research content_type content_uri research_string =
   match content_type with
   | Internal ->
     let res = linked_contents_of_solutions content_uri solutions in
-    Lwt.return (Rinternal res)
+    Lwt.return (Cl_internal res)
   | External ->
     let res = List.map (external_linked_content_from content_uri) solutions in
-    Lwt.return (Rexternal res)
+    Lwt.return (Cl_external res)
 
 let build_query origin_str_uri target_str_uri q tag_uri =
   let tag_str_uri = string_of_uri tag_uri in

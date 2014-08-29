@@ -23,9 +23,14 @@ type tag_type = TagLink | TagContent
 type content_type = Internal | External
 
 (** link_id * target_uri * title * summary  *)
-type content_ret =
-| Rinternal of (link_id * uri * string * string) list
-| Rexternal of (link_id * uri) list
+type condlink =
+| Cl_internal of (link_id * uri * string * string) list
+| Cl_external of (link_id * uri) list
+
+(** uri * title * summary  *)
+type condcontent =
+| Cc_internal of (Nosql_store.id * string * string) list
+| Cc_external of uri list
 
 (** {6 Utils}  *)
 
@@ -70,13 +75,9 @@ val compare_uri : uri -> uri -> int
 
 (** {6 Contents}  *)
 
-(** [get_triple_contents tags_uri]
+(** [get_triple_contents content_type tags_uri]
     if [tags_uri] is an empty list, return all contents' triple. *)
-val get_triple_contents : uri list -> content list Lwt.t
-
-(** [get_external_contents tags_uri]
-    if [tags_uri] is an empty list, return all contents' triple. *)
-val get_external_contents : uri list -> uri list Lwt.t
+val get_triple_contents : content_type -> uri list -> condcontent Lwt.t
 
 (** [insert_content content_id title summary tags_uri]
     [tags_uri] can be an empty list
@@ -102,13 +103,13 @@ val update_content_tags : uri -> uri list -> unit Lwt.t
 val get_link_detail : link_id -> (link_id * uri * uri * tag list) Lwt.t
 
 (** [get_links_from_content content_uri]  *)
-val links_from_content : content_type -> uri -> content_ret Lwt.t
+val links_from_content : content_type -> uri -> condlink Lwt.t
 
 (** [get_links_from_content_tags content_id tags_uri]  *)
-val links_from_content_tags : content_type -> uri -> uri list -> content_ret Lwt.t
+val links_from_content_tags : content_type -> uri -> uri list -> condlink Lwt.t
 
 (** [get_links_from_research content_id research]  *)
-val links_from_research : content_type -> uri -> string -> content_ret Lwt.t
+val links_from_research : content_type -> uri -> string -> condlink Lwt.t
 
 (** [insert_links (origin_uri, targets_uri, tag_uri list) list]
     @raise Invalid_argument if at least one tags list is empty. *)

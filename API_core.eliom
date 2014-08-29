@@ -115,19 +115,29 @@ let get_contents filter tags_str_uri =
       | Some t -> List.map uri_of_string t
       | None   -> []
     in
-    lwt i_res = Rdf_store.get_triple_contents tags_uri in
-    lwt e_res = Rdf_store.get_external_contents tags_uri in
+    lwt i_res = Rdf_store.get_triple_contents Rdf_store.Internal tags_uri in
+    lwt e_res = Rdf_store.get_triple_contents Rdf_store.External tags_uri in
     let format (uri, title, summary) =
       `Assoc [(API_tools.uri_field, `String (Rdf_store.string_of_uri uri));
               (API_tools.title_field, `String title);
               (API_tools.summary_field, `String summary)]
     in
-    let i_format (id, title, summary) =
-      format (Rdf_store.uri_of_content_id id, title, summary)
+    let internal_format res =
+      let aux (id, title, summary) =
+        format (Rdf_store.uri_of_content_id id, title, summary)
+      in
+      Lwt.return (List.map aux res)
     in
-    let i_json = List.map i_format i_res in
-    lwt triples = get_data_list_from e_res triple_platforms in
-    let e_json = List.map format triples in
+    let external_format res =
+      lwt triples = get_data_list_from res triple_platforms in
+      Lwt.return (List.map format triples)
+    in
+    let build_json = function
+      | Rdf_store.Cc_internal r -> internal_format r
+      | Rdf_store.Cc_external r -> external_format r
+    in
+    lwt i_json = build_json i_res in
+    lwt e_json = build_json e_res in
     Lwt.return (`List (i_json@e_json))
   in
   API_tools.check_return ~param_name:API_tools.contents_ret_name aux
@@ -332,8 +342,8 @@ let external_build_assoc l =
   Lwt.return (List.map2 format link_ids ret)
 
 let build_json = function
-  | Rdf_store.Rinternal l -> internal_build_assoc l
-  | Rdf_store.Rexternal l -> external_build_assoc l
+  | Rdf_store.Cl_internal l -> internal_build_assoc l
+  | Rdf_store.Cl_external l -> external_build_assoc l
 
 let get_links_from_content_tags content_uri opt_tags_uri =
   let aux tags_str_uri () =
