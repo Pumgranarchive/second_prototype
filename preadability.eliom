@@ -2,7 +2,7 @@ module Yojson = Yojson.Basic
 
 open Yojson.Util
 
-let cash = Pcash.new_cash ()
+lwt cash = Pcash.new_cash "Reability"
 
 let get_short_summary str =
   let length = String.length str in
@@ -12,8 +12,9 @@ let get_short_summary str =
 
 let get_readability_data uris =
   let aux uri =
-    if Pcash.exists cash uri
-    then Lwt.return (Pcash.get cash uri)
+    lwt exist = Pcash.exists cash uri in
+    if exist
+    then Pcash.get cash uri
     else
       try_lwt
         (let ruri = Rdf_uri.uri (Rdf_store.string_of_uri uri) in
@@ -22,7 +23,7 @@ let get_readability_data uris =
          let summary = get_short_summary (to_string (member "excerpt" json)) in
          lwt body = Tidy.xhtml_of_html (to_string (member "content" json)) in
          let data = (uri, title, summary, body, true) in
-         Pcash.save cash uri data;
+         lwt () = Pcash.save cash uri data in
          Lwt.return data)
       with e ->
         (print_endline (Printexc.to_string e);
