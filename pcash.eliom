@@ -9,14 +9,34 @@ module Map = Map.Make(OrderedUri)
 let store =
   Ocsipersist.open_store "PumCash"
 
+let max_length = 1000
+
 let new_cash name =
   let default () = Map.empty in
   Ocsipersist.make_persistent_lazy ~store ~name ~default
 
+let get_length map =
+  Map.fold (fun k v n -> n + 1) map 0
+
+let pull map =
+  let select k = function
+    | None   -> Some k
+    | Some v -> Some v
+  in
+  match Map.fold (fun k v first -> select k first) map None with
+  | Some v -> Map.remove v map
+  | None   -> map
+
 let save cash key data =
   lwt cash_map = Ocsipersist.get cash in
   let new_cash_map = Map.add key data cash_map in
-  Ocsipersist.set cash new_cash_map
+  let length = get_length cash_map in
+  let limited_cash_map =
+    if length > max_length
+    then pull new_cash_map
+    else new_cash_map
+  in
+  Ocsipersist.set cash limited_cash_map
 
 let compare = OrderedUri.compare
 
