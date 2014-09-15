@@ -1,12 +1,4 @@
-module OrderedUri =
-  struct
-    type t = Rdf_store.uri
-    let compare = Rdf_store.compare_uri
-  end
-
-module Map = Map.Make(OrderedUri)
-
-let cash = Pcash.new_cash ()
+lwt cash = Pcash.new_cash "Youtube"
 
 let is_youtube_uri uri =
   let str_uri = Rdf_store.string_of_uri uri in
@@ -14,10 +6,11 @@ let is_youtube_uri uri =
   with _ -> false
 
 let get_youtube_triple uris =
-  let know_uris = List.filter (Pcash.exists cash) uris in
-  let know_data = List.map (Pcash.get cash) know_uris in
-  let unknow_uris = List.filter (Pcash.not_exists cash) uris in
-  let id_of_uri uri = Youtube_http.get_video_id_from_url (Rdf_store.string_of_uri uri)
+  lwt know_uris = Lwt_list.filter_p (Pcash.exists cash) uris in
+  lwt know_data = Lwt_list.map_s (Pcash.get cash) know_uris in
+  lwt unknow_uris = Lwt_list.filter_p (Pcash.not_exists cash) uris in
+  let id_of_uri uri =
+    Youtube_http.get_video_id_from_url (Rdf_store.string_of_uri uri)
   in
   let ids = List.map id_of_uri unknow_uris in
   lwt videos =
@@ -28,10 +21,11 @@ let get_youtube_triple uris =
   let format (_, title, str_uri, summary, _) =
     let uri = Rdf_store.uri_of_string str_uri in
     let data = (uri, title, summary) in
-    Pcash.save cash uri data;
-    data
+    lwt () = Pcash.save cash uri data in
+    Lwt.return data
   in
-  Lwt.return (know_data@(List.map format videos))
+  lwt new_data = Lwt_list.map_s format videos in
+  Lwt.return (know_data@new_data)
 
 let get_youtube_detail uri =
   lwt results = get_youtube_triple [uri] in
