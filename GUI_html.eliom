@@ -29,96 +29,107 @@ let internal_error_html () =
 
 (** Display the home html service *)
 let home_html (contents, tags) =
-  let submit, tags_inputs, tags_html_list = GUI_tools.build_tags_form tags in
+  let tags_ul = GUI_tools.build_tags_ul tags in
   let contents_html =
-    D.div ~a:[a_class["contents"]] (GUI_tools.build_contents_list contents)
+    div ~a:[a_id "content"]
+      [div ~a:[a_class["content_main_list"]]
+          (GUI_tools.build_contents_list contents)]
   in
-  let tags_html =
-    div ~a:[a_class["links"]]
-      ((h4 [pcdata "Tags"])::tags_html_list)
+  let side_button = div ~a:[a_class["side_button";"side_button_home";"side_button_img_home"]] [div ~a:[a_class["side_button_circle"]] []] in
+  let side_action = div ~a:[a_class["side_button_bottom"]]
+    [ul ~a:[a_class["side_button_bottom_list"]]
+        [li ~a:[a_class["side_button";"side_button_img_plus"]]
+            [div ~a:[a_class["side_button_circle"]] []]]]
   in
-  let insertb, backb, forwardb, header_elt =
-    GUI_tools.build_contents_header ()
-  in
-  ignore {unit{ GUI_client_core.bind_back
-                (%backb:[Html5_types.input] Eliom_content.Html5.elt) }};
-  ignore {unit{ GUI_client_core.bind_forward
-                (%forwardb:[Html5_types.input] Eliom_content.Html5.elt) }};
-  ignore {unit{ GUI_client_core.bind_insert_content
-                (%insertb:[Html5_types.input] Eliom_content.Html5.elt) }};
-  ignore {unit{ GUI_client_core.handle_refresh_contents
-                (%contents_html:[Html5_types.div] Eliom_content.Html5.elt)
-                (%tags_inputs:[Html5_types.input] Eliom_content.Html5.elt list)
-                (%submit:[Html5_types.input] Eliom_content.Html5.elt)}};
+  let side_bar = div ~a:[a_id "sidebar"] [side_button; tags_ul; side_action] in
+  let main_logo = div ~a:[a_id "main_logo"] [] in
+  let container = div ~a:[a_id "container"] [side_bar; contents_html; main_logo] in
+  (* ignore {unit{ GUI_client_core.bind_back *)
+  (*               (%backb:[Html5_types.input] Eliom_content.Html5.elt) }}; *)
+  (* ignore {unit{ GUI_client_core.bind_forward *)
+  (*               (%forwardb:[Html5_types.input] Eliom_content.Html5.elt) }}; *)
+  (* ignore {unit{ GUI_client_core.bind_insert_content *)
+  (*               (%insertb:[Html5_types.input] Eliom_content.Html5.elt) }}; *)
+  (* ignore {unit{ GUI_client_core.handle_refresh_contents *)
+  (*               (%contents_html:[Html5_types.div] Eliom_content.Html5.elt) *)
+  (*               (%tags_inputs:[Html5_types.input] Eliom_content.Html5.elt list) *)
+  (*               (%submit:[Html5_types.input] Eliom_content.Html5.elt)}}; *)
   Eliom_tools.F.html
     ~title:"Pumgrana"
-    ~css:[["css";"pumgrana.css"]]
-    Html5.F.(body [
-      header_elt;
-      contents_html;
-      div [tags_html]])
+    ~css:[["css";"style.css"]]
+    Html5.F.(body [container])
 
 (** Display the content detail html service *)
 let content_detail (content, tags_id, links, tags_link) =
   try
-    let aux (id, subject) =  div [pcdata subject] in
-    let tags_subjects = List.map aux tags_id in
-    let links_html = D.div (GUI_tools.build_links_list links) in
-    let submit, links_tags_inputs, links_tags_html =
-      GUI_tools.build_tags_form tags_link
-    in
-    let backb, forwardb, updateb, deleteb, header_elt =
-      GUI_tools.build_detail_content_header ()
-    in
+    (* let aux (id, subject) =  div [pcdata subject] in *)
+    (* let tags_subjects = List.map aux tags_id in *)
+    let tags_ul = GUI_tools.build_tags_ul tags_id in
+    (* let links_html = D.div (GUI_tools.build_links_list links) in *)
+    (* let submit, links_tags_inputs, links_tags_html = *)
+    (*   GUI_tools.build_tags_form tags_link *)
+    (* in *)
     let c_id, content_elt = match content with
       | GUI_deserialize.Internal (c_id, c_title, c_summary, c_body) ->
         c_id, div [h3 [pcdata c_title]; p [pcdata c_summary]; p [pcdata c_body]]
       | GUI_deserialize.External (c_id, c_title, c_summary, c_html_body) ->
         let id = (GUI_deserialize.string_of_id c_id) in
         let regexp = Str.regexp ".*youtube.*" in
-        let iframe_bool = Str.string_match regexp id 0 in
-        if iframe_bool
-        then c_id, div [h3 [pcdata c_title]; F.Unsafe.data c_html_body]
-        else
-          c_id, iframe ~a:[a_class ["pum_iframe"];
-                           a_src (Eliom_content.Xml.uri_of_string id)] []
+        (* let iframe_bool = Str.string_match regexp id 0 in *)
+        (* if iframe_bool *)
+        (* then  *)c_id,
+        div ~a:[a_id "content"]
+          [div [h3 [pcdata c_title]; F.Unsafe.data c_html_body]]
+        (* else *)
+        (*   c_id, iframe ~a:[a_class ["pum_iframe"]; *)
+        (*                    a_src (Eliom_content.Xml.uri_of_string id)] [] *)
     in
+    let side_button = div ~a:[a_class["side_button";"side_button_home";"side_button_img_content"]] [div ~a:[a_class["side_button_circle"]] []] in
+    let side_action = div ~a:[a_class["side_button_bottom"]]
+      [ul ~a:[a_class["side_button_bottom_list"]]
+          [li ~a:[a_class["side_button";"side_button_img_home"]]
+              [div ~a:[a_class["side_button_circle"]] []];
+           li ~a:[a_class["side_button";"side_button_img_link"]]
+             [div ~a:[a_class["side_button_circle"]] []]]]
+    in
+    let side_bar = div ~a:[a_id "sidebar"] [side_button; tags_ul; side_action] in
+    let main_logo = div ~a:[a_id "main_logo"] [] in
+    let container = div ~a:[a_id "container"] [side_bar; content_elt; main_logo] in
 
-    ignore {unit{ GUI_client_core.bind_back
-                  (%backb:[Html5_types.input] Eliom_content.Html5.elt) }};
-    ignore {unit{ GUI_client_core.bind_forward
-                  (%forwardb:[Html5_types.input] Eliom_content.Html5.elt) }};
-    ignore {unit{ GUI_client_core.bind_update_content
-                  (%updateb:[Html5_types.input] Eliom_content.Html5.elt)
-                  (%c_id:GUI_deserialize.id) }};
-    ignore {unit{ GUI_client_core.bind_delete_content
-                  (%deleteb:[Html5_types.input] Eliom_content.Html5.elt)
-                  (%c_id:GUI_deserialize.id) }};
-    ignore {unit{ GUI_client_core.handle_refresh_links
-                  (%c_id:GUI_deserialize.id)
-                  (%links_html:[Html5_types.div] Eliom_content.Html5.elt)
-                  (%links_tags_inputs:
-                      [Html5_types.input] Eliom_content.Html5.elt list)
-                  (%submit:[Html5_types.input] Eliom_content.Html5.elt) }};
+    (* ignore {unit{ GUI_client_core.bind_back *)
+    (*               (%backb:[Html5_types.input] Eliom_content.Html5.elt) }}; *)
+    (* ignore {unit{ GUI_client_core.bind_forward *)
+    (*               (%forwardb:[Html5_types.input] Eliom_content.Html5.elt) }}; *)
+    (* ignore {unit{ GUI_client_core.bind_update_content *)
+    (*               (%updateb:[Html5_types.input] Eliom_content.Html5.elt) *)
+    (*               (%c_id:GUI_deserialize.id) }}; *)
+    (* ignore {unit{ GUI_client_core.bind_delete_content *)
+    (*               (%deleteb:[Html5_types.input] Eliom_content.Html5.elt) *)
+    (*               (%c_id:GUI_deserialize.id) }}; *)
+    (* ignore {unit{ GUI_client_core.handle_refresh_links *)
+    (*               (%c_id:GUI_deserialize.id) *)
+    (*               (%links_html:[Html5_types.div] Eliom_content.Html5.elt) *)
+    (*               (%links_tags_inputs: *)
+    (*                   [Html5_types.input] Eliom_content.Html5.elt list) *)
+    (*               (%submit:[Html5_types.input] Eliom_content.Html5.elt) }}; *)
 
     Eliom_tools.F.html
       ~title:"Pumgrana"
       ~js:[["js";"jquery-2.1.1.min.js"]]
-      ~css:[["css";"pumgrana.css"]]
-      Html5.F.(body [
-        header_elt;
-        div ~a:[a_class["detail"]]
-          [content_elt;
-           div ~a:[a_class["detail_tags"]]
-             [h5 [pcdata "Tags"];
-              div tags_subjects]];
-        div ~a:[a_class["links"]]
-          [h4 [pcdata "Links"];
-           links_html;
-           div ~a:[a_class["links_tags"]]
-             [h5 [pcdata "Link Tags"];
-              div links_tags_html]]
-      ])
+      ~css:[["css";"style.css"]]
+      Html5.F.(body [container])
+      (*   div ~a:[a_class["detail"]] *)
+      (*     [content_elt; *)
+      (*      div ~a:[a_class["detail_tags"]] *)
+      (*        [h5 [pcdata "Tags"]; *)
+      (*         div tags_subjects]]; *)
+      (*   div ~a:[a_class["links"]] *)
+      (*     [h4 [pcdata "Links"]; *)
+      (*      links_html; *)
+      (*      div ~a:[a_class["links_tags"]] *)
+      (*        [h5 [pcdata "Link Tags"]; *)
+      (*         div links_tags_html]] *)
+      (* ]) *)
   with
   | e ->
     let err_msg = Printexc.to_string e in

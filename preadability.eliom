@@ -6,8 +6,8 @@ lwt cash = Pcash.new_cash "Reability"
 
 let get_short_summary str =
   let length = String.length str in
-  if length > 50
-  then (String.sub str 0 50) ^ "..."
+  if length > 400
+  then (String.sub str 0 400) ^ "..."
   else  str
 
 let get_readability_data uris =
