@@ -1,6 +1,7 @@
 @font-face {
   font-family: "PT Sans";
-  src: url('../font/PTS55F.ttf'); }
+  src: url('../font/PTS55F.ttf');
+}
 
 body, html {
   font-family: "PT Sans";
@@ -38,6 +39,8 @@ body, html {
 }
 
 .link_arrow {
+  float: left;
+  margin-top: 30px;
   margin-left: -19px;
   width: 16px;
   height: 30px;
@@ -147,6 +150,11 @@ body, html {
   padding-left: 10px;
 }
 
+.content_current_linked_main_list {
+  margin-top: 21px;
+  width: 456px;
+}
+
 .content_main_list {
   padding-top: 21px;
   width: 556px;
@@ -194,7 +202,6 @@ body, html {
 }
 
 .content_current_linked {
-  padding-top: 30px;
   height: 100%;
   position: fixed;
   right: 0;
