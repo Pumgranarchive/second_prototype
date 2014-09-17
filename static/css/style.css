@@ -133,6 +133,10 @@ body, html {
   padding-left: 10px;
 }
 
+.content_main_list {
+  width: 556px;
+}
+
 .content_main_list_elem:hover {
   background-color: #e2e2e3;
 }
@@ -185,7 +189,8 @@ body, html {
 }
 
 a {
-  color: inherit; text-decoration: none;
+  color: inherit;
+  text-decoration: none;
 }
 
 iframe, figure {
