@@ -41,7 +41,7 @@ let home_html (contents, tags) =
         [li ~a:[a_class["side_button";"side_button_img_plus"]]
             [div ~a:[a_class["side_button_circle"]] []]]]
   in
-  let side_bar = div ~a:[a_id "sidebar"] [side_button; tags_ul; side_action] in
+  let side_bar = div ~a:[a_id "sidebar"] [side_button; br (); tags_ul; side_action] in
   let main_logo = div ~a:[a_id "main_logo"] [] in
   let container = div ~a:[a_id "container"] [side_bar; contents_html; main_logo] in
   (* ignore {unit{ GUI_client_core.bind_back *)
@@ -62,10 +62,8 @@ let home_html (contents, tags) =
 (** Display the content detail html service *)
 let content_detail (content, tags_id, links, tags_link) =
   try
-    (* let aux (id, subject) =  div [pcdata subject] in *)
-    (* let tags_subjects = List.map aux tags_id in *)
     let tags_ul = GUI_tools.build_tags_ul tags_id in
-    (* let links_html = D.div (GUI_tools.build_links_list links) in *)
+    let link_list = GUI_tools.build_links_list links in
     (* let submit, links_tags_inputs, links_tags_html = *)
     (*   GUI_tools.build_tags_form tags_link *)
     (* in *)
@@ -78,7 +76,7 @@ let content_detail (content, tags_id, links, tags_link) =
         (* let iframe_bool = Str.string_match regexp id 0 in *)
         (* if iframe_bool *)
         (* then  *)c_id,
-        div ~a:[a_id "content"]
+        div ~a:[a_class["content_current"]]
           [div [h3 [pcdata c_title]; F.Unsafe.data c_html_body]]
         (* else *)
         (*   c_id, iframe ~a:[a_class ["pum_iframe"]; *)
@@ -87,14 +85,21 @@ let content_detail (content, tags_id, links, tags_link) =
     let side_button = div ~a:[a_class["side_button";"side_button_home";"side_button_img_content"]] [div ~a:[a_class["side_button_circle"]] []] in
     let side_action = div ~a:[a_class["side_button_bottom"]]
       [ul ~a:[a_class["side_button_bottom_list"]]
-          [li ~a:[a_class["side_button";"side_button_img_home"]]
+          [li ~a:[a_class["side_button";"side_button_img_link"]]
+             [div ~a:[a_class["side_button_circle"]] []];
+           li ~a:[a_class["side_button";"side_button_img_home"]]
               [div ~a:[a_class["side_button_circle"]] []];
-           li ~a:[a_class["side_button";"side_button_img_link"]]
-             [div ~a:[a_class["side_button_circle"]] []]]]
+           li ~a:[a_class["side_button";"side_button_img_plus"]]
+              [div ~a:[a_class["side_button_circle"]] []]]]
     in
-    let side_bar = div ~a:[a_id "sidebar"] [side_button; tags_ul; side_action] in
+    let side_button_add = div ~a:[a_class["side_button_add"]] [pcdata "Add a tag"] in
+    let side_bar = div ~a:[a_id "sidebar"] [side_button; tags_ul; side_button_add; side_action] in
     let main_logo = div ~a:[a_id "main_logo"] [] in
-    let container = div ~a:[a_id "container"] [side_bar; content_elt; main_logo] in
+    let link_bar = div ~a:[a_class["content_current_linked"]]
+      [div ~a:[a_class["content_main_list"]] link_list]
+    in
+    let content = div ~a:[a_id "content"] [content_elt; link_bar; main_logo] in
+    let container = div ~a:[a_id "container"] [side_bar; content] in
 
     (* ignore {unit{ GUI_client_core.bind_back *)
     (*               (%backb:[Html5_types.input] Eliom_content.Html5.elt) }}; *)

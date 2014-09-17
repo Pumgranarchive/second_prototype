@@ -183,3 +183,7 @@ body, html {
   padding-left: 20px;
   background: #f3f3f3 url("../images/link_bar_fade.png") repeat-y 0px top;
 }
+
+iframe, figure {
+    margin: 0px;
+}
