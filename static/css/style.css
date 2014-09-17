@@ -179,9 +179,13 @@ body, html {
   height: 100%;
   position: fixed;
   right: 0;
-  width: 50%;
+  width: 40%;
   padding-left: 20px;
   background: #f3f3f3 url("../images/link_bar_fade.png") repeat-y 0px top;
+}
+
+a {
+  color: inherit; text-decoration: none;
 }
 
 iframe, figure {
