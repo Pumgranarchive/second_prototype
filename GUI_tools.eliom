@@ -69,6 +69,21 @@ let build_ck_tags_list tags =
   in
   aux [] [] tags
 
+(** Build tags li list *)
+let build_tags_li tags =
+  let rec aux lis = function
+    | []                -> List.rev lis
+    | (uri, subject)::t  ->
+      let li = li [pcdata subject] in
+      aux (li::lis) t
+  in
+  aux [] tags
+
+let build_tags_ul tags =
+  let lis = build_tags_li tags in
+  div ~a:[a_class["side_taglist"]]
+    [ul ~a:[a_class["side_taglist_list"]] lis]
+
 (** Build the tags html formular from tag list *)
 let build_tags_form tags =
   let tags_inputs, tags_html_0 = build_ck_tags_list tags in
@@ -107,15 +122,26 @@ let build_links_list links =
   in
   List.map aux links
 
+(* {client{ *)
+
+(*   let bind_content content_div = *)
+(*     let dom_content = Eliom_content.Html5.To_dom.of_div content_div in *)
+(*     Js.windows.url <- *)
+
+(* }} *)
+
 let build_contents_list contents =
-  let aux (id, title, summary) =
+  let aux html (id, title, summary) =
     let str_id = Rdf_store.uri_encode (GUI_deserialize.string_of_id id) in
-    div ~a:[a_class ["content"]]
-      [a ~service:%GUI_services.content_detail_service [pcdata title] str_id;
-       br ();
-       span [pcdata summary]]
+    let content = D.div ~a:[a_class ["content_main_list_elem"]]
+      [a ~service:%GUI_services.content_detail_service [h3 [pcdata title]] str_id;
+       p [pcdata summary]]
+    in
+    if List.length html == 0
+    then [content]
+    else content::(div ~a:[a_class["content_main_list_elem_sep"]] [])::html
   in
-  List.map aux contents
+  List.rev (List.fold_left aux [] contents)
 
 let build_add_tag () =
   let input = D.raw_input ~input_type:`Text () in
