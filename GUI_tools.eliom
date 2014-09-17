@@ -114,14 +114,17 @@ let build_ck_links_list links =
 
 (** Build a links list html *)
 let build_links_list links =
-  let aux (link_id, id, title, summary) =
+  let aux html (link_id, id, title, summary) =
     let str_id = Rdf_store.uri_encode (GUI_deserialize.string_of_id id) in
-    div ~a:[a_class["content_main_list_elem"]]
-      [a ~service:%GUI_services.content_detail_service
-            [h3 [pcdata title]] str_id;
-         p [pcdata summary]]
+    let linked = D.a ~service:%GUI_services.content_detail_service
+      [div ~a:[a_class["content_main_list_elem"]]
+          [h3 [pcdata title]; p [pcdata summary]]] str_id
+    in
+    if List.length html == 0
+    then [linked]
+    else linked::(div ~a:[a_class["content_main_list_elem_sep"]] [])::html
   in
-  List.map aux links
+  List.rev (List.fold_left aux [] links)
 
 (* {client{ *)
 
@@ -134,9 +137,10 @@ let build_links_list links =
 let build_contents_list contents =
   let aux html (id, title, summary) =
     let str_id = Rdf_store.uri_encode (GUI_deserialize.string_of_id id) in
-    let content = D.div ~a:[a_class ["content_main_list_elem"]]
-      [a ~service:%GUI_services.content_detail_service [h3 [pcdata title]] str_id;
-       p [pcdata summary]]
+    let content =
+      D.a ~service:%GUI_services.content_detail_service
+        [div ~a:[a_class ["content_main_list_elem"]]
+          [h3 [pcdata title]; p [pcdata summary]]] str_id
     in
     if List.length html == 0
     then [content]

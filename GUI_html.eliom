@@ -86,9 +86,10 @@ let content_detail (content, tags_id, links, tags_link) =
     let side_action = div ~a:[a_class["side_button_bottom"]]
       [ul ~a:[a_class["side_button_bottom_list"]]
           [li ~a:[a_class["side_button";"side_button_img_link"]]
-             [div ~a:[a_class["side_button_circle"]] []];
-           li ~a:[a_class["side_button";"side_button_img_home"]]
               [div ~a:[a_class["side_button_circle"]] []];
+           li ~a:[a_class["side_button";"side_button_img_home"]]
+             [a ~service:GUI_services.home_service_without
+                 [div ~a:[a_class["side_button_circle"]] []] None];
            li ~a:[a_class["side_button";"side_button_img_plus"]]
               [div ~a:[a_class["side_button_circle"]] []]]]
     in
