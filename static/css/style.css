@@ -145,7 +145,7 @@ body, html {
   -moz-border-radius: 6px;
   border-radius: 6px;
   width: 556px;
-  height: 124px;
+  max-height: 124px;
   overflow: hidden;
   padding-left: 10px;
 }
