@@ -38,6 +38,12 @@ body, html {
   background: #f3f3f3 url("../images/side_bar_fade.png") repeat-y 84px top;
 }
 
+.link_sub_arrow {
+  float: left;
+  margin-top: 34px;
+  margin-left: -59px;
+}
+
 .link_arrow {
   float: left;
   margin-top: 30px;
@@ -89,22 +95,15 @@ body, html {
   margin-left: 10px;
 }
 
-.side_button_circle {
-  width: 40px;
-  height: 40px;
-  position: relative;
-  top: 24px;
-  margin: auto;
-  -moz-border-radius: 20px;
-  -webkit-border-radius: 20px;
-  border-radius: 20px;
-}
-
 .side_button {
   width: 100%;
   height: 90px;
   background-position: center;
   background-repeat: no-repeat;
+  -webkit-transition: all .2s ease-in;
+    -moz-transition: all .2s ease-in;
+      -o-transition: all .2s ease-in;
+        transition: all .2s ease-in;
 }
 
 .side_button_home {
@@ -117,7 +116,8 @@ body, html {
   bottom: 0;
 }
 
-.side_button_img_home { background-image: url('../images/Icons_webbtn-home_red_full.png'); }
+.side_button_img_home { background-image: url('../images/Icons_webbtn-home_red_full.png');    
+      }
 .side_button_img_home:hover { background-image: url('../images/Icons_webbtn-home_white_full.png'); }
 .side_button_img_plus { background-image: url('../images/Icons_webbtn-plus_red_full.png'); }
 .side_button_img_plus:hover { background-image: url('../images/Icons_webbtn-plus_white_full.png'); }
