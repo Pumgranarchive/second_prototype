@@ -255,51 +255,51 @@ let rec remove_all_child dom =
 let rec append_all dom = function
   | []          -> ()
   | block::tail ->
-    let dom_block = To_dom.of_div block in
+    let dom_block = To_dom.of_a block in
     Dom.appendChild dom dom_block; append_all dom tail
 
 (** Manage html list refreshing by getting data from API's serice. *)
-let handle_refresh_list html_elt submit_elt div_of_yojson fun_request =
-  let dom_html = To_dom.of_div html_elt in
-  let dom_submit = To_dom.of_input submit_elt in
-  let refresh_html () =
-    let display str_results =
-      let div_res_list = div_of_yojson (Yojson.from_string str_results) in
-      remove_all_child dom_html;
-      append_all dom_html div_res_list
-    in
-    lwt str_results = fun_request () in
-    Lwt.return (display str_results)
-  in
-  Lwt.async (fun () -> Lwt_js_events.clicks dom_submit
-    (fun _ _ -> refresh_html ()))
+(* let handle_refresh_list html_elt submit_elt a_of_yojson fun_request = *)
+(*   let dom_html = To_dom.of_div html_elt in *)
+(*   let dom_submit = To_dom.of_input submit_elt in *)
+(*   let refresh_html () = *)
+(*     let display str_results = *)
+(*       let a_res_list = a_of_yojson (Yojson.from_string str_results) in *)
+(*       remove_all_child dom_html; *)
+(*       append_all dom_html a_res_list *)
+(*     in *)
+(*     lwt str_results = fun_request () in *)
+(*     Lwt.return (display str_results) *)
+(*   in *)
+(*   Lwt.async (fun () -> Lwt_js_events.clicks dom_submit *)
+(*     (fun _ _ -> refresh_html ())) *)
 
 (** Manage link's refreshing by getting data from API's serice. *)
-let handle_refresh_links content_id html_elt inputs_elt submit_elt =
-  let uri = GUI_deserialize.uri_of_id content_id in
-  let dom_inputs = List.map To_dom.of_input inputs_elt in
-  handle_refresh_list html_elt submit_elt
-    (fun r -> GUI_tools.build_links_list
-      (get_service_return get_link_list r))
-    (fun () ->
-      let list = get_checked_inputs dom_inputs in
-      let encoded_uri = Rdf_store.uri_encode uri in
-      let encoded_list = List.map Rdf_store.uri_encode list in
-      Eliom_client.call_service
-        ~service:%API_services.get_links_from_content_tags
-        (encoded_uri, Some encoded_list) ())
+(* let handle_refresh_links content_id html_elt inputs_elt submit_elt = *)
+(*   let uri = GUI_deserialize.uri_of_id content_id in *)
+(*   let dom_inputs = List.map To_dom.of_input inputs_elt in *)
+(*   handle_refresh_list html_elt submit_elt *)
+(*     (fun r -> GUI_tools.build_links_list *)
+(*       (get_service_return get_link_list r)) *)
+(*     (fun () -> *)
+(*       let list = get_checked_inputs dom_inputs in *)
+(*       let encoded_uri = Rdf_store.uri_encode uri in *)
+(*       let encoded_list = List.map Rdf_store.uri_encode list in *)
+(*       Eliom_client.call_service *)
+(*         ~service:%API_services.get_links_from_content_tags *)
+(*         (encoded_uri, Some encoded_list) ()) *)
 
 (** Manage content's refreshing by getting data from API's serice. *)
-let handle_refresh_contents html_elt inputs_elt submit_elt =
-  let dom_inputs = List.map To_dom.of_input inputs_elt in
-  handle_refresh_list html_elt submit_elt
-    (fun r -> GUI_tools.build_contents_list
-      (get_service_return get_short_content_list r))
-    (fun () ->
-      let list = get_checked_inputs dom_inputs in
-      let encoded_list = List.map Rdf_store.uri_encode list in
-      Eliom_client.call_service
-        ~service:%API_services.get_contents
-        (None, Some encoded_list) ())
+(* let handle_refresh_contents html_elt inputs_elt submit_elt = *)
+(*   let dom_inputs = List.map To_dom.of_input inputs_elt in *)
+(*   handle_refresh_list html_elt submit_elt *)
+(*     (fun r -> GUI_tools.build_contents_list *)
+(*       (get_service_return get_short_content_list r)) *)
+(*     (fun () -> *)
+(*       let list = get_checked_inputs dom_inputs in *)
+(*       let encoded_list = List.map Rdf_store.uri_encode list in *)
+(*       Eliom_client.call_service *)
+(*         ~service:%API_services.get_contents *)
+(*         (None, Some encoded_list) ()) *)
 
 }}
