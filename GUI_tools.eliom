@@ -116,9 +116,10 @@ let build_ck_links_list links =
 let build_links_list links =
   let aux (link_id, id, title, summary) =
     let str_id = Rdf_store.uri_encode (GUI_deserialize.string_of_id id) in
-    div [a ~service:%GUI_services.content_detail_service
-            [pcdata title] str_id;
-         br (); pcdata summary]
+    div ~a:[a_class["content_main_list_elem"]]
+      [a ~service:%GUI_services.content_detail_service
+            [h3 [pcdata title]] str_id;
+         p [pcdata summary]]
   in
   List.map aux links
 
