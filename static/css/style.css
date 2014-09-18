@@ -38,6 +38,12 @@ body, html {
   background: #f3f3f3 url("../images/side_bar_fade.png") repeat-y 84px top;
 }
 
+.link_sub_arrow {
+  float: left;
+  margin-top: 34px;
+  margin-left: -59px;
+}
+
 .link_arrow {
   float: left;
   margin-top: 30px;
