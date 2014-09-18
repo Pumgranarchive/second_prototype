@@ -112,7 +112,7 @@ let content_detail (content, tags_id, links, tags_link) =
               ["images";"linked_content_arrow.png"]) ()
     in
     let link_bar = div ~a:[a_class["content_current_linked"]]
-      [linked_arrow; div ~a:[a_class["content_main_list"]] link_list]
+      [linked_arrow; div ~a:[a_class["content_current_linked_main_list"]] link_list]
     in
     let content = div ~a:[a_id "content"] [content_elt; link_bar; main_logo] in
     let container = div ~a:[a_id "container"] [side_bar; content] in

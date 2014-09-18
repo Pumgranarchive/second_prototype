@@ -117,12 +117,12 @@ let build_links_list links =
   let aux html (link_id, id, title, summary) =
     let str_id = Rdf_store.uri_encode (GUI_deserialize.string_of_id id) in
     let linked = D.a ~service:%GUI_services.content_detail_service
-      [div ~a:[a_class["content_main_list_elem"]]
+      [div ~a:[a_class["content_current_linked_main_list_elem"]]
           [h3 [pcdata title]; p [pcdata summary]]] str_id
     in
     if List.length html == 0
     then [linked]
-    else linked::(div ~a:[a_class["content_main_list_elem_sep"]] [])::html
+    else linked::(div ~a:[a_class["content_current_linked_main_list_elem_sep"]] [])::html
   in
   List.rev (List.fold_left aux [] links)
 
