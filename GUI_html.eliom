@@ -28,25 +28,13 @@ let internal_error_html () =
   empty_html ~msg:"Internal Error" ()
 
 (** Display the home html service *)
-let home_html (contents, tags) =
-  let tags_ul = GUI_tools.build_tags_ul tags in
+let home_html (contents, tags_id) =
   let contents_html =
     div ~a:[a_id "content"]
       [div ~a:[a_class["content_main_list"]]
           (GUI_tools.build_contents_list contents)]
   in
-  let side_button = div ~a:[a_class["side_button";"side_button_home";"side_button_img_home"]] [div ~a:[a_class["side_button_circle"]] []] in
-  let side_action = div ~a:[a_class["side_button_bottom"]]
-    [ul ~a:[a_class["side_button_bottom_list"]]
-        [li ~a:[a_class["side_button";"side_button_img_plus"]]
-            [div ~a:[a_class["side_button_circle"]] []]]]
-  in
-  let side_arrow = img ~a:[a_class["side_arrow"]]
-    ~alt:("")
-    ~src:(make_uri ~service:(Eliom_service.static_dir ())
-            ["images";"arrow_side_bar.png"]) ()
-  in
-  let side_bar = div ~a:[a_id "sidebar"] [side_arrow; side_button; br (); tags_ul; side_action] in
+  let side_bar = SideBar.(make Home tags_id) in
   let main_logo = div ~a:[a_id "main_logo"] [] in
   let container = div ~a:[a_id "container"] [side_bar; contents_html; main_logo] in
   (* ignore {unit{ GUI_client_core.bind_back *)
@@ -67,7 +55,6 @@ let home_html (contents, tags) =
 (** Display the content detail html service *)
 let content_detail (content, tags_id, links, tags_link) =
   try
-    let tags_ul = GUI_tools.build_tags_ul tags_id in
     let link_list = GUI_tools.build_links_list links in
     (* let submit, links_tags_inputs, links_tags_html = *)
     (*   GUI_tools.build_tags_form tags_link *)
@@ -87,32 +74,20 @@ let content_detail (content, tags_id, links, tags_link) =
         (*   c_id, iframe ~a:[a_class ["pum_iframe"]; *)
         (*                    a_src (Eliom_content.Xml.uri_of_string id)] [] *)
     in
-    let side_button = div ~a:[a_class["side_button";"side_button_home";"side_button_img_content"]] [div ~a:[a_class["side_button_circle"]] []] in
-    let side_action = div ~a:[a_class["side_button_bottom"]]
-      [ul ~a:[a_class["side_button_bottom_list"]]
-          [li ~a:[a_class["side_button";"side_button_img_link"]]
-              [div ~a:[a_class["side_button_circle"]] []];
-           li ~a:[a_class["side_button";"side_button_img_home"]]
-             [a ~service:GUI_services.home_service_without
-                 [div ~a:[a_class["side_button_circle"]] []] None];
-           li ~a:[a_class["side_button";"side_button_img_plus"]]
-              [div ~a:[a_class["side_button_circle"]] []]]]
-    in
-    let side_button_add = div ~a:[a_class["side_button_add"]] [pcdata "Add a tag"] in
-    let side_arrow = img ~a:[a_class["side_arrow"]]
+    let side_bar = SideBar.(make Content tags_id) in
+    let main_logo = div ~a:[a_id "main_logo"] [] in
+    let link_sub_arrow = img ~a:[a_class["link_sub_arrow"]]
       ~alt:("")
       ~src:(make_uri ~service:(Eliom_service.static_dir ())
-              ["images";"arrow_side_bar.png"]) ()
+              ["images";"Icons_web-links_red.png"]) ()
     in
-    let side_bar = div ~a:[a_id "sidebar"] [side_arrow; side_button; tags_ul; side_button_add; side_action] in
-    let main_logo = div ~a:[a_id "main_logo"] [] in
-    let linked_arrow = img ~a:[a_class["link_arrow"]]
+    let link_arrow = img ~a:[a_class["link_arrow"]]
       ~alt:("")
       ~src:(make_uri ~service:(Eliom_service.static_dir ())
               ["images";"linked_content_arrow.png"]) ()
     in
     let link_bar = div ~a:[a_class["content_current_linked"]]
-      [linked_arrow; div ~a:[a_class["content_current_linked_main_list"]] link_list]
+      [link_arrow; div ~a:[a_class["content_current_linked_main_list"]] link_list]
     in
     let content = div ~a:[a_id "content"] [content_elt; link_bar; main_logo] in
     let container = div ~a:[a_id "container"] [side_bar; content] in
