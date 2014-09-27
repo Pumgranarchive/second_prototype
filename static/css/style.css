@@ -249,6 +249,10 @@ body, html {
   text-decoration: none;
 }
 
-iframe, figure {
+iframe {
+  max-width: 100%;
+}
+
+figure {
   margin: 0px;
 }
