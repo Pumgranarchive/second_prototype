@@ -1,5 +1,3 @@
-lwt cash = Pcash.new_cash "Youtube"
-
 let is_youtube_uri uri =
   let str_uri = Rdf_store.string_of_uri uri in
   try ignore (Youtube_http.get_video_id_from_url str_uri); true
@@ -18,6 +16,8 @@ let listenner key (uri, title, summary) =
   let new_data_list = List.map format videos in
   let new_data = List.hd new_data_list in
   Lwt.return new_data
+
+lwt cash = Pcash.make "Youtube" listenner
 
 let get_youtube_triple uris =
   lwt know_uris = Lwt_list.filter_p (Pcash.exists cash) uris in

@@ -2,8 +2,6 @@ module Yojson = Yojson.Basic
 
 open Yojson.Util
 
-lwt cash = Pcash.new_cash "Reability"
-
 let get_short_summary str =
   let length = String.length str in
   if length > 200
@@ -20,6 +18,8 @@ let data_from_uri uri =
 
 let listenner key (uri, title, summary, body, external_v) =
   data_from_uri uri
+
+lwt cash = Pcash.make "Reability" listenner
 
 let get_readability_data uris =
   let aux uri =
