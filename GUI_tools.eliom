@@ -14,6 +14,20 @@ open Eliom_content.Html5.F
 
 (*** Build tools  *)
 
+}}
+
+{server{
+
+let make_html ?(title="Pumgrana") content =
+  Eliom_tools.F.html ~title
+    ~js:[["js";"jquery-2.1.1.min.js"]]
+    ~css:[["css";"style.css"]]
+    Html5.F.(body content)
+
+}}
+
+{shared{
+
 let build_header elt_list =
   div ~a:[a_class["header"]]
     ([span ~a:[a_class["pumgrana"]]

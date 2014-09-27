@@ -19,10 +19,7 @@ let empty_html ?msg () =
     | Some s    -> [pcdata s]
     | None      -> []
   in
-  Eliom_tools.F.html
-    ~title:"Pumgrana"
-    ~css:[["css";"pumgrana.css"]]
-    Html5.F.(body body_list)
+  GUI_tools.make_html body_list
 
 let internal_error_html () =
   empty_html ~msg:"Internal Error" ()
@@ -48,10 +45,7 @@ let home_html (contents, tags_id) =
   let main_logo = div ~a:[a_id "main_logo"] [] in
   let content = div ~a:[a_id "content"] [content_list] in
   let container = div ~a:[a_id "container"] [side_bar; content; main_logo] in
-  Eliom_tools.F.html
-    ~title:"Pumgrana"
-    ~css:[["css";"style.css"]]
-    Html5.F.(body [container])
+  GUI_tools.make_html [container]
 
 (* ignore {unit{ GUI_client_core.bind_back *)
 (*               (%backb:[Html5_types.input] Eliom_content.Html5.elt) }}; *)
@@ -70,37 +64,39 @@ let home_html (contents, tags_id) =
 (*                   [Html5_types.input] Eliom_content.Html5.elt list) *)
 (*               (%submit:[Html5_types.input] Eliom_content.Html5.elt) }}; *)
 
+(* let submit, links_tags_inputs, links_tags_html = *)
+(*   GUI_tools.build_tags_form tags_link *)
+(* in *)
+
+(* let id = (GUI_deserialize.string_of_id c_id) in *)
+(* let regexp = Str.regexp ".*youtube.*" in *)
+(* let iframe_bool = Str.string_match regexp id 0 in *)
+(* if iframe_bool *)
+(* then  c_id, *)
+(* div ~a:[a_class["content_current"]] *)
+(*   [div [h3 [pcdata c_title]; F.Unsafe.data c_html_body]] *)
+(* else *)
+(*   c_id, iframe ~a:[a_class ["pum_iframe"]; *)
+(*                    a_src (Eliom_content.Xml.uri_of_string id)] [] *)
+
 (** Display the content detail html service *)
 let content_detail (content, tags_id, links, tags_link) =
   try
-    (* let submit, links_tags_inputs, links_tags_html = *)
-    (*   GUI_tools.build_tags_form tags_link *)
-    (* in *)
-    let c_id, content_elt = match content with
+    let c_title, content_elt = match content with
       | GUI_deserialize.Internal (c_id, c_title, c_summary, c_body) ->
-        c_id, div [h3 [pcdata c_title]; p [pcdata c_summary]; p [pcdata c_body]]
+        c_title,
+        div [h3 [pcdata c_title]; p [pcdata c_summary]; p [pcdata c_body]]
       | GUI_deserialize.External (c_id, c_title, c_summary, c_html_body) ->
-        (* let id = (GUI_deserialize.string_of_id c_id) in *)
-        (* let regexp = Str.regexp ".*youtube.*" in *)
-        (* let iframe_bool = Str.string_match regexp id 0 in *)
-        (* if iframe_bool *)
-        (* then  *)c_id,
+        c_title,
         div ~a:[a_class["content_current"]]
           [div [h3 [pcdata c_title]; F.Unsafe.data c_html_body]]
-        (* else *)
-        (*   c_id, iframe ~a:[a_class ["pum_iframe"]; *)
-        (*                    a_src (Eliom_content.Xml.uri_of_string id)] [] *)
     in
     let side_bar = SideBar.(make Content tags_id) in
     let link_bar = LinkBar.make links in
     let main_logo = div ~a:[a_id "main_logo"] [] in
     let content = div ~a:[a_id "content"] [content_elt; link_bar; main_logo] in
     let container = div ~a:[a_id "container"] [side_bar; content] in
-    Eliom_tools.F.html
-      ~title:"Pumgrana"
-      ~js:[["js";"jquery-2.1.1.min.js"]]
-      ~css:[["css";"style.css"]]
-      Html5.F.(body [container])
+    GUI_tools.make_html ~title:c_title [container]
   with
   | e ->
     let err_msg = Printexc.to_string e in
