@@ -27,35 +27,52 @@ let empty_html ?msg () =
 let internal_error_html () =
   empty_html ~msg:"Internal Error" ()
 
+(* ignore {unit{ GUI_client_core.bind_back *)
+(*               (%backb:[Html5_types.input] Eliom_content.Html5.elt) }}; *)
+(* ignore {unit{ GUI_client_core.bind_forward *)
+(*               (%forwardb:[Html5_types.input] Eliom_content.Html5.elt) }}; *)
+(* ignore {unit{ GUI_client_core.bind_insert_content *)
+(*               (%insertb:[Html5_types.input] Eliom_content.Html5.elt) }}; *)
+(* ignore {unit{ GUI_client_core.handle_refresh_contents *)
+(*               (%contents_html:[Html5_types.div] Eliom_content.Html5.elt) *)
+(*               (%tags_inputs:[Html5_types.input] Eliom_content.Html5.elt list) *)
+(*               (%submit:[Html5_types.input] Eliom_content.Html5.elt)}}; *)
+
 (** Display the home html service *)
 let home_html (contents, tags_id) =
-  let contents_html =
-    div ~a:[a_id "content"]
-      [div ~a:[a_class["content_main_list"]]
-          (GUI_tools.build_contents_list contents)]
+  let content_list =
+    div ~a:[a_class["content_main_list"]]
+      (GUI_tools.build_contents_list contents)
   in
   let side_bar = SideBar.(make Home tags_id) in
   let main_logo = div ~a:[a_id "main_logo"] [] in
-  let container = div ~a:[a_id "container"] [side_bar; contents_html; main_logo] in
-  (* ignore {unit{ GUI_client_core.bind_back *)
-  (*               (%backb:[Html5_types.input] Eliom_content.Html5.elt) }}; *)
-  (* ignore {unit{ GUI_client_core.bind_forward *)
-  (*               (%forwardb:[Html5_types.input] Eliom_content.Html5.elt) }}; *)
-  (* ignore {unit{ GUI_client_core.bind_insert_content *)
-  (*               (%insertb:[Html5_types.input] Eliom_content.Html5.elt) }}; *)
-  (* ignore {unit{ GUI_client_core.handle_refresh_contents *)
-  (*               (%contents_html:[Html5_types.div] Eliom_content.Html5.elt) *)
-  (*               (%tags_inputs:[Html5_types.input] Eliom_content.Html5.elt list) *)
-  (*               (%submit:[Html5_types.input] Eliom_content.Html5.elt)}}; *)
+  let content = div ~a:[a_id "content"] [content_list] in
+  let container = div ~a:[a_id "container"] [side_bar; content; main_logo] in
   Eliom_tools.F.html
     ~title:"Pumgrana"
     ~css:[["css";"style.css"]]
     Html5.F.(body [container])
 
+(* ignore {unit{ GUI_client_core.bind_back *)
+(*               (%backb:[Html5_types.input] Eliom_content.Html5.elt) }}; *)
+(* ignore {unit{ GUI_client_core.bind_forward *)
+(*               (%forwardb:[Html5_types.input] Eliom_content.Html5.elt) }}; *)
+(* ignore {unit{ GUI_client_core.bind_update_content *)
+(*               (%updateb:[Html5_types.input] Eliom_content.Html5.elt) *)
+(*               (%c_id:GUI_deserialize.id) }}; *)
+(* ignore {unit{ GUI_client_core.bind_delete_content *)
+(*               (%deleteb:[Html5_types.input] Eliom_content.Html5.elt) *)
+(*               (%c_id:GUI_deserialize.id) }}; *)
+(* ignore {unit{ GUI_client_core.handle_refresh_links *)
+(*               (%c_id:GUI_deserialize.id) *)
+(*               (%links_html:[Html5_types.div] Eliom_content.Html5.elt) *)
+(*               (%links_tags_inputs: *)
+(*                   [Html5_types.input] Eliom_content.Html5.elt list) *)
+(*               (%submit:[Html5_types.input] Eliom_content.Html5.elt) }}; *)
+
 (** Display the content detail html service *)
 let content_detail (content, tags_id, links, tags_link) =
   try
-    let link_list = GUI_tools.build_links_list links in
     (* let submit, links_tags_inputs, links_tags_html = *)
     (*   GUI_tools.build_tags_form tags_link *)
     (* in *)
@@ -63,8 +80,8 @@ let content_detail (content, tags_id, links, tags_link) =
       | GUI_deserialize.Internal (c_id, c_title, c_summary, c_body) ->
         c_id, div [h3 [pcdata c_title]; p [pcdata c_summary]; p [pcdata c_body]]
       | GUI_deserialize.External (c_id, c_title, c_summary, c_html_body) ->
-        let id = (GUI_deserialize.string_of_id c_id) in
-        let regexp = Str.regexp ".*youtube.*" in
+        (* let id = (GUI_deserialize.string_of_id c_id) in *)
+        (* let regexp = Str.regexp ".*youtube.*" in *)
         (* let iframe_bool = Str.string_match regexp id 0 in *)
         (* if iframe_bool *)
         (* then  *)c_id,
@@ -75,57 +92,15 @@ let content_detail (content, tags_id, links, tags_link) =
         (*                    a_src (Eliom_content.Xml.uri_of_string id)] [] *)
     in
     let side_bar = SideBar.(make Content tags_id) in
+    let link_bar = LinkBar.make links in
     let main_logo = div ~a:[a_id "main_logo"] [] in
-    let link_sub_arrow = img ~a:[a_class["link_sub_arrow"]]
-      ~alt:("")
-      ~src:(make_uri ~service:(Eliom_service.static_dir ())
-              ["images";"Icons_web-links_red.png"]) ()
-    in
-    let link_arrow = img ~a:[a_class["link_arrow"]]
-      ~alt:("")
-      ~src:(make_uri ~service:(Eliom_service.static_dir ())
-              ["images";"linked_content_arrow.png"]) ()
-    in
-    let link_bar = div ~a:[a_class["content_current_linked"]]
-      [link_arrow; div ~a:[a_class["content_current_linked_main_list"]] link_list]
-    in
     let content = div ~a:[a_id "content"] [content_elt; link_bar; main_logo] in
     let container = div ~a:[a_id "container"] [side_bar; content] in
-
-    (* ignore {unit{ GUI_client_core.bind_back *)
-    (*               (%backb:[Html5_types.input] Eliom_content.Html5.elt) }}; *)
-    (* ignore {unit{ GUI_client_core.bind_forward *)
-    (*               (%forwardb:[Html5_types.input] Eliom_content.Html5.elt) }}; *)
-    (* ignore {unit{ GUI_client_core.bind_update_content *)
-    (*               (%updateb:[Html5_types.input] Eliom_content.Html5.elt) *)
-    (*               (%c_id:GUI_deserialize.id) }}; *)
-    (* ignore {unit{ GUI_client_core.bind_delete_content *)
-    (*               (%deleteb:[Html5_types.input] Eliom_content.Html5.elt) *)
-    (*               (%c_id:GUI_deserialize.id) }}; *)
-    (* ignore {unit{ GUI_client_core.handle_refresh_links *)
-    (*               (%c_id:GUI_deserialize.id) *)
-    (*               (%links_html:[Html5_types.div] Eliom_content.Html5.elt) *)
-    (*               (%links_tags_inputs: *)
-    (*                   [Html5_types.input] Eliom_content.Html5.elt list) *)
-    (*               (%submit:[Html5_types.input] Eliom_content.Html5.elt) }}; *)
-
     Eliom_tools.F.html
       ~title:"Pumgrana"
       ~js:[["js";"jquery-2.1.1.min.js"]]
       ~css:[["css";"style.css"]]
       Html5.F.(body [container])
-      (*   div ~a:[a_class["detail"]] *)
-      (*     [content_elt; *)
-      (*      div ~a:[a_class["detail_tags"]] *)
-      (*        [h5 [pcdata "Tags"]; *)
-      (*         div tags_subjects]]; *)
-      (*   div ~a:[a_class["links"]] *)
-      (*     [h4 [pcdata "Links"]; *)
-      (*      links_html; *)
-      (*      div ~a:[a_class["links_tags"]] *)
-      (*        [h5 [pcdata "Link Tags"]; *)
-      (*         div links_tags_html]] *)
-      (* ]) *)
   with
   | e ->
     let err_msg = Printexc.to_string e in
