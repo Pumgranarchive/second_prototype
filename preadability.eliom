@@ -29,7 +29,7 @@ let get_readability_data uris =
     else
       try_lwt
         (lwt data = data_from_uri uri in
-         lwt () = Pcash.add cash listenner uri data in
+         lwt () = Pcash.add cash uri data in
          Lwt.return data)
       with e ->
         (print_endline (Printexc.to_string e);
