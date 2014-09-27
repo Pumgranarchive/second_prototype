@@ -10,6 +10,17 @@ let get_short_summary str =
   then (String.sub str 0 200) ^ "..."
   else  str
 
+let data_from_uri uri =
+  let ruri = Rdf_uri.uri (Rdf_store.string_of_uri uri) in
+  lwt json = Readability.get_parser ruri in
+  let title = to_string (member "title" json) in
+  let summary = get_short_summary (to_string (member "excerpt" json)) in
+  lwt body = Tidy.xhtml_of_html (to_string (member "content" json)) in
+  Lwt.return (uri, title, summary, body, true)
+
+let listenner key (uri, title, summary, body, external_v) =
+  data_from_uri uri
+
 let get_readability_data uris =
   let aux uri =
     lwt exist = Pcash.exists cash uri in
@@ -17,13 +28,8 @@ let get_readability_data uris =
     then Pcash.get cash uri
     else
       try_lwt
-        (let ruri = Rdf_uri.uri (Rdf_store.string_of_uri uri) in
-         lwt json = Readability.get_parser ruri in
-         let title = to_string (member "title" json) in
-         let summary = get_short_summary (to_string (member "excerpt" json)) in
-         lwt body = Tidy.xhtml_of_html (to_string (member "content" json)) in
-         let data = (uri, title, summary, body, true) in
-         lwt () = Pcash.save cash uri data in
+        (lwt data = data_from_uri uri in
+         lwt () = Pcash.add cash listenner uri data in
          Lwt.return data)
       with e ->
         (print_endline (Printexc.to_string e);
