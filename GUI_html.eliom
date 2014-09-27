@@ -14,6 +14,24 @@ module Yojson = Yojson.Basic
 
 }}
 
+module Container =
+struct
+  let make elements =
+    div ~a:[a_id "container"] elements
+end
+
+module Content =
+struct
+  let make elements =
+    div ~a:[a_id "content"] elements
+end
+
+module MainLogo =
+struct
+  let make () =
+    div ~a:[a_id "main_logo"] []
+end
+
 let empty_html ?msg () =
   let body_list = match msg with
     | Some s    -> [pcdata s]
@@ -42,9 +60,9 @@ let home_html (contents, tags_id) =
       (GUI_tools.build_contents_list contents)
   in
   let side_bar = SideBar.(make Home tags_id) in
-  let main_logo = div ~a:[a_id "main_logo"] [] in
-  let content = div ~a:[a_id "content"] [content_list] in
-  let container = div ~a:[a_id "container"] [side_bar; content; main_logo] in
+  let main_logo = MainLogo.make () in
+  let content = Content.make [content_list] in
+  let container =  Container.make [side_bar; content; main_logo] in
   GUI_tools.make_html [container]
 
 (* ignore {unit{ GUI_client_core.bind_back *)
@@ -82,7 +100,7 @@ let home_html (contents, tags_id) =
 (** Display the content detail html service *)
 let content_detail (content, tags_id, links, tags_link) =
   try
-    let c_title, content_elt = match content with
+    let title, content_elt = match content with
       | GUI_deserialize.Internal (c_id, c_title, c_summary, c_body) ->
         c_title,
         div [h3 [pcdata c_title]; p [pcdata c_summary]; p [pcdata c_body]]
@@ -93,10 +111,10 @@ let content_detail (content, tags_id, links, tags_link) =
     in
     let side_bar = SideBar.(make Content tags_id) in
     let link_bar = LinkBar.make links in
-    let main_logo = div ~a:[a_id "main_logo"] [] in
-    let content = div ~a:[a_id "content"] [content_elt; link_bar; main_logo] in
-    let container = div ~a:[a_id "container"] [side_bar; content] in
-    GUI_tools.make_html ~title:c_title [container]
+    let main_logo = MainLogo.make () in
+    let content = Content.make [content_elt; link_bar; main_logo] in
+    let container = Container.make [side_bar; content] in
+    GUI_tools.make_html ~title [container]
   with
   | e ->
     let err_msg = Printexc.to_string e in
