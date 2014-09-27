@@ -31,7 +31,7 @@ let get_youtube_triple uris =
   in
   let add (uri, title, summary) =
     let data = (uri, title, summary) in
-    Pcash.add cash listenner uri data
+    Pcash.add cash uri data
   in
   let new_data = List.map format videos in
   lwt () = Lwt_list.iter_s add new_data in

@@ -10,8 +10,10 @@ module OrderedUri =
 
 module Map = Map.Make(OrderedUri)
 
-let store =
-  Ocsipersist.open_store "PumCash"
+type 'a listenner = (Rdf_store.uri -> 'a -> 'a Lwt.t)
+type 'a t = (float * 'a) Map.t Ocsipersist.t * 'a listenner
+
+let store = Ocsipersist.open_store "PumCash"
 
 (******************************************************************************
 ********************************** Utils **************************************
@@ -84,9 +86,9 @@ let make name sublistenner =
   let default () = Map.empty in
   lwt cash = Ocsipersist.make_persistent_lazy ~store ~name ~default in
   lwt () = assign_listenner cash sublistenner in
-  Lwt.return cash
+  Lwt.return (cash, sublistenner)
 
-let add cash sublistenner key data =
+let add (cash, sublistenner) key data =
   lwt cash_map = Ocsipersist.get cash in
   let deadline = new_deadline cash sublistenner key in
   let embedded = (deadline, data) in
@@ -99,15 +101,15 @@ let add cash sublistenner key data =
   in
   Ocsipersist.set cash limited_cash_map
 
-let exists cash key =
+let exists (cash, sublistenner) key =
   lwt cash_map = Ocsipersist.get cash in
   Lwt.return (Map.exists (fun k v -> compare k key = 0) cash_map)
 
-let not_exists cash key =
+let not_exists (cash, sublistenner) key =
   lwt cash_map = Ocsipersist.get cash in
   Lwt.return (Map.for_all (fun k v -> compare k key != 0) cash_map)
 
-let get cash key =
+let get (cash, sublistenner) key =
   lwt cash_map = Ocsipersist.get cash in
   let _, data = Map.find key cash_map in
   Lwt.return data
