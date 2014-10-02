@@ -62,7 +62,8 @@ let home_html (contents, tags_id) =
   let side_bar = SideBar.(make Home tags_id) in
   let main_logo = MainLogo.make () in
   let content = Content.make [content_list] in
-  let container =  Container.make [side_bar; content; main_logo] in
+  let add_content = AddContent.(make Home) in
+  let container =  Container.make [side_bar; content; main_logo; add_content] in
   GUI_tools.make_html [container]
 
 (* ignore {unit{ GUI_client_core.bind_back *)
@@ -113,7 +114,8 @@ let content_detail (content, tags_id, links, tags_link) =
     let link_bar = LinkBar.make links in
     let main_logo = MainLogo.make () in
     let content = Content.make [content_elt; link_bar; main_logo] in
-    let container = Container.make [side_bar; content] in
+    let add_content = AddContent.(make Home) in
+    let container = Container.make [side_bar; content; add_content] in
     GUI_tools.make_html ~title [container]
   with
   | e ->

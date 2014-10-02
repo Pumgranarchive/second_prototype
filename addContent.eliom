@@ -5,4 +5,4 @@ open Eliom_content.Html5.F
 type t = Home | Content | Link
 
 let make ctype =
-  div []
+  div ~a:[a_style "visibility: hidden;"] [pcdata "my div"]
