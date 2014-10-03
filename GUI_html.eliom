@@ -59,11 +59,13 @@ let home_html (contents, tags_id) =
     div ~a:[a_class["content_main_list"]]
       (GUI_tools.build_contents_list contents)
   in
-  let side_bar = SideBar.(make Home tags_id) in
+  let mode = `Home in
+  let add_content = AddContent.make mode in
+  let side_bar = SideBar.make mode tags_id add_content in
   let main_logo = MainLogo.make () in
   let content = Content.make [content_list] in
-  let add_content = AddContent.(make Home) in
-  let container =  Container.make [side_bar; content; main_logo; add_content] in
+  let html_add_content = AddContent.to_html add_content in
+  let container =  Container.make [side_bar; content; main_logo; html_add_content] in
   GUI_tools.make_html [container]
 
 (* ignore {unit{ GUI_client_core.bind_back *)
@@ -110,12 +112,14 @@ let content_detail (content, tags_id, links, tags_link) =
         div ~a:[a_class["content_current"]]
           [div [h3 [pcdata c_title]; F.Unsafe.data c_html_body]]
     in
-    let side_bar = SideBar.(make Content tags_id) in
+    let mode = `Content in
+    let add_content = AddContent.make mode in
+    let side_bar = SideBar.make mode tags_id add_content in
     let link_bar = LinkBar.make links in
     let main_logo = MainLogo.make () in
     let content = Content.make [content_elt; link_bar; main_logo] in
-    let add_content = AddContent.(make Home) in
-    let container = Container.make [side_bar; content; add_content] in
+    let html_add_content = AddContent.to_html add_content in
+    let container = Container.make [side_bar; content; html_add_content] in
     GUI_tools.make_html ~title [container]
   with
   | e ->
