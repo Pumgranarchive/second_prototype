@@ -10,7 +10,7 @@ let format (_, title, str_uri, summary, _) =
   let uri = Rdf_store.uri_of_string str_uri in
   uri, title, summary
 
-let listenner key (uri, title, summary) =
+let listenner uri =
   let id = id_of_uri uri in
   lwt videos = Youtube_http.get_videos_from_ids [id] in
   let new_data_list = List.map format videos in

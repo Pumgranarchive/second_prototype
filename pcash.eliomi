@@ -4,7 +4,7 @@
 *)
 
 type 'a t
-type 'a listenner = (Rdf_store.uri -> 'a -> 'a Lwt.t)
+type 'a listenner = (Rdf_store.uri -> 'a Lwt.t)
 
 (** [make name listenner]
     [listenner] will be used for refreshing data *)

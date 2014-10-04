@@ -10,7 +10,7 @@ module OrderedUri =
 
 module Map = Map.Make(OrderedUri)
 
-type 'a listenner = (Rdf_store.uri -> 'a -> 'a Lwt.t)
+type 'a listenner = (Rdf_store.uri -> 'a Lwt.t)
 type 'a t = (float * 'a) Map.t Ocsipersist.t * 'a listenner
 
 let store = Ocsipersist.open_store "PumCash"
@@ -39,9 +39,9 @@ let pull map =
 
 let calc_deadline () = (Unix.time ()) +. life_time
 
-let refresh cash sublistenner key data =
+let refresh cash sublistenner key =
   let deadline = calc_deadline () in
-  lwt new_data = sublistenner key data in
+  lwt new_data = sublistenner key in
   lwt cash_map = Ocsipersist.get cash in
   let embedded = (deadline, new_data) in
   let new_cash_map = Map.add key embedded cash_map in
@@ -55,10 +55,10 @@ let rec listenner cash sublistenner key deadline () =
   in
   lwt cash_map = Ocsipersist.get cash in
   try
-    let time, data = Map.find key cash_map in
+    let dl, data = Map.find key cash_map in
     let now = Unix.time () in
-    lwt () = if time <= now
-      then refresh cash sublistenner key data
+    lwt () = if dl <= now
+      then refresh cash sublistenner key
       else Lwt.return ()
     in
     let () = Lwt.async (listenner cash sublistenner key deadline) in

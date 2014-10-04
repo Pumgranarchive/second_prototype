@@ -1,6 +1,26 @@
+(******************************************************************************
+***************************** Initialisation **********************************
+*******************************************************************************)
+
 module Yojson = Yojson.Basic
 
 open Yojson.Util
+
+let get_token () =
+  let ic = open_in "token" in
+  try
+    let token = input_line ic in
+    let () = close_in ic in
+    token
+  with e ->
+    close_in_noerr ic;
+    raise Not_found
+
+let _ = Readability.set_token (get_token ())
+
+(******************************************************************************
+********************************** Utils **************************************
+*******************************************************************************)
 
 let get_short_summary str =
   let length = String.length str in
@@ -9,17 +29,22 @@ let get_short_summary str =
   else  str
 
 let data_from_uri uri =
-  let ruri = Rdf_uri.uri (Rdf_store.string_of_uri uri) in
+  let str_uri = Rdf_store.string_of_uri uri in
+  let ruri = Rdf_uri.uri str_uri in
   lwt json = Readability.get_parser ruri in
   let title = to_string (member "title" json) in
   let summary = get_short_summary (to_string (member "excerpt" json)) in
   lwt body = Tidy.xhtml_of_html (to_string (member "content" json)) in
   Lwt.return (uri, title, summary, body, true)
 
-let listenner key (uri, title, summary, body, external_v) =
+let listenner uri =
   data_from_uri uri
 
 lwt cash = Pcash.make "Reability" listenner
+
+(******************************************************************************
+******************************** Funtions *************************************
+*******************************************************************************)
 
 let get_readability_data uris =
   let aux uri =
