@@ -50,7 +50,11 @@ let make_arrow () =
             ["images";"arrow_side_bar.png"]) ()
 
 let make_tags mode tags_id =
-  let tags_ul = GUI_tools.build_tags_ul tags_id in
+  let active_click = match mode with
+    | `Content -> true
+    | _        -> false
+  in
+  let tags_ul = GUI_tools.build_tags_ul ~active_click tags_id in
   let button_add = div ~a:[a_class["side_button_add"]] [pcdata "Add a tag"] in
   match mode with
   | `Content -> tags_ul::button_add::[]

@@ -27,7 +27,6 @@ let make_html ?(title="Pumgrana") content =
 let redirect_link html_body =
   let href_regexp = Str.regexp "href=" in
   let quote_regexp = Str.regexp "\\(\"\\|\'\\)" in
-  let special_regexp = Str.regexp "[<\\|>]+" in
   let rec replace idx html =
     try
       let match_idx = Str.search_forward href_regexp html idx in
@@ -104,17 +103,23 @@ let build_ck_tags_list tags =
   aux [] [] tags
 
 (** Build tags li list *)
-let build_tags_li tags =
+let build_tags_li ?(active_click=false) tags =
   let rec aux lis = function
     | []                -> List.rev lis
     | (uri, subject)::t  ->
-      let li = li [pcdata subject] in
+      let str_uri = Rdf_store.(uri_encode (string_of_uri uri)) in
+      let fill = pcdata subject in
+      let li = if active_click
+        then li [a ~service:%GUI_services.home_service [div [fill]]
+                    (None, Some [str_uri])]
+        else li [fill]
+      in
       aux (li::lis) t
   in
   aux [] tags
 
-let build_tags_ul tags =
-  let lis = build_tags_li tags in
+let build_tags_ul ?(active_click=false) tags =
+  let lis = build_tags_li ~active_click tags in
   div ~a:[a_class["side_taglist"]]
     [ul ~a:[a_class["side_taglist_list"]] lis]
 
