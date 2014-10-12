@@ -24,6 +24,27 @@ let make_html ?(title="Pumgrana") content =
     ~css:[["css";"style.css"]]
     Html5.F.(body content)
 
+let redirect_link html_body =
+  let max = (String.length html_body) - 1 in
+  let href_regexp = Str.regexp "href=" in
+  let quote_regexp = Str.regexp "\\(\"\\|\'\\)" in
+  let rec replace idx html =
+    let match_idx = Str.search_forward href_regexp html idx in
+    let start_idx = (Str.search_forward quote_regexp html match_idx) + 1 in
+    let end_idx = Str.search_forward quote_regexp html start_idx in
+    let url = String.sub html start_idx (end_idx - start_idx) in
+    let encoded_url = Rdf_store.uri_encode url in
+    let new_href = "/content/detail/" ^ encoded_url in
+    let previous_html = String.sub html 0 start_idx in
+    let following_html = String.sub html end_idx (max - end_idx) in
+    let new_html = previous_html ^ new_href ^ following_html in
+    (* let tmp = String.sub new_html match_idx ((String.length new_href) + 100) in *)
+    (* print_endline tmp; *)
+    try replace end_idx new_html
+    with Not_found -> new_html
+  in
+  replace 0 html_body
+
 }}
 
 {shared{

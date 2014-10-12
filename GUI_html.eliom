@@ -100,19 +100,22 @@ let home_html (contents, tags_id) =
 (*   c_id, iframe ~a:[a_class ["pum_iframe"]; *)
 (*                    a_src (Eliom_content.Xml.uri_of_string id)] [] *)
 
+let get_content_data = function
+  | GUI_deserialize.Internal (c_id, c_title, c_summary, c_body) ->
+    c_title,
+    div [h3 [pcdata c_title]; p [pcdata c_summary]; p [pcdata c_body]]
+  | GUI_deserialize.External (c_id, c_title, c_summary, c_html_body) ->
+    let revise_html = GUI_tools.redirect_link c_html_body in
+    c_title,
+    div ~a:[a_class["content_current"]]
+      [div [h3 [pcdata c_title]; F.Unsafe.data revise_html]]
+
+
 (** Display the content detail html service *)
 let content_detail (content, tags_id, links, tags_link) =
   try
-    let title, content_elt = match content with
-      | GUI_deserialize.Internal (c_id, c_title, c_summary, c_body) ->
-        c_title,
-        div [h3 [pcdata c_title]; p [pcdata c_summary]; p [pcdata c_body]]
-      | GUI_deserialize.External (c_id, c_title, c_summary, c_html_body) ->
-        c_title,
-        div ~a:[a_class["content_current"]]
-          [div [h3 [pcdata c_title]; F.Unsafe.data c_html_body]]
-    in
     let mode = `Content in
+    let title, content_elt = get_content_data content in
     let add_content = AddContent.make mode in
     let side_bar = SideBar.make mode tags_id add_content in
     let link_bar = LinkBar.make links in
