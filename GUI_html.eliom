@@ -110,7 +110,6 @@ let get_content_data = function
     div ~a:[a_class["content_current"]]
       [div [h3 [pcdata c_title]; F.Unsafe.data revise_html]]
 
-
 (** Display the content detail html service *)
 let content_detail (content, tags_id, links, tags_link) =
   try
