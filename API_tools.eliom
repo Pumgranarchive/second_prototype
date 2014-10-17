@@ -49,7 +49,8 @@ let json_of_ocsigen_string_stream input_type_opt ostream_opt =
   | None                -> raise API_conf.(Pum_exc(return_not_found, "The ocsigen stream have to not be None."))
   | Some ostream        ->
     let stream = Ocsigen_stream.get ostream in
-    lwt str_json = Ocsigen_stream.string_of_stream 100000 stream in
+    lwt str_json = Ocsigen_stream.string_of_stream 1000000 stream in
+    print_endline str_json;
     Lwt.return (Yojson.from_string str_json)
 
 (*** Checking tools  *)
