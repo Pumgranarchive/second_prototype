@@ -314,12 +314,12 @@ let get_tags_by_subject tag_type subjects =
   in
   let build_regexp query str =
     let q = next_query query "|" in
-    q ^ "(" ^ str ^ ")"
+    q ^ "(^" ^ str ^ "$)"
   in
   let regexp = List.fold_left build_regexp "" subjects in
   let query = "SELECT ?tag ?subject WHERE
           { ?tag <" ^ r_url ^ "> ?subject .
-            FILTER regex(?subject, \"" ^ regexp ^ "\" ) }"
+            FILTER regex(?subject, \"" ^ regexp ^ "\", \"i\") }"
   in
   lwt solutions = get_from_4store query in
   let tuple_tags = List.map tuple_tag_from solutions in
@@ -491,7 +491,8 @@ let get_triple_contents content_type tags_uri =
   let half_query = contents_filter_query tags_uri in
   let select, where = get_content_query ~complex:true content_type in
   let query =
-    "SELECT "^ select ^" WHERE {"^ where ^ half_query ^"} GROUP BY ?content"
+    "SELECT "^ select ^" WHERE {"^ where ^ half_query ^"}
+     GROUP BY ?content LIMIT 20"
   in
   lwt solutions = get_from_4store query in
   let res = match content_type with
