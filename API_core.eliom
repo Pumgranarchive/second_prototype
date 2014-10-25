@@ -3,6 +3,14 @@
   This Module do request to data base and format well to return it in service
  *)
 
+module OrderedUri =
+  struct
+    type t = Rdf_store.uri
+    let compare = Rdf_store.compare_uri
+  end
+
+module Map = Map.Make(OrderedUri)
+
 (* Tools *)
 
 let id_of_string_uri uri =
@@ -330,15 +338,13 @@ let internal_build_assoc l =
   Lwt.return (List.map build_assoc l)
 
 let external_build_assoc l =
-  let extract_uri (link_id, uri) = uri in
-  let extract_link_id (link_id, uri) = link_id in
-  let format link_id (uri, title, summary) =
-    build_assoc (link_id, uri, title, summary)
+  let uris = List.map (fun (li, u) -> u) l in
+  let mlink = List.fold_left (fun m (li, u) -> Map.add u li m) Map.empty l in
+  let format (uri, title, summary) =
+    build_assoc (Map.find uri mlink, uri, title, summary)
   in
-  let uris = List.map extract_uri l in
-  let link_ids = List.map extract_link_id l in
   lwt ret = get_data_list_from uris triple_platforms in
-  Lwt.return (List.map2 format link_ids ret)
+  Lwt.return (List.map format ret)
 
 let build_json = function
   | Rdf_store.Cl_internal l -> internal_build_assoc l
