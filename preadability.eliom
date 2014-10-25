@@ -34,7 +34,10 @@ let data_from_uri uri =
   lwt json = Readability.get_parser ruri in
   let title = to_string (member "title" json) in
   let summary = get_short_summary (to_string (member "excerpt" json)) in
-  lwt body = Tidy.xhtml_of_html (to_string (member "content" json)) in
+  lwt body =
+      try_lwt Tidy.xhtml_of_html (to_string (member "content" json))
+      with e -> Lwt.return ("<div><b>Tidy Error</b></div>")
+  in
   Lwt.return (uri, title, summary, body, true)
 
 let listenner uri =
