@@ -388,8 +388,13 @@ let get_links_from_research content_uri research =
   in
   API_tools.check_return ~param_name:API_tools.links_ret_name aux
 
+lwt _ =
+  let uri = "https://www.youtube.com/watch?v=7LJBF5_9-p4" in
+  lwt _ = get_links_from_research uri "wikipedia" in
+  Lwt.return ()
+
+
 let insert_links data =
-  print_endline "";
   let aux () =
     let triple_uri (origin_str_uri, target_str_uri, tags_str_uri) =
       let data =
@@ -397,9 +402,6 @@ let insert_links data =
         Rdf_store.uri_of_string target_str_uri,
         List.map Rdf_store.uri_of_string tags_str_uri
       in
-      (* Printf.printf "%s => %s [ " origin_str_uri target_str_uri; *)
-      (* List.iter (Printf.printf "%s ") tags_str_uri; *)
-      (* Printf.printf "]\n"; *)
       data
     in
     let triple_list = List.map triple_uri data in
@@ -409,7 +411,6 @@ let insert_links data =
       `Assoc [(API_tools.uri_field, `String str_link_id)]
     in
     let json_link_id = List.map format links_id in
-    print_endline "";
     Lwt.return (`List json_link_id)
   in
   API_tools.check_return
