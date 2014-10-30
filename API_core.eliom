@@ -61,22 +61,26 @@ let triple_platforms =
    (is_something_else,          Preadability.get_readability_triple)]
 
 let get_data_list_from uris platforms =
-  let aux lwt_data (condiction, getter) =
-    lwt uris, results = lwt_data in
+  let launch lwt_data (condiction, getter) =
+    lwt uris, requests = lwt_data in
     let plt_uris = List.filter condiction uris in
     let not_know uri =
-      not (List.exists (fun x -> Ptype.compare_uri uri x = 0) plt_uris)
+      List.for_all (fun x -> Ptype.compare_uri uri x != 0) plt_uris
     in
     let other_uris = List.filter not_know uris in
-    lwt plt_res = if List.length plt_uris = 0
+    let new_requests =
+      if List.length plt_uris = 0
       then Lwt.return []
       else getter plt_uris
     in
-    Lwt.return (other_uris, results@plt_res)
+    Lwt.return (other_uris, new_requests::requests)
   in
-  lwt uris, result = List.fold_left aux (Lwt.return (uris,[])) platforms in
+  let wait request = request in
+  lwt uris, requests = List.fold_left launch (Lwt.return (uris,[])) platforms in
   if List.length uris != 0 then raise Not_found;
-  Lwt.return result
+  lwt answers = Lwt_list.map_p wait requests in
+  lwt results = Lwt_list.map_p wait (List.concat answers) in
+  Lwt.return results
 
 (*** Getters *)
 let get_detail content_str_uri =

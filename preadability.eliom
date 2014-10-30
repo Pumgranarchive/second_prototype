@@ -16,7 +16,7 @@ let get_token () =
     close_in_noerr ic;
     raise Not_found
 
-let _ = Readability.set_token (get_token ())
+let () = Readability.set_token (get_token ())
 
 (******************************************************************************
 ********************************** Utils **************************************
@@ -31,7 +31,15 @@ let get_short_summary str =
 let data_from_uri uri =
   let str_uri = Rdf_store.string_of_uri uri in
   let ruri = Rdf_uri.uri str_uri in
-  lwt json = Readability.get_parser ruri in
+  (* print_endline ""; *)
+  (* Printf.printf "Readability: Start: %s" str_uri; *)
+  (* print_endline ""; *)
+  lwt json =
+      try_lwt Readability.get_parser ruri
+      with e -> (print_endline (Printexc.to_string e); raise e)
+  in
+  (* Printf.printf "Readability: Finised: %s" str_uri; *)
+  (* print_endline "\n"; *)
   let title = to_string (member "title" json) in
   let summary = get_short_summary (to_string (member "excerpt" json)) in
   lwt body =
@@ -40,10 +48,7 @@ let data_from_uri uri =
   in
   Lwt.return (uri, title, summary, body, true)
 
-let listenner uri =
-  data_from_uri uri
-
-lwt cash = Pcash.make "Reability" listenner
+lwt cash = Pcash.make "Readability" data_from_uri
 
 (******************************************************************************
 ******************************** Funtions *************************************
@@ -64,23 +69,23 @@ let get_readability_data uris =
          let str_uri = Rdf_store.string_of_uri uri in
          Lwt.return (uri, str_uri, "Readability error", "", true))
   in
-  let build lwt_list uri =
-    lwt list = lwt_list in
-    lwt data = aux uri in
-    Lwt.return (data::list)
-  in
-  List.fold_left build (Lwt.return []) uris
+  List.map aux uris
 
 let get_readability_detail uri =
-  lwt results = get_readability_data [uri] in
-  Lwt.return (List.hd results)
+  List.hd (get_readability_data [uri])
 
 let get_readability_triple uris =
-  lwt results = get_readability_data uris in
-  let format (uri, title, summary, body, v_external) = uri, title, summary in
+  let results = get_readability_data uris in
+  let format data =
+    lwt uri, title, summary, body, v_external = data in
+    Lwt.return (uri, title, summary)
+  in
   Lwt.return (List.map format results)
 
 let get_readability_body uri =
-  lwt results = get_readability_data [uri] in
-  let format (uri, title, summary, body, v_external) = body in
-  Lwt.return (format (List.hd results))
+  let result = List.hd (get_readability_data [uri]) in
+  let format data =
+    lwt uri, title, summary, body, v_external = data in
+    Lwt.return body
+  in
+  format result

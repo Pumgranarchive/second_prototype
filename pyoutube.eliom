@@ -11,8 +11,14 @@ let format (_, title, str_uri, summary, _) =
   uri, title, summary
 
 let listenner uri =
+  (* let str_uri = Rdf_store.string_of_uri uri in *)
   let id = id_of_uri uri in
+  (* print_endline ""; *)
+  (* Printf.printf "Youtube: Start: %s" str_uri; *)
+  (* print_endline ""; *)
   lwt videos = Youtube_http.get_videos_from_ids [id] in
+  (* Printf.printf "Youtube: Finished: %s" str_uri; *)
+  (* print_endline "\n"; *)
   let new_data_list = List.map format videos in
   let new_data = List.hd new_data_list in
   Lwt.return new_data
@@ -21,24 +27,28 @@ lwt cash = Pcash.make "Youtube" listenner
 
 let get_youtube_triple uris =
   lwt know_uris = Lwt_list.filter_p (Pcash.exists cash) uris in
-  lwt know_data = Lwt_list.map_s (Pcash.get cash) know_uris in
   lwt unknow_uris = Lwt_list.filter_p (Pcash.not_exists cash) uris in
+  let know_data = List.map (Pcash.get cash) know_uris in
   let ids = List.map id_of_uri unknow_uris in
-  lwt videos =
-      if List.length ids > 0
-      then Youtube_http.get_videos_from_ids ids
-      else Lwt.return []
-  in
-  let add (uri, title, summary) =
-    let data = (uri, title, summary) in
+  let add lwt_data =
+    lwt data = lwt_data in
+    let uri, title, summary = data in
     Pcash.add cash uri data
   in
-  let new_data = List.map format videos in
-  lwt () = Lwt_list.iter_s add new_data in
+  let lwt_format data = Lwt.return (format data) in
+  lwt new_data =
+      if List.length ids > 0
+      then
+        lwt videos = Youtube_http.get_videos_from_ids ids in
+        let new_data = List.map lwt_format videos in
+        lwt () = Lwt_list.iter_p add new_data in
+        Lwt.return new_data
+      else Lwt.return []
+  in
   Lwt.return (know_data@new_data)
 
 let get_youtube_detail uri =
   lwt results = get_youtube_triple [uri] in
-  let (uri, title, summary) = List.hd results in
+  lwt uri, title, summary = List.hd results in
   lwt body = Preadability.get_readability_body uri in
   Lwt.return (uri, title, summary, body, true)
