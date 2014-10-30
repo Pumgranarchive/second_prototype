@@ -11,14 +11,8 @@ let format (_, title, str_uri, summary, _) =
   uri, title, summary
 
 let listenner uri =
-  (* let str_uri = Rdf_store.string_of_uri uri in *)
   let id = id_of_uri uri in
-  (* print_endline ""; *)
-  (* Printf.printf "Youtube: Start: %s" str_uri; *)
-  (* print_endline ""; *)
   lwt videos = Youtube_http.get_videos_from_ids [id] in
-  (* Printf.printf "Youtube: Finished: %s" str_uri; *)
-  (* print_endline "\n"; *)
   let new_data_list = List.map format videos in
   let new_data = List.hd new_data_list in
   Lwt.return new_data

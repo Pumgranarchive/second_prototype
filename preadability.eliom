@@ -31,15 +31,10 @@ let get_short_summary str =
 let data_from_uri uri =
   let str_uri = Rdf_store.string_of_uri uri in
   let ruri = Rdf_uri.uri str_uri in
-  (* print_endline ""; *)
-  (* Printf.printf "Readability: Start: %s" str_uri; *)
-  (* print_endline ""; *)
   lwt json =
       try_lwt Readability.get_parser ruri
       with e -> (print_endline (Printexc.to_string e); raise e)
   in
-  (* Printf.printf "Readability: Finised: %s" str_uri; *)
-  (* print_endline "\n"; *)
   let title = to_string (member "title" json) in
   let summary = get_short_summary (to_string (member "excerpt" json)) in
   lwt body =

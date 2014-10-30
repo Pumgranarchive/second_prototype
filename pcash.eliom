@@ -33,11 +33,7 @@ let refresh table sublistenner str_key =
   let key = Rdf_store.uri_of_string str_key in
   lwt new_data = sublistenner key in
   let deadline = calc_deadline () in
-  print_endline "";
-  Printf.printf "Ocsipersist.add: before: %s" str_key;
-  print_endline "";
   lwt ()  = Ocsipersist.add table str_key (deadline, new_data) in
-  print_endline "Ocsipersist.add: after\n";
   Lwt.return ()
 
 let rec listenner table sublistenner str_key deadline () =
@@ -74,30 +70,20 @@ let assign_listenner table sublistenner =
 *******************************************************************************)
 
 let make name sublistenner =
-  print_endline "";
-  Printf.printf "Make: before: %s" name;
-  print_endline "";
   let table = Ocsipersist.open_table name  in
   lwt () = assign_listenner table sublistenner in
-  print_endline "Make: after\n";
   Lwt.return (table, sublistenner)
 
 let add (table, sublistenner) key data =
-  print_endline "\n";
   let str_key = Rdf_store.string_of_uri key in
-  Printf.printf "Add: enter : %s" str_key;
-  print_endline "";
   let deadline = new_deadline table sublistenner str_key in
   lwt () = Ocsipersist.add table str_key (deadline, data) in
   lwt () = limit table in
-  print_endline "Add: out\n";
   Lwt.return ()
 
 let get (table, sublistenner) key =
-  print_endline "\nGet: enter\n";
   let str_key = Rdf_store.string_of_uri key in
   lwt _, data = Ocsipersist.find table str_key in
-  print_endline "Get: out\n";
   Lwt.return data
 
 let exists pcash key =
