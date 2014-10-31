@@ -125,12 +125,16 @@ body, html {
 }
 
 .side_button_img_home { background-image: url('../images/Icons_webbtn-home_red_full.png'); }
+.side_button_img_home_nh { background-image: url('../images/Icons_webbtn-home_red_full.png'); }
 .side_button_img_home:hover { background-image: url('../images/Icons_webbtn-home_white_full.png'); }
 .side_button_img_plus { background-image: url('../images/Icons_webbtn-plus_red_full.png'); }
+.side_button_img_plus_nh { background-image: url('../images/Icons_webbtn-plus_red_full.png'); }
 .side_button_img_plus:hover { background-image: url('../images/Icons_webbtn-plus_white_full.png'); }
 .side_button_img_content { background-image: url('../images/Icons_webbtn-content_red_full.png'); }
+.side_button_img_content_nh { background-image: url('../images/Icons_webbtn-content_red_full.png'); }
 .side_button_img_content:hover { background-image: url('../images/Icons_webbtn-content_white_full.png'); }
 .side_button_img_link { background-image: url('../images/Icons_webbtn-link_red_full.png'); }
+.side_button_img_link_nh { background-image: url('../images/Icons_webbtn-link_red_full.png'); }
 .side_button_img_link:hover { background-image: url('../images/Icons_webbtn-link_white_full.png'); }
 
 .side_button_bottom_list {
