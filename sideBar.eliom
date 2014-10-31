@@ -12,9 +12,9 @@ type 'a action_type =
 
 let make_button mode =
   let img_class = match mode with
-    | `Home    -> "side_button_img_home"
-    | `Content -> "side_button_img_content"
-    | `Link    -> "side_button_img_link"
+    | `Home    -> "side_button_img_home_nh"
+    | `Content -> "side_button_img_content_nh"
+    | `Link    -> "side_button_img_link_nh"
   in
   div ~a:[a_class["side_button";"side_button_home";img_class]]
     [div ~a:[a_class["side_button_circle"]] []]
@@ -50,11 +50,7 @@ let make_arrow () =
             ["images";"arrow_side_bar.png"]) ()
 
 let make_tags mode tags_id =
-  let active_click = match mode with
-    | `Content -> true
-    | _        -> false
-  in
-  let tags_ul = GUI_tools.build_tags_ul ~active_click tags_id in
+  let tags_ul = GUI_tools.build_tags_ul ~active_click:true tags_id in
   let button_add = div ~a:[a_class["side_button_add"]] [pcdata "Add a tag"] in
   match mode with
   | `Content -> tags_ul::button_add::[]
