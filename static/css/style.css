@@ -80,6 +80,11 @@ body, html {
   background-color: #f96d72;
 }
 
+.side_button_link {
+  width: 100%;
+  height: 100%;
+}
+
 .side_button_add {
   color: #fa4b4e;
   border: 1px solid #fa4b4e;

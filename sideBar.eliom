@@ -17,7 +17,7 @@ let make_button mode =
     | `Link    -> "side_button_img_link_nh"
   in
   div ~a:[a_class["side_button";"side_button_home";img_class]]
-    [div ~a:[a_class["side_button_circle"]] []]
+    [div ~a:[a_class["side_button_link"]] []]
 
 let action atype =
   let img_class = match atype with
@@ -26,7 +26,7 @@ let action atype =
     | Acontent -> "side_button_img_content"
     | Aplus _  -> "side_button_img_plus"
   in
-  let fill = D.div ~a:[a_class["side_button_circle"]] [] in
+  let fill = D.div ~a:[a_class["side_button_link"]] [] in
   let link = match atype with
     | Ahome    -> a ~service:GUI_services.home_service_without [fill] None
     | Aplus ac -> AddContent.switch_onclick ac fill; fill
