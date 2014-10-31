@@ -15,4 +15,6 @@ let make links =
   (* let link_sub_arrow = make_img "link_sub_arrow" "Icons_web-links_red.png" in *)
   let link_arrow = make_img "link_arrow" "linked_content_arrow.png" in
   let links = make_links links in
-  div ~a:[a_class["content_current_linked"]] [link_arrow; links]
+  div ~a:[a_class["content_current_linked"]]
+    [div ~a:[a_class["content_current_linked_mainlogo"]]
+	[link_arrow; links]]
