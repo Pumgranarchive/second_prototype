@@ -37,7 +37,7 @@ let action atype =
 let make_action mode add_content =
   let li_list = match mode with
     | `Home    -> [action (Aplus add_content)]
-    | `Content -> [action Alink; action Ahome; action (Aplus add_content)]
+    | `Content -> [(* action Alink; *) action Ahome; action (Aplus add_content)]
     | `Link    -> [action Acontent; action Ahome; action (Aplus add_content)]
   in
   div ~a:[a_class["side_button_bottom"]]
