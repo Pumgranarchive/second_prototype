@@ -1,10 +1,10 @@
 (******************************************************************************
 ***************************** Initialisation **********************************
 *******************************************************************************)
-
 module Yojson = Yojson.Basic
 
 open Yojson.Util
+open Utils
 
 let get_token () =
   let ic = open_in "token" in
@@ -37,10 +37,7 @@ let data_from_uri uri =
   in
   let title = to_string (member "title" json) in
   let summary = get_short_summary (to_string (member "excerpt" json)) in
-  lwt body =
-      try_lwt Tidy.xhtml_of_html (to_string (member "content" json))
-      with e -> Lwt.return ("<div><b>Tidy Error</b></div>")
-  in
+  lwt body = Tidy.xhtml_of_html (to_string (member "content" json)) in
   Lwt.return (uri, title, summary, body, true)
 
 lwt cash = Pcash.make "Readability" data_from_uri
@@ -55,22 +52,18 @@ let get_readability_data uris =
     if exist
     then Pcash.get cash uri
     else
-      try_lwt
-        (lwt data = data_from_uri uri in
-         lwt () = Pcash.add cash uri data in
-         Lwt.return data)
-      with e ->
-        (print_endline (Printexc.to_string e);
-         let str_uri = Rdf_store.string_of_uri uri in
-         Lwt.return (uri, str_uri, "Readability error", "", true))
+      lwt data = data_from_uri uri in
+      lwt () = Pcash.add cash uri data in
+      Lwt.return data
   in
-  List.map aux uris
+  Lwt_list.map_exc aux uris
 
 let get_readability_detail uri =
-  List.hd (get_readability_data [uri])
+  lwt list = get_readability_data [uri] in
+  List.hd list
 
 let get_readability_triple uris =
-  let results = get_readability_data uris in
+  lwt results = get_readability_data uris in
   let format data =
     lwt uri, title, summary, body, v_external = data in
     Lwt.return (uri, title, summary)
@@ -78,9 +71,6 @@ let get_readability_triple uris =
   Lwt.return (List.map format results)
 
 let get_readability_body uri =
-  let result = List.hd (get_readability_data [uri]) in
-  let format data =
-    lwt uri, title, summary, body, v_external = data in
-    Lwt.return body
-  in
-  format result
+  lwt list = get_readability_data [uri] in
+  lwt uri, title, summary, body, v_external = List.hd list in
+  Lwt.return body

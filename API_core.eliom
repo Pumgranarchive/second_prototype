@@ -3,6 +3,8 @@
   This Module do request to data base and format well to return it in service
  *)
 
+open Utils
+
 module OrderedUri =
   struct
     type t = Rdf_store.uri
@@ -68,18 +70,21 @@ let get_data_list_from uris platforms =
       List.for_all (fun x -> Ptype.compare_uri uri x != 0) plt_uris
     in
     let other_uris = List.filter not_know uris in
-    let new_requests =
-      if List.length plt_uris = 0
-      then Lwt.return []
-      else getter plt_uris
-    in
-    Lwt.return (other_uris, new_requests::requests)
+    try_lwt
+      let new_requests =
+        if List.length plt_uris = 0
+        then Lwt.return []
+        else getter plt_uris
+      in
+      Lwt.return (other_uris, new_requests::requests)
+    with e ->
+      let () = print_endline (Printexc.to_string e) in
+      Lwt.return (other_uris, requests)
   in
-  let wait request = request in
   lwt uris, requests = List.fold_left launch (Lwt.return (uris,[])) platforms in
   if List.length uris != 0 then raise Not_found;
-  lwt answers = Lwt_list.map_p wait requests in
-  lwt results = Lwt_list.map_p wait (List.concat answers) in
+  lwt answers = Lwt_list.(map_s_exc wait requests) in
+  lwt results = Lwt_list.(map_s_exc wait (List.concat answers)) in
   Lwt.return results
 
 (*** Getters *)

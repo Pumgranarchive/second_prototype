@@ -42,7 +42,7 @@ let rec listenner table sublistenner str_key deadline () =
     then Lwt_unix.sleep sleeping_time
     else Lwt.return ()
   in
-  try
+  try_lwt
     lwt dl, data = Ocsipersist.find table str_key in
     let now = Unix.time () in
     lwt () = if dl <= now
@@ -51,7 +51,7 @@ let rec listenner table sublistenner str_key deadline () =
     in
     let () = Lwt.async (listenner table sublistenner str_key deadline) in
     Lwt.return ()
-  with Not_found -> Lwt.return ()
+  with _ -> Lwt.return ()
 
 let new_deadline table sublistenner str_key =
   let deadline = calc_deadline () in

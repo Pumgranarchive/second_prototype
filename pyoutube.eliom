@@ -1,3 +1,5 @@
+open Utils
+
 let is_youtube_uri uri =
   let str_uri = Rdf_store.string_of_uri uri in
   try ignore (Youtube_http.get_video_id_from_url str_uri); true
@@ -34,8 +36,8 @@ let get_youtube_triple uris =
       if List.length ids > 0
       then
         lwt videos = Youtube_http.get_videos_from_ids ids in
-        let new_data = List.map lwt_format videos in
-        lwt () = Lwt_list.iter_p add new_data in
+        lwt new_data = Lwt_list.map_exc lwt_format videos in
+        lwt () = Lwt_list.iter_s_exc add new_data in
         Lwt.return new_data
       else Lwt.return []
   in
