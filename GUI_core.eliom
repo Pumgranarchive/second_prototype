@@ -7,6 +7,15 @@
 open Pdeserialize
 open GUI_deserialize
 
+let null_id = Nosql_store.id_of_string "54232a2e40b43eec7507f24e"
+let null_uri = Rdf_store.uri_of_string "http://foo.com"
+let error_short_content =
+  GUI_deserialize.Internal
+    (GUI_deserialize.Id null_id,
+     "Internal server error", "", "Internal server error")
+let error_content =
+    ((null_uri, null_uri), null_uri, null_uri, [])
+
 let content_str_uri_of_str_id id =
   Rdf_store.(string_of_uri (uri_of_content_id (Nosql_store.id_of_string id)))
 
@@ -28,20 +37,20 @@ let get_detail_content uri =
     Lwt.return (content, tags, link_list, tags_link_list)
   with
   | e -> print_endline (Printexc.to_string e);
-    Lwt.return (
-      GUI_deserialize.(Internal
-                         (Id (Nosql_store.id_of_string "0000000000000000"),
-                          "title", "", "Internal server error")),
-      [], [], [])
+    Lwt.return (error_short_content, [], [], [])
 
 let get_contents filter tags_uri =
-  lwt contents_json = API_core.get_contents filter tags_uri in
-  lwt tags_json = API_core.get_tags_by_type API_conf.content_tag in
-  let contents = get_service_return get_short_content_list contents_json in
-  let tags = get_service_return get_tag_list tags_json in
-  Lwt.return (contents, tags)
+  try_lwt
+    lwt contents_json = API_core.get_contents filter tags_uri in
+    lwt tags_json = API_core.get_tags_by_type API_conf.content_tag in
+    let contents = get_service_return get_short_content_list contents_json in
+    let tags = get_service_return get_tag_list tags_json in
+    Lwt.return (contents, tags)
+ with e -> print_endline (Printexc.to_string e); Lwt.return ([], [])
 
 let get_link_detail link_uri =
-  lwt json_detail = API_core.get_link_detail link_uri in
-  let detail = List.hd (get_service_return get_detail_link_list json_detail) in
-  Lwt.return detail
+  try_lwt
+    lwt json_detail = API_core.get_link_detail link_uri in
+    let detail = List.hd (get_service_return get_detail_link_list json_detail) in
+    Lwt.return detail
+  with e -> print_endline (Printexc.to_string e); Lwt.return error_content

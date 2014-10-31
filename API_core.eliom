@@ -100,7 +100,7 @@ let get_detail content_str_uri =
                           (API_tools.summary_field, `String summary);
                           (API_tools.body_field, `String body);
                           (API_tools.external_field, `Bool v_external)])
-    with _ -> Lwt.return `Null
+    with Not_found -> Lwt.return `Null
   in
   API_tools.check_return ~param_name:API_tools.contents_ret_name aux
 
@@ -392,12 +392,6 @@ let get_links_from_research content_uri research =
     Lwt.return (`List (i_json@e_json))
   in
   API_tools.check_return ~param_name:API_tools.links_ret_name aux
-
-lwt _ =
-  let uri = "https://www.youtube.com/watch?v=7LJBF5_9-p4" in
-  lwt _ = get_links_from_research uri "wikipedia" in
-  Lwt.return ()
-
 
 let insert_links data =
   let aux () =
