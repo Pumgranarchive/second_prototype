@@ -102,11 +102,11 @@ let home_html (contents, tags_id) =
 
 let get_content_data = function
   | GUI_deserialize.Internal (c_id, c_title, c_summary, c_body) ->
-    c_title,
+    c_id, c_title,
     div [h3 [pcdata c_title]; p [pcdata c_summary]; p [pcdata c_body]]
   | GUI_deserialize.External (c_id, c_title, c_summary, c_html_body) ->
     let revise_html = GUI_tools.redirect_link c_html_body in
-    c_title,
+    c_id, c_title,
     div ~a:[a_class["content_current"]]
       [div [h3 [pcdata c_title]; F.Unsafe.data revise_html]]
 
@@ -114,10 +114,10 @@ let get_content_data = function
 let content_detail (content, tags_id, links, tags_link) =
   try
     let mode = `Content in
-    let title, content_elt = get_content_data content in
+    let content_id, title, content_elt = get_content_data content in
     let add_content = AddContent.make mode in
     let side_bar = SideBar.make mode tags_id add_content in
-    let link_bar = LinkBar.make links in
+    let link_bar = LinkBar.make content_id links in
     let main_logo = MainLogo.make () in
     let content = Content.make [content_elt; link_bar; main_logo] in
     let html_add_content = AddContent.to_html add_content in

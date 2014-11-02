@@ -252,11 +252,11 @@ let rec remove_all_child dom =
       remove_all_child dom)
 
 (** Append all div element of given list in the dom element. *)
-let rec append_all dom = function
+let rec append_all dom_of_elm dom = function
   | []          -> ()
   | block::tail ->
-    let dom_block = To_dom.of_a block in
-    Dom.appendChild dom dom_block; append_all dom tail
+    let dom_block = dom_of_elm block in
+    Dom.appendChild dom dom_block; append_all dom_of_elm dom tail
 
 (** Manage html list refreshing by getting data from API's serice. *)
 (* let handle_refresh_list html_elt submit_elt a_of_yojson fun_request = *)

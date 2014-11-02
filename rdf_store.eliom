@@ -508,7 +508,6 @@ let research_contents content_type research_string =
   let query =
     "SELECT "^ select ^" WHERE {"^ where ^ filter_query ^"} GROUP BY ?content"
   in
-  print_endline query;
   lwt solutions = get_from_4store query in
   let res = match content_type with
     | Internal -> Cc_internal (List.map triple_content_from solutions)
@@ -696,9 +695,6 @@ let build_research_query content_type content_uri research_strings =
 let links_from_research content_type content_uri research_string =
   let research_strings = cut_research research_string in
   let query = build_research_query content_type content_uri research_strings in
-  print_endline "";
-  print_endline query;
-  print_endline "";
   lwt solutions = get_from_4store query in
   match content_type with
   | Internal ->
