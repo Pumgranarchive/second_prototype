@@ -70,6 +70,10 @@ end
 
 {client{
 
+open Eliom_content
+open Eliom_content.Html5
+open Eliom_content.Html5.F
+
 module Client =
   struct
 
@@ -88,6 +92,22 @@ module Client =
         let dom_block = dom_of_elm block in
         let () = Dom.appendChild dom dom_block in
         append_all dom_of_elm dom tail
+
+    let refresh_list ~make_request ~elm_of_result ~dom_of_elm input div_list =
+      let dom_input = To_dom.of_input input in
+      let dom_list = To_dom.of_div div_list in
+      let refresh_html () =
+        let display result =
+          let elms = elm_of_result result in
+          let () = remove_all_child dom_list in
+          append_all dom_of_elm dom_list elms
+        in
+        lwt answer = make_request () in
+        Lwt.return (display answer)
+      in
+      Lwt.async (fun () ->
+        Lwt_js_events.inputs dom_input
+          (fun _ _ -> refresh_html ()))
 
   end
 

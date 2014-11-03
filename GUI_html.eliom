@@ -26,6 +26,13 @@ struct
     div ~a:[a_id "content"] elements
 end
 
+module Content_list =
+struct
+  let make contents =
+    D.div ~a:[a_class["content_main_list"]]
+      (GUI_tools.build_contents_list contents)
+end
+
 module MainLogo =
 struct
   let make () =
@@ -55,13 +62,11 @@ let internal_error_html () =
 
 (** Display the home html service *)
 let home_html (contents, tags_id) =
-  let content_list =
-    div ~a:[a_class["content_main_list"]]
-      (GUI_tools.build_contents_list contents)
-  in
+  let content_list = Content_list.make contents in
   let mode = `Home in
+  let amode = `Home content_list in
   let add_content = AddContent.make mode in
-  let side_bar = SideBar.make mode tags_id add_content in
+  let side_bar = SideBar.make amode tags_id add_content in
   let main_logo = MainLogo.make () in
   let content = Content.make [content_list] in
   let html_add_content = AddContent.to_html add_content in

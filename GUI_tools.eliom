@@ -163,8 +163,7 @@ let build_links_list links =
     then [linked]
     else linked::(div ~a:[a_class["content_current_linked_main_list_elem_sep"]] [])::html
   in
-  let list = List.rev (List.fold_left aux [] links) in
-  div list
+  List.rev (List.fold_left aux [] links)
 
 (* {client{ *)
 
