@@ -67,3 +67,28 @@ struct
 
 
 end
+
+{client{
+
+module Client =
+  struct
+
+    (** Remove all child from the given dom element.  *)
+    let rec remove_all_child dom =
+      let c = dom##firstChild in
+      Js.Opt.iter c
+        (fun c ->
+          let () = Dom.removeChild dom c in
+          remove_all_child dom)
+
+    (** Append all div element of given list in the dom element. *)
+    let rec append_all dom_of_elm dom = function
+      | []          -> ()
+      | block::tail ->
+        let dom_block = dom_of_elm block in
+        let () = Dom.appendChild dom dom_block in
+        append_all dom_of_elm dom tail
+
+  end
+
+}}

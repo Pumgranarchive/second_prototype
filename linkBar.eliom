@@ -15,6 +15,8 @@ open GUI_deserialize
 
 {client{
 
+open Utils.Client
+
 let refresh content_id input div_list =
   let uri = GUI_deserialize.uri_of_id content_id in
   let dom_input = To_dom.of_input input in
@@ -25,8 +27,8 @@ let refresh content_id input div_list =
       let links = get_service_return get_link_list json in
       Eliom_lib.debug "%d results" (List.length links);
       let new_list = GUI_tools.build_links_list links in
-      GUI_client_core.remove_all_child dom_list;
-      GUI_client_core.append_all To_dom.of_div dom_list [new_list]
+      remove_all_child dom_list;
+      append_all To_dom.of_div dom_list [new_list]
     in
     let make_request () =
       let encoded_uri = Rdf_store.uri_encode uri in

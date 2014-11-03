@@ -243,21 +243,6 @@ let bind_save_insert_content save_insert_button title_elt
       let newlist_tags = get_no_checked_inputs dom_new_tagsi in
       save_insert_content title summary body newlist_tags)
 
-(** Remove all child from the given dom element.  *)
-let rec remove_all_child dom =
-  let c = dom##firstChild in
-  Js.Opt.iter c
-    (fun c ->
-      Dom.removeChild dom c;
-      remove_all_child dom)
-
-(** Append all div element of given list in the dom element. *)
-let rec append_all dom_of_elm dom = function
-  | []          -> ()
-  | block::tail ->
-    let dom_block = dom_of_elm block in
-    Dom.appendChild dom dom_block; append_all dom_of_elm dom tail
-
 (** Manage html list refreshing by getting data from API's serice. *)
 (* let handle_refresh_list html_elt submit_elt a_of_yojson fun_request = *)
 (*   let dom_html = To_dom.of_div html_elt in *)
