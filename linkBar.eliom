@@ -17,12 +17,11 @@ open GUI_deserialize
 
 open Utils.Client
 
-let refresh content_id input div_list =
+let refresh_links content_id input div_list =
   let uri = GUI_deserialize.uri_of_id content_id in
   let encoded_uri = Rdf_store.uri_encode uri in
-  let dom_input = To_dom.of_input input in
   let make_request () =
-    let research = Js.to_string (dom_input##value) in
+    let research = get_research input in
     Eliom_client.call_service
       ~service:%API_services.get_links_from_research
       (encoded_uri, research) ()
@@ -32,8 +31,7 @@ let refresh content_id input div_list =
     let links = get_service_return get_link_list json in
     [div (GUI_tools.build_links_list links)]
   in
-  let dom_of_elm = To_dom.of_div in
-  refresh_list ~make_request ~elm_of_result ~dom_of_elm input div_list
+  refresh_list ~make_request ~elm_of_result To_dom.of_div input div_list
 
 }}
 
@@ -43,8 +41,8 @@ let make_img class_name name =
             ["images"; name]) ()
 
 let make_search_input content_id div_links =
-  let search_input = D.raw_input ~input_type:`Text ~name:"filter" () in
-  let () = ignore {unit{ refresh %content_id %search_input %div_links }} in
+  let search_input = D.raw_input ~input_type:`Text ~name:"research" () in
+  let () = ignore {unit{ refresh_links %content_id %search_input %div_links }} in
   search_input
 
 let make_links links =

@@ -11,14 +11,14 @@ let _ =
         Eliom_client.change_url
         ~service:%GUI_services.home_service_without None }};
       lwt data = GUI_core.get_contents None None in
-      Lwt.return (GUI_html.home_html data))
+      Lwt.return (GUI_html.home_html data None))
 
 let _ =
   Pumgrana.App.register
     ~service:GUI_services.home_service_without
     (fun (filter) () ->
       lwt data = GUI_core.get_contents filter None in
-      Lwt.return (GUI_html.home_html data))
+      Lwt.return (GUI_html.home_html data None))
 
 let map f = function
   | Some x -> Some (f x)
@@ -27,10 +27,9 @@ let map f = function
 let _ =
   Pumgrana.App.register
     ~service:GUI_services.home_service
-    (fun (filter, tags_uri) () ->
-      let uris = map (List.map Rdf_store.uri_decode) tags_uri in
-      lwt data = GUI_core.get_contents filter uris in
-      Lwt.return (GUI_html.home_html data))
+    (fun (filter, research) () ->
+      lwt data = GUI_core.get_contents filter research in
+      Lwt.return (GUI_html.home_html data research))
 
 let _ =
   Pumgrana.App.register

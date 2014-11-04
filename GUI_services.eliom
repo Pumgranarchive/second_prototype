@@ -24,7 +24,7 @@ let home_service =
   Eliom_service.Http.service
     ~path:["home"]
     ~get_params:Eliom_parameter.(suffix (opt (string "filter") **
-                                           opt (list "tags" (string "uri"))))
+                                           opt (string "research")))
     ()
 
 (* Content detail *)

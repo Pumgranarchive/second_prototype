@@ -4,6 +4,7 @@
   it GUI html
 *)
 
+open Utils
 open Pdeserialize
 open GUI_deserialize
 
@@ -39,10 +40,11 @@ let get_detail_content uri =
   | e -> print_endline (Printexc.to_string e);
     Lwt.return (error_short_content, [], [], [])
 
-let get_contents filter tags_uri =
+let get_contents opt_filter opt_research =
   try_lwt
-    lwt contents_json = API_core.get_contents filter tags_uri in
-    lwt tags_json = API_core.get_tags_by_type API_conf.content_tag in
+    let research = Opt.get_not_null "" opt_research in
+    lwt contents_json = API_core.research_contents opt_filter research in
+    lwt tags_json = API_core.get_tags_from_research research in
     let contents = get_service_return get_short_content_list contents_json in
     let tags = get_service_return get_tag_list tags_json in
     Lwt.return (contents, tags)

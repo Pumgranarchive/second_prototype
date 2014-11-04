@@ -68,6 +68,15 @@ struct
 
 end
 
+module Opt =
+struct
+
+  let get_not_null default = function
+    | None -> default
+    | Some x -> x
+
+end
+
 {client{
 
 open Eliom_content
@@ -93,7 +102,12 @@ module Client =
         let () = Dom.appendChild dom dom_block in
         append_all dom_of_elm dom tail
 
-    let refresh_list ~make_request ~elm_of_result ~dom_of_elm input div_list =
+    let get_research input =
+        let dom_input = To_dom.of_input input in
+        let value = Js.to_string (dom_input##value) in
+        if String.length value > 0 then value else " "
+
+    let refresh_list ~make_request ~elm_of_result dom_of_elm input div_list =
       let dom_input = To_dom.of_input input in
       let dom_list = To_dom.of_div div_list in
       let refresh_html () =

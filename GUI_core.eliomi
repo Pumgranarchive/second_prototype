@@ -13,7 +13,7 @@ val get_detail_content: string ->
      (Rdf_store.uri * string) list) Lwt.t
 
 (** Get all data for get_contents html service. *)
-val get_contents: string option -> string list option ->
+val get_contents: string option -> string option ->
   ((GUI_deserialize.id * string * string) list *
       (Rdf_store.uri * string) list) Lwt.t
 

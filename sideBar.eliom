@@ -14,7 +14,7 @@ open GUI_deserialize
 }}
 
 type mode =
-[ `Home of Html5_types.div Eliom_content.Html5.D.elt
+[ `Home of (Html5_types.div Eliom_content.Html5.D.elt * string)
 | `Content
 | `Link ]
 
@@ -28,21 +28,32 @@ type 'a action_type =
 
 open Utils.Client
 
-let refresh input div_list =
-  let dom_input = To_dom.of_input input in
+let refresh_contents input div_content =
   let make_request () =
-    let research = Js.to_string (dom_input##value) in
+    let research = get_research input in
     Eliom_client.call_service
-      ~service:%API_services.research_contents
-      (None, research) ()
+        ~service:%API_services.research_contents
+        (None, research) ()
   in
-  let elm_of_result result =
-    let json = Yojson.from_string result in
+  let elm_of_result r_contents =
+    let json = Yojson.from_string r_contents in
     let contents = get_service_return get_short_content_list json in
     [div (GUI_tools.build_contents_list contents)]
   in
-  let dom_of_elm = To_dom.of_div in
-  refresh_list ~make_request ~elm_of_result ~dom_of_elm input div_list
+  refresh_list ~make_request ~elm_of_result To_dom.of_div input div_content
+
+let refresh_tags input div_tag =
+  let make_request () =
+    let research = get_research input in
+    Eliom_client.call_service
+      ~service:%API_services.get_tags_from_research research ()
+  in
+  let elm_of_result r_tags =
+    let json = Yojson.from_string r_tags in
+    let tags = get_service_return get_tag_list json in
+    [div [GUI_tools.build_tags_ul ~active_click:true tags]]
+  in
+  refresh_list ~make_request ~elm_of_result To_dom.of_div input div_tag
 
 }}
 
@@ -57,9 +68,10 @@ let make_button mode =
     [div ~a:[a_class["side_button_link"]] []]
 
 let make_search_input div_tags = function
-  | `Home div_contents ->
-    let search_input = D.raw_input ~input_type:`Text ~name:"filter" () in
-    let () = ignore {unit{ refresh %search_input %div_contents }} in
+  | `Home (div_contents, value) ->
+    let search_input = D.raw_input ~input_type:`Text ~name:"research" ~value () in
+    let () = ignore {unit{ refresh_contents %search_input %div_contents }} in
+    let () = ignore {unit{ refresh_tags %search_input %div_tags }} in
     search_input
   | _ -> div []
 

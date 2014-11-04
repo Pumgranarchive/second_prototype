@@ -107,11 +107,10 @@ let build_tags_li ?(active_click=false) tags =
   let rec aux lis = function
     | []                -> List.rev lis
     | (uri, subject)::t  ->
-      let str_uri = Rdf_store.(uri_encode (string_of_uri uri)) in
       let fill = pcdata subject in
       let li = if active_click
         then li [a ~service:%GUI_services.home_service [div [fill]]
-                    (None, Some [str_uri])]
+                    (None, Some subject)]
         else li [fill]
       in
       aux (li::lis) t
@@ -164,14 +163,6 @@ let build_links_list links =
     else linked::(div ~a:[a_class["content_current_linked_main_list_elem_sep"]] [])::html
   in
   List.rev (List.fold_left aux [] links)
-
-(* {client{ *)
-
-(*   let bind_content content_div = *)
-(*     let dom_content = Eliom_content.Html5.To_dom.of_div content_div in *)
-(*     Js.windows.url <- *)
-
-(* }} *)
 
 let build_contents_list contents =
   let aux html (id, title, summary) =

@@ -213,15 +213,17 @@ let cut_research str =
   Str.split regex str
 
 let build_filter_research research_strings =
-  if List.length research_strings == 0 then "" else
-    let build_filter filter research_string =
-      let filter' = next_query filter " || " in
-      filter' ^ "regex(str(?subject), \"" ^ research_string ^ "\", \"i\")"
-    in
-    let filter = List.fold_left build_filter "" research_strings in
-    "?tag ?res ?subject .
-     FILTER (regex(str(?tag), \"^"^base_tag_url^"\") &&
-             regex(str(?res), \"^"^base_tag_ressource^"\") && ("^ filter ^")) . "
+  let build_filter filter research_string =
+    let filter' = next_query filter " || " in
+    filter' ^ "regex(str(?subject), \"" ^ research_string ^ "\", \"i\")"
+  in
+  let filter = List.fold_left build_filter "" research_strings in
+  let include_filter =
+    if (String.length filter > 0) then " && ("^ filter ^")" else ""
+  in
+  "?tag ?res ?subject .
+   FILTER (regex(str(?tag), \"^"^base_tag_url^"\") &&
+           regex(str(?res), \"^"^base_tag_ressource^"\") "^include_filter^") . "
 
 (*** Lwt tools  *)
 
@@ -348,7 +350,11 @@ let get_tags tag_type tags_uri =
 let get_tags_from_research research_string =
   let research_strings = cut_research research_string in
   let filter_query = build_filter_research research_strings in
-  let query = "SELECT ?tag ?subject WHERE { "^filter_query^"} GROUP BY ?tag" in
+  let query =
+    "SELECT ?tag ?subject WHERE
+     { " ^ filter_query ^" FILTER regex(str(?res), \"^"^tag_content_r^"\") }
+     GROUP BY ?tag"
+  in
   lwt solutions = get_from_4store query in
   let tuple_tags = List.map tuple_tag_from solutions in
   Lwt.return tuple_tags

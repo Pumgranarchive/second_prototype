@@ -5,6 +5,7 @@
 
 {shared{
 
+open Utils
 open Eliom_lib
 open Eliom_content
 open Eliom_content.Html5
@@ -61,10 +62,11 @@ let internal_error_html () =
 (*               (%submit:[Html5_types.input] Eliom_content.Html5.elt)}}; *)
 
 (** Display the home html service *)
-let home_html (contents, tags_id) =
+let home_html (contents, tags_id) opt_research =
+  let research = Opt.get_not_null "" opt_research in
   let content_list = Content_list.make contents in
   let mode = `Home in
-  let amode = `Home content_list in
+  let amode = `Home (content_list, research) in
   let add_content = AddContent.make mode in
   let side_bar = SideBar.make amode tags_id add_content in
   let main_logo = MainLogo.make () in
