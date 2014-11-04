@@ -285,6 +285,19 @@ let _ =
     (fun (tag_type) () ->
       return_of_json (API_core.get_tags_by_type tag_type))
 
+(* Get tag from research *)
+let get_tags_from_research =
+  Eliom_service.Http.service
+    ~path:["api"; "tag"; "list_from_research"]
+    ~get_params:Eliom_parameter.(suffix (string "research"))
+    ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:get_tags_from_research
+    (fun research () ->
+      return_of_json (API_core.get_tags_from_research research))
+
 (* Get_tag_from_content *)
 let get_tags_from_content =
   Eliom_service.Http.service

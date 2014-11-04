@@ -261,6 +261,14 @@ let get_tags_by_type type_name =
   in
   API_tools.check_return ~param_name:API_tools.tags_ret_name aux
 
+let get_tags_from_research research =
+  let aux () =
+    lwt tags = Rdf_store.get_tags_from_research research in
+    let json = `List (List.map tag_format tags) in
+    Lwt.return json
+  in
+  API_tools.check_return ~param_name:API_tools.tags_ret_name aux
+
 let get_tags_from_content content_str_uri =
   let aux () =
     let content_uri = uri_of_string content_str_uri in

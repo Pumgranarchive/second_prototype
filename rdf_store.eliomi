@@ -132,6 +132,9 @@ val delete_links : link_id list -> unit Lwt.t
     if [tags_uri] list is null, all tags of the given tag_type are returned *)
 val get_tags : tag_type -> uri list -> tag list Lwt.t
 
+(** [get_tags_from_research research] *)
+val get_tags_from_research : string -> tag list Lwt.t
+
 (** [get_tags_from_link link_id] *)
 val get_tags_from_link : link_id -> tag list Lwt.t
 

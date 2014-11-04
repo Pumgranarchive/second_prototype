@@ -345,6 +345,14 @@ let get_tags tag_type tags_uri =
   let tuple_tags = List.map tuple_tag_from solutions in
   Lwt.return (tuple_tags)
 
+let get_tags_from_research research_string =
+  let research_strings = cut_research research_string in
+  let filter_query = build_filter_research research_strings in
+  let query = "SELECT ?tag ?subject WHERE { "^filter_query^"} GROUP BY ?tag" in
+  lwt solutions = get_from_4store query in
+  let tuple_tags = List.map tuple_tag_from solutions in
+  Lwt.return tuple_tags
+
 let get_tags_from_link link_id =
   let o_str_uri, t_str_uri = str_tuple_of_link_id link_id in
   let query = "SELECT ?tag ?subject WHERE
