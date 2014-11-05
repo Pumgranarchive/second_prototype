@@ -50,7 +50,7 @@ let redirect_link html_body =
 let build_header elt_list =
   div ~a:[a_class["header"]]
     ([span ~a:[a_class["pumgrana"]]
-         [a ~service:%GUI_services.starting_service
+         [a ~service:%GUI_services.home
              [img ~a:[a_class ["pumgrana_logo"]]
                  ~alt:("Pumgrana Logo")
                  ~src:(make_uri
@@ -109,8 +109,7 @@ let build_tags_li ?(active_click=false) tags =
     | (uri, subject)::t  ->
       let fill = pcdata subject in
       let li = if active_click
-        then li [a ~service:%GUI_services.home_service [div [fill]]
-                    (None, Some subject)]
+        then li [a ~service:%GUI_services.contents [div [fill]] (Some subject)]
         else li [fill]
       in
       aux (li::lis) t
@@ -142,8 +141,8 @@ let build_ck_links_list links =
       let input = D.raw_input ~input_type:`Checkbox ~name:str_link_id () in
       let html =
         div [input;
-             a ~service:%GUI_services.link_update_service
-               [pcdata title] (Rdf_store.uri_encode str_link_id);
+             (* a ~service:%GUI_services.link_update_service *)
+             (*   [ *)pcdata title(* ] (Rdf_store.uri_encode str_link_id) *);
              br (); pcdata summary]
       in
       aux (input::inputs) (html::full_html) t
@@ -154,7 +153,7 @@ let build_ck_links_list links =
 let build_links_list links =
   let aux html (link_id, id, title, summary) =
     let str_id = Rdf_store.uri_encode (GUI_deserialize.string_of_id id) in
-    let linked = D.a ~service:%GUI_services.content_detail_service
+    let linked = D.a ~service:%GUI_services.content_detail
       [div ~a:[a_class["content_current_linked_main_list_elem"]]
           [h3 [pcdata title]; p [pcdata summary]]] str_id
     in
@@ -168,7 +167,7 @@ let build_contents_list contents =
   let aux html (id, title, summary) =
     let str_id = Rdf_store.uri_encode (GUI_deserialize.string_of_id id) in
     let content =
-      D.a ~service:%GUI_services.content_detail_service
+      D.a ~service:%GUI_services.content_detail
         [div ~a:[a_class ["content_main_list_elem"]]
           [h3 [pcdata title]; p [pcdata summary]]] str_id
     in

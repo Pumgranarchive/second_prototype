@@ -3,62 +3,60 @@
   This module implement services of GUI
 *)
 
-(* Starting page *)
-let starting_service =
+(* Home service *)
+let home =
   Eliom_service.App.service
     ~path:[]
     ~get_params:Eliom_parameter.unit
     ()
 
-(* Home page without parameters *)
-(* We need to do this because parameters does not allow to match
-   to the source url.*)
-let home_service_without =
+(* Contents list service *)
+let contents =
   Eliom_service.Http.service
-    ~path:["home"]
-    ~get_params:Eliom_parameter.(suffix (opt (string "filter")))
+    ~path:["contents"]
+    ~get_params:Eliom_parameter.(suffix (opt (string "s1")))
     ()
 
-(* Home page with parameters *)
-let home_service =
-  Eliom_service.Http.service
-    ~path:["home"]
-    ~get_params:Eliom_parameter.(suffix (opt (string "filter") **
-                                           opt (string "research")))
-    ()
+(* Contents list service with two parameters  *)
+(* let contents_two = *)
+(*   Eliom_service.Http.service *)
+(*     ~path:["contents"] *)
+(*     ~get_params:Eliom_parameter.(suffix (opt (string "filter") ** *)
+(*                                            opt (string "research"))) *)
+(*     () *)
 
-(* Content detail *)
-let content_detail_service =
+(* Content detail view service *)
+let content_detail =
   Eliom_service.Http.service
-    ~path:["content"; "detail"]
+    ~path:["view"]
     ~get_params:Eliom_parameter.(suffix (string "content_uri"))
     ()
 
 (* Update content detail *)
-let content_update_service =
-  Eliom_service.Http.service
-    ~path:["content"; "update"]
-    ~get_params:Eliom_parameter.(suffix (string "content_uri"))
-    ()
+(* let content_update_service = *)
+(*   Eliom_service.Http.service *)
+(*     ~path:["content"; "update"] *)
+(*     ~get_params:Eliom_parameter.(suffix (string "content_uri")) *)
+(*     () *)
 
 (* Insert content detail *)
-let content_insert_service =
-  Eliom_service.Http.service
-    ~path:["content"; "insert"]
-    ~get_params:Eliom_parameter.unit
-    ()
+(* let content_insert_service = *)
+(*   Eliom_service.Http.service *)
+(*     ~path:["content"; "insert"] *)
+(*     ~get_params:Eliom_parameter.unit *)
+(*     () *)
 
 (* Insert link *)
-let link_insert_service =
-  Eliom_service.Http.service
-    ~path:["link"; "insert"]
-    ~get_params:Eliom_parameter.(suffix (opt (string "origin_uri") **
-                                           opt (string "target_uri")))
-    ()
+(* let link_insert_service = *)
+(*   Eliom_service.Http.service *)
+(*     ~path:["link"; "insert"] *)
+(*     ~get_params:Eliom_parameter.(suffix (opt (string "origin_uri") ** *)
+(*                                            opt (string "target_uri"))) *)
+(*     () *)
 
 (* Update link *)
-let link_update_service =
-  Eliom_service.Http.service
-    ~path:["link"; "update"]
-    ~get_params:Eliom_parameter.(suffix (string "link_uri"))
-    ()
+(* let link_update_service = *)
+(*   Eliom_service.Http.service *)
+(*     ~path:["link"; "update"] *)
+(*     ~get_params:Eliom_parameter.(suffix (string "link_uri")) *)
+(*     () *)
