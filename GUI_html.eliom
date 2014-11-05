@@ -25,6 +25,16 @@ module Content =
 struct
   let make elements =
     div ~a:[a_id "content"] elements
+
+  let get_data = function
+    | GUI_deserialize.Internal (c_id, c_title, c_summary, c_body) ->
+      c_id, c_title,
+      div [h3 [pcdata c_title]; p [pcdata c_summary]; p [pcdata c_body]]
+    | GUI_deserialize.External (c_id, c_title, c_summary, c_html_body) ->
+      let revise_html = GUI_tools.redirect_link c_html_body in
+      c_id, c_title,
+      div ~a:[a_class["content_current"]]
+        [div [h3 [pcdata c_title]; F.Unsafe.data revise_html]]
 end
 
 module Content_list =
@@ -50,19 +60,15 @@ let empty_html ?msg () =
 let internal_error_html () =
   empty_html ~msg:"Internal Error" ()
 
-(* ignore {unit{ GUI_client_core.bind_back *)
-(*               (%backb:[Html5_types.input] Eliom_content.Html5.elt) }}; *)
-(* ignore {unit{ GUI_client_core.bind_forward *)
-(*               (%forwardb:[Html5_types.input] Eliom_content.Html5.elt) }}; *)
-(* ignore {unit{ GUI_client_core.bind_insert_content *)
-(*               (%insertb:[Html5_types.input] Eliom_content.Html5.elt) }}; *)
-(* ignore {unit{ GUI_client_core.handle_refresh_contents *)
-(*               (%contents_html:[Html5_types.div] Eliom_content.Html5.elt) *)
-(*               (%tags_inputs:[Html5_types.input] Eliom_content.Html5.elt list) *)
-(*               (%submit:[Html5_types.input] Eliom_content.Html5.elt)}}; *)
+(** Display the home html service *)
+let home () =
+  let middle_search = MiddleSearch.make () in
+  let main_logo = MainLogo.make () in
+  let container =  Container.make [middle_search; main_logo] in
+  GUI_tools.make_html [container]
 
 (** Display the home html service *)
-let home_html (contents, tags_id) opt_research =
+let contents (contents, tags_id) opt_research =
   let research = Opt.get_not_null "" opt_research in
   let content_list = Content_list.make contents in
   let mode = `Home in
@@ -74,23 +80,6 @@ let home_html (contents, tags_id) opt_research =
   let html_add_content = AddContent.to_html add_content in
   let container =  Container.make [side_bar; content; main_logo; html_add_content] in
   GUI_tools.make_html [container]
-
-(* ignore {unit{ GUI_client_core.bind_back *)
-(*               (%backb:[Html5_types.input] Eliom_content.Html5.elt) }}; *)
-(* ignore {unit{ GUI_client_core.bind_forward *)
-(*               (%forwardb:[Html5_types.input] Eliom_content.Html5.elt) }}; *)
-(* ignore {unit{ GUI_client_core.bind_update_content *)
-(*               (%updateb:[Html5_types.input] Eliom_content.Html5.elt) *)
-(*               (%c_id:GUI_deserialize.id) }}; *)
-(* ignore {unit{ GUI_client_core.bind_delete_content *)
-(*               (%deleteb:[Html5_types.input] Eliom_content.Html5.elt) *)
-(*               (%c_id:GUI_deserialize.id) }}; *)
-(* ignore {unit{ GUI_client_core.handle_refresh_links *)
-(*               (%c_id:GUI_deserialize.id) *)
-(*               (%links_html:[Html5_types.div] Eliom_content.Html5.elt) *)
-(*               (%links_tags_inputs: *)
-(*                   [Html5_types.input] Eliom_content.Html5.elt list) *)
-(*               (%submit:[Html5_types.input] Eliom_content.Html5.elt) }}; *)
 
 (* let submit, links_tags_inputs, links_tags_html = *)
 (*   GUI_tools.build_tags_form tags_link *)
@@ -107,21 +96,11 @@ let home_html (contents, tags_id) opt_research =
 (*   c_id, iframe ~a:[a_class ["pum_iframe"]; *)
 (*                    a_src (Eliom_content.Xml.uri_of_string id)] [] *)
 
-let get_content_data = function
-  | GUI_deserialize.Internal (c_id, c_title, c_summary, c_body) ->
-    c_id, c_title,
-    div [h3 [pcdata c_title]; p [pcdata c_summary]; p [pcdata c_body]]
-  | GUI_deserialize.External (c_id, c_title, c_summary, c_html_body) ->
-    let revise_html = GUI_tools.redirect_link c_html_body in
-    c_id, c_title,
-    div ~a:[a_class["content_current"]]
-      [div [h3 [pcdata c_title]; F.Unsafe.data revise_html]]
-
 (** Display the content detail html service *)
 let content_detail (content, tags_id, links, tags_link) =
   try
     let mode = `Content in
-    let content_id, title, content_elt = get_content_data content in
+    let content_id, title, content_elt = Content.get_data content in
     let add_content = AddContent.make mode in
     let side_bar = SideBar.make mode tags_id add_content in
     let link_bar = LinkBar.make content_id links in

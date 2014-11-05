@@ -7,25 +7,21 @@ let _ =
   Pumgrana.App.register
     ~service:GUI_services.home
     (fun () () ->
-      ignore {unit{
-        Eliom_client.change_url
-        ~service:%GUI_services.contents None }};
-      lwt data = GUI_core.get_contents None None in
-      Lwt.return (GUI_html.home_html data None))
+      Lwt.return (GUI_html.home ()))
 
 let _ =
   Pumgrana.App.register
     ~service:GUI_services.contents
     (fun research () ->
       lwt data = GUI_core.get_contents None research in
-      Lwt.return (GUI_html.home_html data research))
+      Lwt.return (GUI_html.contents data research))
 
 (* let _ = *)
 (*   Pumgrana.App.register *)
 (*     ~service:GUI_services.contents_two *)
 (*     (fun (filter, research) () -> *)
 (*       lwt data = GUI_core.get_contents filter research in *)
-(*       Lwt.return (GUI_html.home_html data research)) *)
+(*       Lwt.return (GUI_html.contents data research)) *)
 
 let _ =
   Pumgrana.App.register

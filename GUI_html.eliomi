@@ -6,8 +6,11 @@
    This module build the GUI html services}
 *)
 
-(** [home_html data research] Display the home html service *)
-val home_html:
+(** [home ()] Display the home html service *)
+val home: unit -> Html5_types.html Eliom_content.Html5.elt
+
+(** [contents data research] Display the contents html service *)
+val contents:
   (GUI_deserialize.id * string * string) list *
   (Rdf_store.uri * string) list ->
   string option ->
