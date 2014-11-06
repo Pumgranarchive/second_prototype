@@ -1,4 +1,4 @@
-type mode = [`Home | `Content | `Link]
+type mode = [`Contents | `Detail | `Link]
 type 'a t
 
 (** [make mode]

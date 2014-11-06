@@ -9,7 +9,7 @@ let (>>=) = Lwt.bind
 
 }}
 
-type mode = [`Home | `Content | `Link]
+type mode = [`Contents | `Detail | `Link]
 type 'a t = ('a * Html5_types.div Eliom_content.Html5.D.elt)
 
 {client{

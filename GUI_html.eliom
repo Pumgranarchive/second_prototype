@@ -71,8 +71,8 @@ let home () =
 let contents (contents, tags_id) opt_research =
   let research = Opt.get_not_null "" opt_research in
   let content_list = Content_list.make contents in
-  let mode = `Home in
-  let amode = `Home (content_list, research) in
+  let mode = `Contents in
+  let amode = `Contents (content_list, research) in
   let add_content = AddContent.make mode in
   let side_bar = SideBar.make amode tags_id add_content in
   let main_logo = MainLogo.make () in
@@ -99,7 +99,7 @@ let contents (contents, tags_id) opt_research =
 (** Display the content detail html service *)
 let content_detail (content, tags_id, links, tags_link) =
   try
-    let mode = `Content in
+    let mode = `Detail in
     let content_id, title, content_elt = Content.get_data content in
     let add_content = AddContent.make mode in
     let side_bar = SideBar.make mode tags_id add_content in

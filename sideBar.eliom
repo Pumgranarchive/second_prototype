@@ -14,8 +14,8 @@ open GUI_deserialize
 }}
 
 type mode =
-[ `Home of (Html5_types.div Eliom_content.Html5.D.elt * string)
-| `Content
+[ `Contents of (Html5_types.div Eliom_content.Html5.D.elt * string)
+| `Detail
 | `Link ]
 
 type 'a action_type =
@@ -60,15 +60,15 @@ let refresh_tags input div_tag =
 
 let make_button mode =
   let img_class = match mode with
-    | `Home _  -> "side_button_img_home_nh"
-    | `Content -> "side_button_img_content_nh"
+    | `Contents _  -> "side_button_img_home_nh"
+    | `Detail -> "side_button_img_content_nh"
     | `Link    -> "side_button_img_link_nh"
   in
   div ~a:[a_class["side_button";"side_button_home";img_class]]
     [div ~a:[a_class["side_button_link"]] []]
 
 let make_search_input div_tags = function
-  | `Home (div_contents, value) ->
+  | `Contents (div_contents, value) ->
     let search_input = D.raw_input ~input_type:`Text ~name:"research" ~value () in
     let () = ignore {unit{ refresh_contents %search_input %div_contents }} in
     let () = ignore {unit{ refresh_tags %search_input %div_tags }} in
@@ -92,9 +92,9 @@ let action atype =
 
 let make_action mode add_content =
   let li_list = match mode with
-    | `Home _  -> [action (Aplus add_content)]
-    | `Content -> [(* action Alink; *) action Ahome; action (Aplus add_content)]
-    | `Link    -> [action Acontent; action Ahome; action (Aplus add_content)]
+    | `Contents _ -> [action (Aplus add_content)]
+    | `Detail -> [(* action Alink; *) action Ahome; action (Aplus add_content)]
+    | `Link   -> [action Acontent; action Ahome; action (Aplus add_content)]
   in
   div ~a:[a_class["side_button_bottom"]]
     [ul ~a:[a_class["side_button_bottom_list"]]
@@ -109,7 +109,7 @@ let make_tags mode tags_id =
   let tags_ul = D.div [GUI_tools.build_tags_ul ~active_click:true tags_id] in
   let button_add = div ~a:[a_class["side_button_add"]] [pcdata "Add a tag"] in
   match mode with
-  | `Content -> tags_ul, div [tags_ul; button_add]
+  | `Detail -> tags_ul, div [tags_ul; button_add]
   | _        -> tags_ul, div [tags_ul]
 
 let make mode tags_id add_content =
