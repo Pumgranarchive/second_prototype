@@ -21,29 +21,6 @@ struct
     div ~a:[a_id "container"] elements
 end
 
-module Content =
-struct
-  let make elements =
-    div ~a:[a_id "content"] elements
-
-  let get_data = function
-    | GUI_deserialize.Internal (c_id, c_title, c_summary, c_body) ->
-      c_id, c_title,
-      div [h3 [pcdata c_title]; p [pcdata c_summary]; p [pcdata c_body]]
-    | GUI_deserialize.External (c_id, c_title, c_summary, c_html_body) ->
-      let revise_html = GUI_tools.redirect_link c_html_body in
-      c_id, c_title,
-      div ~a:[a_class["content_current"]]
-        [div [h3 [pcdata c_title]; F.Unsafe.data revise_html]]
-end
-
-module Content_list =
-struct
-  let make contents =
-    D.div ~a:[a_class["content_main_list"]]
-      (GUI_tools.build_contents_list contents)
-end
-
 module MainLogo =
 struct
   let make () =
@@ -61,59 +38,42 @@ let internal_error_html () =
   empty_html ~msg:"Internal Error" ()
 
 (** Display the home html service *)
-let home () =
+let home () () =
   let middle_search = MiddleSearch.make () in
   let main_logo = MainLogo.make () in
   let container =  Container.make [middle_search; main_logo] in
-  GUI_tools.make_html [container]
+  let html = GUI_tools.make_html [container] in
+  Lwt.return html
 
 (** Display the home html service *)
-let contents (contents, tags_id) opt_research =
+let contents (opt_filter, opt_research) () =
   let research = Opt.get_not_null "" opt_research in
-  let content_list = Content_list.make contents in
-  let mode = `Contents in
-  let amode = `Contents (content_list, research) in
+  lwt content_list = ContentList.make opt_filter research in
+  let mode = `Contents (content_list, opt_filter, research) in
   let add_content = AddContent.make mode in
-  let side_bar = SideBar.make amode tags_id add_content in
+  lwt side_bar = SideBar.make mode add_content in
   let main_logo = MainLogo.make () in
   let content = Content.make [content_list] in
   let html_add_content = AddContent.to_html add_content in
-  let container =  Container.make [side_bar; content; main_logo; html_add_content] in
-  GUI_tools.make_html [container]
-
-(* let submit, links_tags_inputs, links_tags_html = *)
-(*   GUI_tools.build_tags_form tags_link *)
-(* in *)
-
-(* let id = (GUI_deserialize.string_of_id c_id) in *)
-(* let regexp = Str.regexp ".*youtube.*" in *)
-(* let iframe_bool = Str.string_match regexp id 0 in *)
-(* if iframe_bool *)
-(* then  c_id, *)
-(* div ~a:[a_class["content_current"]] *)
-(*   [div [h3 [pcdata c_title]; F.Unsafe.data c_html_body]] *)
-(* else *)
-(*   c_id, iframe ~a:[a_class ["pum_iframe"]; *)
-(*                    a_src (Eliom_content.Xml.uri_of_string id)] [] *)
+  let container = Container.make [side_bar; content; main_logo; html_add_content] in
+  let html = GUI_tools.make_html [container] in
+  Lwt.return html
 
 (** Display the content detail html service *)
-let content_detail (content, tags_id, links, tags_link) =
-  try
-    let mode = `Detail in
-    let content_id, title, content_elt = Content.get_data content in
-    let add_content = AddContent.make mode in
-    let side_bar = SideBar.make mode tags_id add_content in
-    let link_bar = LinkBar.make content_id links in
-    let main_logo = MainLogo.make () in
-    let content = Content.make [content_elt; link_bar; main_logo] in
-    let html_add_content = AddContent.to_html add_content in
-    let container = Container.make [side_bar; content; html_add_content] in
-    GUI_tools.make_html ~title [container]
-  with
-  | e ->
-    let err_msg = Printexc.to_string e in
-    print_endline err_msg;
-    empty_html ~msg:err_msg ()
+let content_detail content_uri () =
+  let mode = `Detail content_uri in
+  lwt title, content_elt = Content.get_data content_uri in
+  let add_content = AddContent.make mode in
+  lwt side_bar = SideBar.make mode add_content in
+  lwt link_bar = LinkBar.make content_uri in
+  let main_logo = MainLogo.make () in
+  let content = Content.make [content_elt; link_bar; main_logo] in
+  let html_add_content = AddContent.to_html add_content in
+  let container = Container.make [side_bar; content; html_add_content] in
+  let html = GUI_tools.make_html ~title [container] in
+  Lwt.return html
+
+
 
 (* (\** Update content detail html service *\) *)
 (* let content_update (content, tags, links, tags_link) = *)

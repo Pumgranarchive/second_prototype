@@ -17,9 +17,9 @@ open GUI_deserialize
 
 open Utils.Client
 
-let refresh_links content_id input div_list =
-  let uri = GUI_deserialize.uri_of_id content_id in
-  let encoded_uri = Rdf_store.uri_encode uri in
+let refresh_links content_uri input div_list =
+  let str_uri = Rdf_store.string_of_uri content_uri in
+  let encoded_uri = Rdf_store.uri_encode str_uri in
   let make_request () =
     let research = get_research input in
     Eliom_client.call_service
@@ -40,20 +40,30 @@ let make_img class_name name =
     ~src:(make_uri ~service:(Eliom_service.static_dir ())
             ["images"; name]) ()
 
-let make_search_input content_id div_links =
+let make_search_input content_uri div_links =
   let search_input = D.raw_input ~input_type:`Text ~name:"research" () in
-  let () = ignore {unit{ refresh_links %content_id %search_input %div_links }} in
+  let () = ignore {unit{ refresh_links %content_uri %search_input %div_links }} in
   search_input
 
-let make_links links =
-  let link_list = GUI_tools.build_links_list links in
-  D.div ~a:[a_class["content_current_linked_main_list"]] link_list
+let get_links content_uri =
+  try_lwt
+    let str_uri = Rdf_store.string_of_uri content_uri in
+    lwt json = API_core.get_links_from_content str_uri in
+    Lwt.return (get_service_return get_link_list json)
+  with e -> (print_endline (Printexc.to_string e); Lwt.return [])
 
-let make content_id links =
+let make_links content_uri =
+  lwt links = get_links content_uri in
+  let link_div = D.div (GUI_tools.build_links_list links) in
+  let html = div ~a:[a_class["content_current_linked_main_list"]] [link_div] in
+  Lwt.return (link_div, html)
+
+let make content_uri =
   (* let link_sub_arrow = make_img "link_sub_arrow" "Icons_web-links_red.png" in *)
   let link_arrow = make_img "link_arrow" "linked_content_arrow.png" in
-  let div_links = make_links links in
-  let search_input = make_search_input content_id div_links in
-  div ~a:[a_class["content_current_linked"]]
-    [div ~a:[a_class["content_current_linked_mainlogo"]]
-	[link_arrow; search_input; div_links]]
+  lwt div_links, links = make_links content_uri in
+  let search_input = make_search_input content_uri div_links in
+  let contents = [link_arrow; search_input; links] in
+  let clinked = div ~a:[a_class["content_current_linked_mainlogo"]] contents in
+  let html = div ~a:[a_class["content_current_linked"]] [clinked] in
+  Lwt.return html

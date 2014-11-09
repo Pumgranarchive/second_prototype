@@ -1,4 +1,6 @@
-type mode = [`Contents | `Detail | `Link]
+type mode =
+[`Contents of (Html5_types.div Eliom_content.Html5.D.elt * string option * string)
+| `Detail of Rdf_store.uri]
 type 'a t
 
 (** [make mode]

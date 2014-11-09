@@ -14,8 +14,8 @@ open GUI_deserialize
 }}
 
 type mode =
-[ `Contents of (Html5_types.div Eliom_content.Html5.D.elt * string)
-| `Detail
+[ `Contents of (Html5_types.div Eliom_content.Html5.D.elt * string option * string)
+| `Detail of Rdf_store.uri
 | `Link ]
 
 type 'a action_type =
@@ -61,15 +61,17 @@ let refresh_tags input div_tag =
 let make_button mode =
   let img_class = match mode with
     | `Contents _  -> "side_button_img_home_nh"
-    | `Detail -> "side_button_img_content_nh"
+    | `Detail _ -> "side_button_img_content_nh"
     | `Link    -> "side_button_img_link_nh"
   in
   div ~a:[a_class["side_button";"side_button_home";img_class]]
     [div ~a:[a_class["side_button_link"]] []]
 
 let make_search_input div_tags = function
-  | `Contents (div_contents, value) ->
-    let search_input = D.raw_input ~input_type:`Text ~name:"research" ~value () in
+  | `Contents (div_contents, filter, research) ->
+    let name = "research" in
+    let value = research in
+    let search_input = D.raw_input ~input_type:`Text ~name ~value () in
     let () = ignore {unit{ refresh_contents %search_input %div_contents }} in
     let () = ignore {unit{ refresh_tags %search_input %div_tags }} in
     search_input
@@ -93,7 +95,7 @@ let action atype =
 let make_action mode add_content =
   let li_list = match mode with
     | `Contents _ -> [action (Aplus add_content)]
-    | `Detail -> [(* action Alink; *) action Ahome; action (Aplus add_content)]
+    | `Detail _ -> [(* action Alink; *) action Ahome; action (Aplus add_content)]
     | `Link   -> [action Acontent; action Ahome; action (Aplus add_content)]
   in
   div ~a:[a_class["side_button_bottom"]]
@@ -105,18 +107,34 @@ let make_arrow () =
     ~src:(make_uri ~service:(Eliom_service.static_dir ())
             ["images";"arrow_side_bar.png"]) ()
 
-let make_tags mode tags_id =
+let get_tags mode =
+  try_lwt
+    lwt json = match mode with
+      | `Contents (div_contents, filter, research) ->
+        API_core.get_tags_from_research research
+      | `Detail content_uri ->
+        API_core.get_tags_from_content (Rdf_store.string_of_uri content_uri)
+      | `Link -> failwith "Not implemented"
+    in
+    Lwt.return (get_service_return get_tag_list json)
+  with e -> (print_endline (Printexc.to_string e); Lwt.return [])
+
+let make_tags mode =
+  lwt tags_id = get_tags mode in
   let tags_ul = D.div [GUI_tools.build_tags_ul ~active_click:true tags_id] in
   let button_add = div ~a:[a_class["side_button_add"]] [pcdata "Add a tag"] in
-  match mode with
-  | `Detail -> tags_ul, div [tags_ul; button_add]
-  | _        -> tags_ul, div [tags_ul]
+  let html = match mode with
+    | `Detail _ -> tags_ul, div [tags_ul; button_add]
+    | _         -> tags_ul, div [tags_ul]
+  in
+  Lwt.return html
 
-let make mode tags_id add_content =
+let make mode add_content =
   let arrow = make_arrow () in
   let button = make_button mode in
-  let tags_div, tags = make_tags mode tags_id in
+  lwt tags_div, tags = make_tags mode in
   let search_input = make_search_input tags_div mode  in
   let action = make_action mode add_content in
   let elements = [arrow; button; search_input; tags; action] in
-  div ~a:[a_id "sidebar"] elements
+  let html = div ~a:[a_id "sidebar"] elements in
+  Lwt.return html
