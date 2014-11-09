@@ -12,17 +12,22 @@ open Eliom_content
 open Eliom_content.Html5
 open Eliom_content.Html5.F
 
+open Utils
+
 (*** Build tools  *)
 
 }}
 
 {server{
 
-let make_html ?(title="Pumgrana") content =
-  Eliom_tools.F.html ~title
+let make_html ?(title="Pumgrana") lwt_contents =
+  lwt contents = Lwt_list.(map_s wait lwt_contents) in
+  let html = Eliom_tools.F.html ~title
     ~js:[["js";"jquery-2.1.1.min.js"]]
     ~css:[["css";"style.css"]]
-    Html5.F.(body content)
+    Html5.F.(body contents)
+  in
+  Lwt.return html
 
 let redirect_link html_body =
   let href_regexp = Str.regexp "href=" in

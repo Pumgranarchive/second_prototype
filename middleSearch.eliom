@@ -54,4 +54,5 @@ let make_tags () =
 let make () =
   let tags = make_tags () in
   let search_input = make_search_input tags  in
-  div [search_input; tags]
+  let html = div [search_input; tags] in
+  Lwt.return html

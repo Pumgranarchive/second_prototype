@@ -14,7 +14,7 @@ open GUI_deserialize
 }}
 
 type mode =
-[ `Contents of (Html5_types.div Eliom_content.Html5.D.elt * string option * string)
+[ `Contents of (Html5_types.div Eliom_content.Html5.D.elt Lwt.t * string option * string)
 | `Detail of Rdf_store.uri
 | `Link ]
 
@@ -68,14 +68,15 @@ let make_button mode =
     [div ~a:[a_class["side_button_link"]] []]
 
 let make_search_input div_tags = function
-  | `Contents (div_contents, filter, research) ->
+  | `Contents (lwt_div_contents, filter, research) ->
+    lwt div_contents = lwt_div_contents in
     let name = "research" in
     let value = research in
     let search_input = D.raw_input ~input_type:`Text ~name ~value () in
     let () = ignore {unit{ refresh_contents %search_input %div_contents }} in
     let () = ignore {unit{ refresh_tags %search_input %div_tags }} in
-    search_input
-  | _ -> div []
+    Lwt.return search_input
+  | _ -> Lwt.return (div [])
 
 let action atype =
   let img_class = match atype with
@@ -133,7 +134,7 @@ let make mode add_content =
   let arrow = make_arrow () in
   let button = make_button mode in
   lwt tags_div, tags = make_tags mode in
-  let search_input = make_search_input tags_div mode  in
+  lwt search_input = make_search_input tags_div mode  in
   let action = make_action mode add_content in
   let elements = [arrow; button; search_input; tags; action] in
   let html = div ~a:[a_id "sidebar"] elements in

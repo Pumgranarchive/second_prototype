@@ -10,7 +10,7 @@ let (>>=) = Lwt.bind
 }}
 
 type mode =
-[`Contents of (Html5_types.div Eliom_content.Html5.D.elt * string option * string)
+[`Contents of (Html5_types.div Eliom_content.Html5.D.elt Lwt.t * string option * string)
 | `Detail of Rdf_store.uri]
 
 type 'a t = ('a * Html5_types.div Eliom_content.Html5.D.elt)
@@ -75,7 +75,7 @@ let make mode =
   ignore {unit{ bind_click_to_switch %background %background }};
   mode, background
 
-let to_html (mode, elm) = elm
+let to_html (mode, elm) = Lwt.return elm
 
 let switch_onclick (mode, elm) target =
   ignore {unit{ bind_click_to_switch %target %elm }}

@@ -25,6 +25,7 @@ struct
 
   let wait x = x
 
+  (** Map list (not Lwt) which catch all exceptions *)
   let map_exc func list =
     let rec aux blist = function
       | []   -> Lwt.return blist
@@ -39,6 +40,7 @@ struct
     lwt res = aux [] list in
     Lwt.return (List.rev res)
 
+  (** Lwt Map list in synchronised manner which catch all exceptions *)
   let map_s_exc func list =
     let rec aux blist = function
       | []   -> Lwt.return blist
@@ -53,6 +55,7 @@ struct
     lwt res = aux [] list in
     Lwt.return (List.rev res)
 
+  (** Lwt Iter list in synchronised manner which catch all exceptions *)
   let iter_s_exc func list =
     let rec aux = function
       | []   -> Lwt.return ()

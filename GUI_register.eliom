@@ -25,7 +25,7 @@ let launcher func get_process post_process get_params post_params =
   with e ->
     let err_msg = Printexc.to_string e in
     let () = print_endline err_msg in
-    Lwt.return (GUI_html.empty_html ~msg:err_msg ())
+    GUI_html.empty_html ~msg:err_msg ()
 
 let _ =
   Pumgrana.App.register

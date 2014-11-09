@@ -15,21 +15,9 @@ module Yojson = Yojson.Basic
 
 }}
 
-module Container =
-struct
-  let make elements =
-    div ~a:[a_id "container"] elements
-end
-
-module MainLogo =
-struct
-  let make () =
-    div ~a:[a_id "main_logo"] []
-end
-
 let empty_html ?msg () =
   let body_list = match msg with
-    | Some s    -> [pcdata s]
+    | Some s    -> [Lwt.return (pcdata s)]
     | None      -> []
   in
   GUI_tools.make_html body_list
@@ -41,37 +29,34 @@ let internal_error_html () =
 let home () () =
   let middle_search = MiddleSearch.make () in
   let main_logo = MainLogo.make () in
-  let container =  Container.make [middle_search; main_logo] in
-  let html = GUI_tools.make_html [container] in
-  Lwt.return html
+  let container = Container.make [middle_search; main_logo] in
+  GUI_tools.make_html [container]
 
 (** Display the home html service *)
 let contents (opt_filter, opt_research) () =
   let research = Opt.get_not_null "" opt_research in
-  lwt content_list = ContentList.make opt_filter research in
+  let content_list = ContentList.make opt_filter research in
   let mode = `Contents (content_list, opt_filter, research) in
   let add_content = AddContent.make mode in
-  lwt side_bar = SideBar.make mode add_content in
+  let side_bar = SideBar.make mode add_content in
   let main_logo = MainLogo.make () in
   let content = Content.make [content_list] in
   let html_add_content = AddContent.to_html add_content in
   let container = Container.make [side_bar; content; main_logo; html_add_content] in
-  let html = GUI_tools.make_html [container] in
-  Lwt.return html
+  GUI_tools.make_html [container]
 
 (** Display the content detail html service *)
 let content_detail content_uri () =
   let mode = `Detail content_uri in
   lwt title, content_elt = Content.get_data content_uri in
   let add_content = AddContent.make mode in
-  lwt side_bar = SideBar.make mode add_content in
-  lwt link_bar = LinkBar.make content_uri in
+  let side_bar = SideBar.make mode add_content in
+  let link_bar = LinkBar.make content_uri in
   let main_logo = MainLogo.make () in
   let content = Content.make [content_elt; link_bar; main_logo] in
   let html_add_content = AddContent.to_html add_content in
   let container = Container.make [side_bar; content; html_add_content] in
-  let html = GUI_tools.make_html ~title [container] in
-  Lwt.return html
+  GUI_tools.make_html ~title [container]
 
 
 
