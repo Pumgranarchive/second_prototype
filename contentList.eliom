@@ -5,10 +5,8 @@ open Eliom_content.Html5.F
 open Pdeserialize
 open GUI_deserialize
 
-let get opt_filter research =
-  try_lwt
-    lwt json = API_core.research_contents opt_filter research in
-    Lwt.return (get_service_return get_short_content_list json)
+let get filter research =
+  try_lwt Http.research_contents research
   with e -> (print_endline (Printexc.to_string e); Lwt.return [])
 
 let make opt_filter research =

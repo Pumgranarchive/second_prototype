@@ -5,11 +5,10 @@
 ** Deserializer for API to GUI
  *)
 
-module Yojson = Yojson.Basic
+include  Pdeserialize
 
 open Yojson.Util
 open Pjson
-open Pdeserialize
 
 type id =
 | Id of Nosql_store.id

@@ -17,20 +17,9 @@ open GUI_deserialize
 
 open Utils.Client
 
-let refresh_links content_uri input div_list =
-  let str_uri = Rdf_store.string_of_uri content_uri in
-  let encoded_uri = Rdf_store.uri_encode str_uri in
-  let make_request () =
-    let research = get_research input in
-    Eliom_client.call_service
-      ~service:%API_services.get_links_from_research
-      (encoded_uri, research) ()
-  in
-  let elm_of_result result =
-    let json = Yojson.from_string result in
-    let links = get_service_return get_link_list json in
-    [div (GUI_tools.build_links_list links)]
-  in
+let refresh_links curi input div_list =
+  let make_request () = Http.links_from_research curi (get_research input) in
+  let elm_of_result links = [div (GUI_tools.build_links_list links)] in
   refresh_list ~make_request ~elm_of_result To_dom.of_div input div_list
 
 }}
@@ -46,10 +35,7 @@ let make_search_input content_uri div_links =
   search_input
 
 let get_links content_uri =
-  try_lwt
-    let str_uri = Rdf_store.string_of_uri content_uri in
-    lwt json = API_core.get_links_from_content str_uri in
-    Lwt.return (get_service_return get_link_list json)
+  try_lwt Http.links_from_content content_uri
   with e -> (print_endline (Printexc.to_string e); Lwt.return [])
 
 let make_links content_uri =

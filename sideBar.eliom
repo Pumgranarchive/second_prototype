@@ -29,30 +29,14 @@ type 'a action_type =
 open Utils.Client
 
 let refresh_contents input div_content =
-  let make_request () =
-    let research = get_research input in
-    Eliom_client.call_service
-        ~service:%API_services.research_contents
-        (None, research) ()
-  in
-  let elm_of_result r_contents =
-    let json = Yojson.from_string r_contents in
-    let contents = get_service_return get_short_content_list json in
-    [div (GUI_tools.build_contents_list contents)]
-  in
+  let make_request () = Http.research_contents (get_research input) in
+  let elm_of_result contents = [div (GUI_tools.build_contents_list contents)] in
   refresh_list ~make_request ~elm_of_result To_dom.of_div input div_content
 
 let refresh_tags input div_tag =
-  let make_request () =
-    let research = get_research input in
-    Eliom_client.call_service
-      ~service:%API_services.get_tags_from_research research ()
-  in
-  let elm_of_result r_tags =
-    let json = Yojson.from_string r_tags in
-    let tags = get_service_return get_tag_list json in
-    [div [GUI_tools.build_tags_ul ~active_click:true tags]]
-  in
+  let active_click = true in
+  let make_request () = Http.tags_from_research (get_research input) in
+  let elm_of_result tags = [div [GUI_tools.build_tags_ul ~active_click tags]] in
   refresh_list ~make_request ~elm_of_result To_dom.of_div input div_tag
 
 }}
@@ -110,14 +94,10 @@ let make_arrow () =
 
 let get_tags mode =
   try_lwt
-    lwt json = match mode with
-      | `Contents (div_contents, filter, research) ->
-        API_core.get_tags_from_research research
-      | `Detail content_uri ->
-        API_core.get_tags_from_content (Rdf_store.string_of_uri content_uri)
+    match mode with
+      | `Contents (_, _, research) -> Http.tags_from_research research
+      | `Detail content_uri -> Http.tags_from_content content_uri
       | `Link -> failwith "Not implemented"
-    in
-    Lwt.return (get_service_return get_tag_list json)
   with e -> (print_endline (Printexc.to_string e); Lwt.return [])
 
 let make_tags mode =

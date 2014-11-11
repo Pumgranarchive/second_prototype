@@ -13,9 +13,7 @@ let make lwt_elements =
   Lwt.return html
 
 let get_data content_uri =
-  let str_uri = Rdf_store.string_of_uri content_uri in
-  lwt json = API_core.get_detail str_uri in
-  let content = List.hd (get_service_return get_content_list json) in
+  lwt content = Http.get_content_detail content_uri in
   let ret = match content with
     | GUI_deserialize.Internal (c_id, c_title, c_summary, c_body) ->
       c_title,
