@@ -22,7 +22,7 @@ CLIENT_FILES_DOC :=     API_conf.eliomi \
                         nosql_store.eliomi
 
 # OCamlfind packages for the server
-SERVER_PACKAGES := yojson bson cohttp cohttp.lwt mongo mongo.lwt rdf rdf.lwt ptools readability bfy tidy pumgrana_http
+SERVER_PACKAGES := yojson bson cohttp cohttp.lwt mongo mongo.lwt rdf rdf.lwt ptools readability_http bfy tidy pumgrana_http
 # OCamlfind packages for the client
 CLIENT_PACKAGES := yojson bson str pctools
 

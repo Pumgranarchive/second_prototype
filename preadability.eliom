@@ -16,7 +16,7 @@ let get_token () =
     close_in_noerr ic;
     raise Not_found
 
-let () = Readability.set_token (get_token ())
+let () = Readability_http.set_token (get_token ())
 
 (******************************************************************************
 ********************************** Utils **************************************
@@ -32,7 +32,7 @@ let data_from_uri uri =
   let str_uri = Rdf_store.string_of_uri uri in
   let ruri = Rdf_uri.uri str_uri in
   lwt json =
-      try_lwt Readability.get_parser ruri
+      try_lwt Readability_http.get_parser ruri
       with e -> (print_endline (Printexc.to_string e); raise e)
   in
   let title = to_string (member "title" json) in
