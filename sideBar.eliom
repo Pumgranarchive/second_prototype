@@ -105,7 +105,7 @@ let make_tags mode =
   let tags_ul = D.div [GUI_tools.build_tags_ul ~active_click:true tags_id] in
   let button_add = div ~a:[a_class["side_button_add"]] [pcdata "Add a tag"] in
   let html = match mode with
-    | `Detail _ -> tags_ul, div [tags_ul; button_add]
+    | `Detail _ -> tags_ul, div [tags_ul(* ; button_add *)]
     | _         -> tags_ul, div [tags_ul]
   in
   Lwt.return html
