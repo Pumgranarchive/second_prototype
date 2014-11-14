@@ -355,6 +355,19 @@ let internal_build_assoc l =
   Lwt.return (List.map build_assoc l)
 
 let external_build_assoc l =
+
+  (* Tmp fix http youtube url which are return as https thus then raise Not_found *)
+  let tmp_fix (li, uri) =
+    let str_uri = Ptype.string_of_uri uri in
+    let http_youtube = Str.regexp "^http://\\(www\\)?\\.youtube" in
+    if Str.string_partial_match http_youtube str_uri 0 then
+      let new_uri = Str.replace_first (Str.regexp "http://") "https://" str_uri in
+      li, Ptype.uri_of_string new_uri
+    else
+      li, uri
+  in
+  let l = List.map tmp_fix l in
+
   let uris = List.map (fun (li, u) -> u) l in
   let mlink = List.fold_left (fun m (li, u) -> Map.add u li m) Map.empty l in
   let format (uri, title, summary) =
