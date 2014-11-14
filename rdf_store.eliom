@@ -1,5 +1,6 @@
 open Lwt
 open Rdf_sparql_protocol
+open Utils
 
 module SMap = Map.Make(String)
 
@@ -753,28 +754,31 @@ let delete_links links_id =
 
 let internal_update_links mode triple_list =
 
-  (* Format part *)
-  let to_str_triple new_list (origin_uri, target_uri, tags_uri) =
+  (* Format entry as string triple *)
+  let to_str_triple str_list (origin_uri, target_uri, tags_uri) =
     if List.length tags_uri == 0
     then raise (Invalid_argument "Empty tags list is not allowed");
-    let list = List.map (fun t ->
-      string_of_uri origin_uri, string_of_uri target_uri, string_of_uri t)
-      tags_uri
-    in
-   list@new_list
+    let str_o = string_of_uri origin_uri in
+    let str_t = string_of_uri target_uri in
+    let list = List.map (fun t -> str_o, str_t, string_of_uri t) tags_uri in
+    list@str_list
   in
   let str_triple_list = List.fold_left to_str_triple [] triple_list in
 
-  (* Getting part *)
-  let build_select s (origin_str_uri, target_str_uri, _) =
-    s ^"{ ?origin ?tag ?target .
-          FILTER (str(?origin) = \"" ^ origin_str_uri ^ "\") .
-          FILTER (str(?target) = \"" ^ target_str_uri ^ "\") } . "
+  (* Getting existing links *)
+  let make_requests (str_origin, str_target, _) =
+    let s = "SELECT ?tag WHERE { <"^str_origin^"> ?tag <"^str_target^"> }" in
+    let request = get_from_4store s in
+    str_origin, str_target, request
   in
-  let half_select = List.fold_left build_select "" str_triple_list in
-  let select = "SELECT ?origin ?target ?tag WHERE { " ^ half_select ^ " }" in
-  lwt solutions = get_from_4store select in
-  let existing_l = List.map triple_link_from solutions in
+  let format (str_origin, str_target, request) =
+    lwt solutions = request in
+    let interf s = str_origin, str_target, from_solution "tag" s in
+    Lwt.return (List.map interf solutions)
+  in
+  lwt requests = Lwt_list.map_exc make_requests str_triple_list in
+  lwt existing_double_l = Lwt_list.map_s_exc format requests in
+  let existing_l = List.concat existing_double_l in
 
   (* Adding / Deleting tools *)
   let build_list ref_list new_list (origin, target, tag) =
@@ -783,34 +787,33 @@ let internal_update_links mode triple_list =
       (String.compare target tar) == 0 &&
       (String.compare tag ta) == 0
     in
-    if List.exists are_equal ref_list then new_list else
-      (origin, target, tag)::new_list
+    if List.exists are_equal ref_list
+    then new_list
+    else (origin, target, tag)::new_list
   in
   let build_query q (ori_uri, tar_uri, tag_uri) =
     q ^"<"^ ori_uri ^">  <"^ tag_uri ^"> <"^ tar_uri ^"> . "
   in
 
-  (* Adding part *)
+  (* Adding not existing links *)
   let a_list = List.fold_left (build_list existing_l) [] str_triple_list in
   let half_insert_query = List.fold_left build_query "" a_list in
   let insert_query = "INSERT DATA { " ^ half_insert_query ^ " }" in
+  let () = Lwt.async (fun () -> post_on_4store insert_query) in
 
-  (* Delete part *)
-  lwt () = if mode != Replacing then Lwt.return () else
+  (* Deleting existing and not expected links *)
+  let () = if mode == Replacing then
       let d_list = List.fold_left (build_list str_triple_list) [] existing_l in
       let half_delete_query = List.fold_left build_query "" d_list in
       let delete_query = "DELETE DATA { " ^ half_delete_query ^ " }" in
-      post_on_4store delete_query
+      Lwt.async (fun () -> post_on_4store delete_query)
   in
 
-  lwt () = post_on_4store insert_query in
+  (* Formating the return *)
+  let link_id (origin, target, _) = link_id origin target in
+  let link_ids = List.map link_id triple_list in
 
-  (* Return format tools *)
-  let build_link_id (origin_uri, target_uri, tags_uri) =
-    link_id origin_uri target_uri
-  in
-  let link_ids = List.map build_link_id triple_list in
-  Lwt.return (link_ids)
+  Lwt.return link_ids
 
 let insert_links triple_list =
   internal_update_links Adding triple_list
