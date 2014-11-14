@@ -52,104 +52,136 @@ let redirect_link html_body =
 
 {shared{
 
-(* let build_header elt_list = *)
-(*   div ~a:[a_class["header"]] *)
-(*     ([span ~a:[a_class["pumgrana"]] *)
-(*          [a ~service:%GUI_services.home *)
-(*              [img ~a:[a_class ["pumgrana_logo"]] *)
-(*                  ~alt:("Pumgrana Logo") *)
-(*                  ~src:(make_uri *)
-(*                          ~service:(Eliom_service.static_dir ()) *)
-(*                          ["images"; "LOGO_Pumgrana.png"]) ()] ()]]@elt_list) *)
+module Str =
+struct
 
-(* let build_header_back_forward elt_list = *)
-(*   let back_button = D.raw_input ~input_type:`Submit ~value:"Back" () in *)
-(*   let forward_button = D.raw_input ~input_type:`Submit ~value:"Forward" () in *)
-(*   let header_elt = build_header ([back_button; forward_button]@elt_list) in *)
-(*   back_button, forward_button, header_elt *)
+let search_forward ?(start=false) str1 str2 start_pos =
+  let end1 = String.length str1 in
+  let end2 = String.length str2 in
+  let rec aux pos1 pos2 =
+    if pos1 >= end1 then (pos2 - 1)
+    else if pos2 >= end2 then raise Not_found else
+      let c1 = String.get str1 pos1 in
+      let c2 = String.get str2 pos2 in
+      if Char.compare c1 c2 == 0 then aux (pos1 + 1) (pos2 + 1)
+      else if start then raise Not_found
+      else aux 0 (pos2 + 1)
+  in
+  aux 0 start_pos
 
-(* let build_contents_header () = *)
-(*   let insert_button = *)
-(*     D.raw_input ~input_type:`Submit ~value:"New" () *)
-(*   in *)
-(*   let back_button, forward_button, header_elt = *)
-(*     build_header_back_forward [insert_button] *)
-(*   in *)
-(*   insert_button, back_button, forward_button, header_elt *)
+let search_backward str1 str2 start2 =
+  let start1 = (String.length str1) - 1 in
+  let rec aux pos1 pos2 =
+    if pos1 < 0 then (pos2 + 1)
+    else if pos2 < 0 then raise Not_found else
+      let c1 = String.get str1 pos1 in
+      let c2 = String.get str2 pos2 in
+      if Char.compare c1 c2 == 0 then aux (pos1 - 1) (pos2 - 1)
+      else aux start1 (pos2 - 1)
+  in
+  aux start1 start2
 
-(* let build_detail_content_header () = *)
-(*   let update_button = D.raw_input ~input_type:`Submit ~value:"Edit" () in *)
-(*   let delete_button = D.raw_input ~input_type:`Submit ~value:"Delete" () in *)
-(*   let back_button, forward_button, header_elt = *)
-(*     build_header_back_forward [update_button; delete_button] *)
-(*   in *)
-(*   back_button, forward_button, update_button, delete_button, header_elt *)
+let remove_http_prefix str_uri =
+  let size =
+    try ignore (search_forward ~start:true "http://" str_uri 0); 7
+    with Not_found -> ignore (search_forward ~start:true "https://" str_uri 0); 8
+  in
+  String.sub str_uri size ((String.length str_uri) - size)
 
-(* let build_update_content_header () = *)
-(*   let cancel_button = D.raw_input ~input_type:`Submit ~value:"Cancel" () in *)
-(*   let save_button = D.raw_input ~input_type:`Submit ~value:"Save" () in *)
-(*   let header_elt = build_header [cancel_button; save_button] in *)
-(*   cancel_button, save_button, header_elt *)
+let sub str start length =
+  if length == 0 then ""
+  else String.sub str start length
 
-(* let build_link_header () = *)
-(*   let insert = D.raw_input ~input_type:`Submit ~value:"New" () in *)
-(*   insert *)
+end
+
+let tuple_of_id str_uri =
+  let str_uri = Str.remove_http_prefix str_uri in
+  let end_pos = (String.length str_uri) - 1 in
+  let slash_pos =
+    try Str.search_forward "/" str_uri 0
+    with Not_found -> end_pos
+  in
+  let dot_pos = Str.search_backward "." str_uri slash_pos in
+  let start_pos =
+    try (Str.search_backward "." str_uri (dot_pos - 1)) + 1
+    with Not_found -> 0
+  in
+  let platform_name = String.sub str_uri start_pos (dot_pos - start_pos) in
+  let ct_pos =
+    try Str.search_backward "=" str_uri end_pos
+    with Not_found -> Str.search_backward "/" str_uri end_pos
+  in
+  let content_name = Str.sub str_uri (ct_pos + 1) (end_pos - ct_pos) in
+  platform_name, content_name
+
+module Tag =
+struct
 
 (** Build tags li list *)
-let build_tags_li ?(active_click=false) tags =
-  let rec aux lis = function
-    | []                -> List.rev lis
-    | (uri, subject)::t  ->
-      let fill = pcdata subject in
-      let li = if active_click
-        then li [a ~service:%GUI_services.contents [div [fill]] (Some subject)]
-        else li [fill]
+  let build_li ?(active_click=false) tags =
+    let rec aux lis = function
+      | []                -> List.rev lis
+      | (uri, subject)::t  ->
+        let fill = pcdata subject in
+        let li = if active_click
+          then li [a ~service:%GUI_services.contents [div [fill]] (Some subject)]
+          else li [fill]
+        in
+        aux (li::lis) t
+    in
+    aux [] tags
+
+  (** Build tags ul list *)
+  let build_ul ?(active_click=false) tags =
+    let lis = build_li ~active_click tags in
+    div ~a:[a_class["side_taglist"]]
+      [ul ~a:[a_class["side_taglist_list"]] lis]
+
+  (** Build add tag html *)
+  let build_add () =
+    let input = D.raw_input ~input_type:`Text () in
+    let add = D.raw_input ~input_type:`Submit ~value:"Add" () in
+    input, add, ref [], [input; add]
+
+end
+
+module Link =
+struct
+
+  (** Build a links list html *)
+  let build_list links =
+    let aux html (link_id, id, title, summary) =
+      let str_id = GUI_deserialize.string_of_id id in
+      let linked = a ~service:%GUI_services.content_detail_by_platform
+        [div ~a:[a_class["content_current_linked_main_list_elem"]]
+            [h3 [pcdata title]; p [pcdata summary]]] (tuple_of_id str_id)
       in
-      aux (li::lis) t
-  in
-  aux [] tags
-
-let build_tags_ul ?(active_click=false) tags =
-  let lis = build_tags_li ~active_click tags in
-  div ~a:[a_class["side_taglist"]]
-    [ul ~a:[a_class["side_taglist_list"]] lis]
-
-(* (\** Build a simple tags list html *\) *)
-(* let build_tags_list tags = *)
-(*   let aux (uri, subject) = div [pcdata subject] in *)
-(*   List.map aux tags *)
-
-(** Build a links list html *)
-let build_links_list links =
-  let aux html (link_id, id, title, summary) =
-    let str_id = Rdf_store.uri_encode (GUI_deserialize.string_of_id id) in
-    let linked = a ~service:%GUI_services.content_detail
-      [div ~a:[a_class["content_current_linked_main_list_elem"]]
-          [h3 [pcdata title]; p [pcdata summary]]] str_id
+      if List.length html == 0
+      then [linked]
+      else linked::(div ~a:[a_class["content_current_linked_main_list_elem_sep"]] [])::html
     in
-    if List.length html == 0
-    then [linked]
-    else linked::(div ~a:[a_class["content_current_linked_main_list_elem_sep"]] [])::html
-  in
-  List.rev (List.fold_left aux [] links)
+    List.rev (List.fold_left aux [] links)
 
-let build_contents_list contents =
-  let aux html (id, title, summary) =
-    let str_id = Rdf_store.uri_encode (GUI_deserialize.string_of_id id) in
-    let content =
-      D.a ~service:%GUI_services.content_detail
-        [div ~a:[a_class ["content_main_list_elem"]]
-          [h3 [pcdata title]; p [pcdata summary]]] str_id
+end
+
+module Content =
+struct
+
+  (** Build a content list html *)
+  let build_list contents =
+    let aux html (id, title, summary) =
+      let str_id = GUI_deserialize.string_of_id id in
+      let content =
+        D.a ~service:%GUI_services.content_detail_by_platform
+          [div ~a:[a_class ["content_main_list_elem"]]
+              [h3 [pcdata title]; p [pcdata summary]]] (tuple_of_id str_id)
+      in
+      if List.length html == 0
+      then [content]
+      else content::(div ~a:[a_class["content_main_list_elem_sep"]] [])::html
     in
-    if List.length html == 0
-    then [content]
-    else content::(div ~a:[a_class["content_main_list_elem_sep"]] [])::html
-  in
-  List.rev (List.fold_left aux [] contents)
+    List.rev (List.fold_left aux [] contents)
 
-let build_add_tag () =
-  let input = D.raw_input ~input_type:`Text () in
-  let add = D.raw_input ~input_type:`Submit ~value:"Add" () in
-  input, add, ref [], [input; add]
+end
 
 }}

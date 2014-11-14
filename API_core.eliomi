@@ -8,6 +8,10 @@
 
 (** {6 Content} *)
 
+(** [uri_from_platform plateform_name content_name]
+    Return the known uri from [plateform_name] and [content_name] *)
+val uri_from_platform : string -> string -> Yojson.Basic.json Lwt.t
+
 (** [get_detail content_uri]  *)
 val get_detail: string -> Yojson.Basic.json Lwt.t
 

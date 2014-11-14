@@ -75,6 +75,10 @@ val compare_uri : uri -> uri -> int
 
 (** {6 Contents}  *)
 
+(** [uri_from_platform plateform_name content_name]
+    Return the known uri from [plateform_name] and [content_name] *)
+val uri_from_platform : string -> string -> uri Lwt.t
+
 (** [get_triple_contents content_type tags_uri]
     if [tags_uri] is an empty list, return all contents' triple. *)
 val get_triple_contents : content_type -> uri list -> condcontent Lwt.t

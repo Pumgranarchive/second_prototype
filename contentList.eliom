@@ -4,6 +4,7 @@ open Eliom_content.Html5.F
 
 open Pdeserialize
 open GUI_deserialize
+open GUI_tools
 
 let get filter research =
   try_lwt Http.research_contents research
@@ -11,6 +12,6 @@ let get filter research =
 
 let make opt_filter research =
   lwt contents = get opt_filter research in
-  let content_list = GUI_tools.build_contents_list contents in
+  let content_list = Content.build_list contents in
   let html = D.div ~a:[a_class["content_main_list"]] content_list in
   Lwt.return html

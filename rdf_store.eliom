@@ -474,6 +474,24 @@ let delete_tags_on_content content_uri tags_uri =
 ******************************* Contents ***************************************
 *******************************************************************************)
 
+let uri_from_platform plt name =
+  let query =
+    "SELECT ?content WHERE {
+       { ?content <" ^ content_title_r ^ "> ?title } UNION
+       { ?content <" ^ content_summary_r ^ "> ?summary } UNION
+       { ?content <" ^ tagged_content_r ^ "> ?tag } UNION
+       { { ?content ?res_link ?target } UNION
+         { ?origin ?res_link ?content } .
+         FILTER regex(str(?res_link), \"^"^base_tag_link_url^"\") } .
+       FILTER regex(str(?content), \"^https?://[^/]*"^plt^".*"^name^"$\")
+     } GROUP BY ?content LIMIT 2"
+  in
+  lwt solutions = get_from_4store query in
+  if List.length solutions > 1
+  then Printf.printf "Fail to find relevent content uri from %s %s\n" plt name;
+  let uri = List.hd (List.map (from_solution "content") solutions) in
+  Lwt.return (uri_of_string uri)
+
 let contents_filter_query tags_uri =
   let build_regexp query tag_uri =
     let q = next_query query " || " in
@@ -489,7 +507,7 @@ let get_content_query ~complex content_type =
   | Internal ->
     "?content ?title ?summary",
     "?content <" ^ content_title_r ^ "> ?title .
-       ?content <" ^ content_summary_r ^ "> ?summary . "
+     ?content <" ^ content_summary_r ^ "> ?summary . "
   | External ->
     "?content",
     if complex then

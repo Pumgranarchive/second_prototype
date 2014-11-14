@@ -10,6 +10,7 @@ module Yojson = Yojson.Basic
 open Pjson
 open Pdeserialize
 open GUI_deserialize
+open GUI_tools
 
 }}
 
@@ -19,7 +20,7 @@ open Utils.Client
 
 let refresh_links curi input div_list =
   let make_request () = Http.links_from_research curi (get_research input) in
-  let elm_of_result links = [div (GUI_tools.build_links_list links)] in
+  let elm_of_result links = [div (Link.build_list links)] in
   refresh_list ~make_request ~elm_of_result To_dom.of_div input div_list
 
 }}
@@ -40,7 +41,7 @@ let get_links content_uri =
 
 let make_links content_uri =
   lwt links = get_links content_uri in
-  let link_div = D.div (GUI_tools.build_links_list links) in
+  let link_div = D.div (Link.build_list links) in
   let html = div ~a:[a_class["content_current_linked_main_list"]] [link_div] in
   Lwt.return (link_div, html)
 

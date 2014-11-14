@@ -10,6 +10,7 @@ module Yojson = Yojson.Basic
 open Pjson
 open Pdeserialize
 open GUI_deserialize
+open GUI_tools
 
 }}
 
@@ -30,13 +31,13 @@ open Utils.Client
 
 let refresh_contents input div_content =
   let make_request () = Http.research_contents (get_research input) in
-  let elm_of_result contents = [div (GUI_tools.build_contents_list contents)] in
+  let elm_of_result contents = [div (Content.build_list contents)] in
   refresh_list ~make_request ~elm_of_result To_dom.of_div input div_content
 
 let refresh_tags input div_tag =
   let active_click = true in
   let make_request () = Http.tags_from_research (get_research input) in
-  let elm_of_result tags = [div [GUI_tools.build_tags_ul ~active_click tags]] in
+  let elm_of_result tags = [div [Tag.build_ul ~active_click tags]] in
   refresh_list ~make_request ~elm_of_result To_dom.of_div input div_tag
 
 }}
@@ -102,8 +103,8 @@ let get_tags mode =
 
 let make_tags mode =
   lwt tags_id = get_tags mode in
-  let tags_ul = D.div [GUI_tools.build_tags_ul ~active_click:true tags_id] in
-  let button_add = div ~a:[a_class["side_button_add"]] [pcdata "Add a tag"] in
+  let tags_ul = D.div [Tag.build_ul ~active_click:true tags_id] in
+  (* let button_add = div ~a:[a_class["side_button_add"]] [pcdata "Add a tag"] in *)
   let html = match mode with
     | `Detail _ -> tags_ul, div [tags_ul(* ; button_add *)]
     | _         -> tags_ul, div [tags_ul]

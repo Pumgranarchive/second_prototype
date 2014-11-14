@@ -23,6 +23,10 @@ struct
 
   include Lwt_list
 
+  let hd lwt_l =
+    lwt l = lwt_l in
+    Lwt.return (List.hd l)
+
   let wait x = x
 
   (** Map list (not Lwt) which catch all exceptions *)

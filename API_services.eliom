@@ -21,6 +21,21 @@ let map func = function
 *)
 
 (* Get_detail  *)
+let uri_from_platform =
+  Eliom_service.Http.service
+    ~path:["api"; "content"; "from_platform"]
+    ~get_params:Eliom_parameter.(suffix (string "platform_name" **
+                                           string "content_name"))
+    ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:uri_from_platform
+    (fun (plt, name) () ->
+      let name = Rdf_store.uri_decode name in
+      return_of_json (API_core.uri_from_platform plt name))
+
+(* Get_detail  *)
 let get_detail =
   Eliom_service.Http.service
     ~path:["api"; "content"; "detail"]
