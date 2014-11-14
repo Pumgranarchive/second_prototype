@@ -42,7 +42,7 @@ type condcontent =
 
 let domain = "http://pumgrana.com/"
 let base_ressource_url = domain ^ "ressource/"
-let base_content_url = domain ^ "content/detail/"
+let base_content_url = domain ^ "view/"
 let base_tag_url = domain ^ "tag/"
 let base_tag_link_url = base_tag_url ^ "link/"
 let base_tag_content_url = base_tag_url ^ "content/"
