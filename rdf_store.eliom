@@ -320,9 +320,10 @@ let get_tags_by_subject tag_type subjects =
     q ^ "(^" ^ str ^ "$)"
   in
   let regexp = List.fold_left build_regexp "" subjects in
-  let query = "SELECT ?tag ?subject WHERE
-          { ?tag <" ^ r_url ^ "> ?subject .
-            FILTER regex(?subject, \"" ^ regexp ^ "\", \"i\") }"
+  let query = "SELECT ?tag ?subject WHERE {
+                 ?tag <" ^ r_url ^ "> ?subject .
+                 FILTER regex(?subject, \"" ^ regexp ^ "\", \"i\") }
+               GROUP BY ?tag LIMIT 10"
   in
   lwt solutions = get_from_4store query in
   let tuple_tags = List.map tuple_tag_from solutions in
@@ -342,7 +343,8 @@ let get_tags tag_type tags_uri =
     then List.fold_left build_query "" tags_uri
     else "?tag <"^r_url^"> ?subject"
   in
-  let query = "SELECT ?tag ?subject WHERE { " ^ half_query ^ " } GROUP BY ?tag"
+  let query = "SELECT ?tag ?subject WHERE { " ^ half_query ^ " }
+               GROUP BY ?tag LIMIT 10"
   in
   lwt solutions = get_from_4store query in
   let tuple_tags = List.map tuple_tag_from solutions in
@@ -354,7 +356,7 @@ let get_tags_from_research research_string =
   let query =
     "SELECT ?tag ?subject WHERE
      { " ^ filter_query ^" FILTER regex(str(?res), \"^"^tag_content_r^"\") }
-     GROUP BY ?tag"
+     GROUP BY ?tag LIMIT 10"
   in
   lwt solutions = get_from_4store query in
   let tuple_tags = List.map tuple_tag_from solutions in
@@ -364,7 +366,7 @@ let get_tags_from_link link_id =
   let o_str_uri, t_str_uri = str_tuple_of_link_id link_id in
   let query = "SELECT ?tag ?subject WHERE
   { <"^ o_str_uri ^"> ?tag <"^ t_str_uri ^"> .
-    ?tag <" ^ tag_link_r ^ "> ?subject } GROUP BY ?tag"
+    ?tag <" ^ tag_link_r ^ "> ?subject } GROUP BY ?tag LIMIT 10"
   in
   lwt solutions = get_from_4store query in
   let tuple_tags = List.map tuple_tag_from solutions in
@@ -374,7 +376,7 @@ let get_tags_from_content content_uri =
   let content_str_uri = string_of_uri content_uri in
   let query = "SELECT ?tag ?subject WHERE
   { <"^ content_str_uri ^"> <"^ tagged_content_r ^"> ?tag .
-    ?tag <" ^ tag_content_r ^ "> ?subject } GROUP BY ?tag"
+    ?tag <" ^ tag_content_r ^ "> ?subject } GROUP BY ?tag LIMIT 10"
   in
   lwt solutions = get_from_4store query in
   let tuple_tags = List.map tuple_tag_from solutions in
@@ -384,7 +386,7 @@ let get_tags_from_content_link content_uri =
   let o_uri = string_of_uri content_uri in
   let query = "SELECT ?tag ?subject WHERE
   { <" ^ o_uri ^ "> ?tag ?target.
-    ?tag <" ^ tag_link_r ^ "> ?subject } GROUP BY ?tag"
+    ?tag <" ^ tag_link_r ^ "> ?subject } GROUP BY ?tag LIMIT 10"
   in
   lwt solutions = get_from_4store query in
   let tags_tuple = List.map tuple_tag_from solutions in
@@ -539,7 +541,7 @@ let research_contents content_type research_string =
   let filter_query = build_filter_research research_strings in
   let select, where = get_content_query ~complex:false content_type in
   let query =
-    "SELECT "^ select ^" WHERE {"^ where ^ filter_query ^"} GROUP BY ?content"
+    "SELECT "^ select ^" WHERE {"^ where ^ filter_query ^"} GROUP BY ?content LIMIT 20"
   in
   lwt solutions = get_from_4store query in
   let res = match content_type with
@@ -692,7 +694,7 @@ let build_tags_query content_type content_uri tags =
   { <"^content_str_uri^"> ?tag ?target .
     "^filter_query^"
     FILTER regex(str(?tag), \"^"^base_tag_url^"\") .
-    " ^ half_query ^ " } GROUP BY ?target"
+    " ^ half_query ^ " } GROUP BY ?target LIMIT 10"
 
 let links_from_content_tags content_type content_uri tags_uri =
   let query = build_tags_query content_type content_uri tags_uri in
@@ -723,7 +725,7 @@ let build_research_query content_type content_uri research_strings =
   "SELECT " ^ select ^ " WHERE
   { <"^content_str_uri^"> ?own_tag ?target .
     ?target <"^tagged_content_r^"> ?tag .
-    "^ filter_query ^" "^ half_query ^" } GROUP BY ?target"
+    "^ filter_query ^" "^ half_query ^" } GROUP BY ?target LIMIT 10"
 
 let links_from_research content_type content_uri research_string =
   let research_strings = cut_research research_string in
