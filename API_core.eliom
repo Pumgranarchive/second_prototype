@@ -298,6 +298,8 @@ let get_tags_from_content_link content_str_uri =
 
 let insert_tags type_name uri_opt subjects =
   let aux () =
+    if (List.length subjects == 0)
+    then raise API_conf.(Pum_exc (return_not_found, "Null subject list"));
     let tag_type = to_tag_type type_name in
     let link_id, content_uri = match tag_type, uri_opt with
       | Rdf_store.TagLink, Some id      ->
