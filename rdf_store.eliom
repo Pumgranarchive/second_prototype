@@ -485,7 +485,7 @@ let uri_from_platform plt name =
        { { ?content ?res_link ?target } UNION
          { ?origin ?res_link ?content } .
          FILTER regex(str(?res_link), \"^"^base_tag_link_url^"\") } .
-       FILTER regex(str(?content), \"^https?://[^/]*"^plt^".*"^name^"$\")
+       FILTER regex(str(?content), \"^https?://[^/]*"^plt^".*(/\\|=)"^name^"$\")
      } GROUP BY ?content LIMIT 2"
   in
   lwt solutions = get_from_4store query in
