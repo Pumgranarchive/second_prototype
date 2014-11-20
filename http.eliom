@@ -33,10 +33,18 @@ let links_from_research content_uri research =
 
 }}
 
+{client{
+
 module Service =
 struct
 
-  let prefix = "http://localhost:8081"
+  let prefix =
+    let url = Js.to_string Dom_html.document##_URL in
+    let length = String.length url in
+    let last_char = String.get url (length - 1) in
+    if Char.compare last_char '/' = 0
+    then String.sub url 0 (length - 1)
+    else url
 
   let research_contents =
     Eliom_service.external_service ~prefix
@@ -59,22 +67,18 @@ struct
       ()
 
 
-end;;
-
-{client{
-
-(* include Pumgrana_http *)
+end
 
 let research_contents research =
   lwt json = Eliom_client.call_service
-    ~service:%Service.research_contents (None, research) ()
+    ~service:Service.research_contents (None, research) ()
   in
   let yojson = Yojson.from_string json in
   Lwt.return (get_service_return get_short_content_list yojson)
 
 let tags_from_research research =
   lwt json = Eliom_client.call_service
-    ~service:%Service.get_tags_from_research research ()
+    ~service:Service.get_tags_from_research research ()
   in
   let yojson = Yojson.from_string json in
   Lwt.return (get_service_return get_tag_list yojson)
@@ -83,7 +87,7 @@ let links_from_research content_uri research =
   let str_uri = Rdf_store.string_of_uri content_uri in
   let encoded_uri = Rdf_store.uri_encode str_uri in
   lwt json = Eliom_client.call_service
-    ~service:%Service.get_links_from_research (encoded_uri, research) ()
+    ~service:Service.get_links_from_research (encoded_uri, research) ()
   in
   let yojson = Yojson.from_string json in
   Lwt.return (get_service_return get_link_list yojson)
