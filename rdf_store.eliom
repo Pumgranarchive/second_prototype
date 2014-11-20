@@ -366,7 +366,7 @@ let get_tags_from_link link_id =
   let o_str_uri, t_str_uri = str_tuple_of_link_id link_id in
   let query = "SELECT ?tag ?subject WHERE
   { <"^ o_str_uri ^"> ?tag <"^ t_str_uri ^"> .
-    ?tag <" ^ tag_link_r ^ "> ?subject } GROUP BY ?tag LIMIT 10"
+    ?tag <" ^ tag_link_r ^ "> ?subject } GROUP BY ?tag LIMIT 8"
   in
   lwt solutions = get_from_4store query in
   let tuple_tags = List.map tuple_tag_from solutions in
@@ -376,7 +376,7 @@ let get_tags_from_content content_uri =
   let content_str_uri = string_of_uri content_uri in
   let query = "SELECT ?tag ?subject WHERE
   { <"^ content_str_uri ^"> <"^ tagged_content_r ^"> ?tag .
-    ?tag <" ^ tag_content_r ^ "> ?subject } GROUP BY ?tag LIMIT 10"
+    ?tag <" ^ tag_content_r ^ "> ?subject } GROUP BY ?tag LIMIT 8"
   in
   lwt solutions = get_from_4store query in
   let tuple_tags = List.map tuple_tag_from solutions in
@@ -386,7 +386,7 @@ let get_tags_from_content_link content_uri =
   let o_uri = string_of_uri content_uri in
   let query = "SELECT ?tag ?subject WHERE
   { <" ^ o_uri ^ "> ?tag ?target.
-    ?tag <" ^ tag_link_r ^ "> ?subject } GROUP BY ?tag LIMIT 10"
+    ?tag <" ^ tag_link_r ^ "> ?subject } GROUP BY ?tag LIMIT 8"
   in
   lwt solutions = get_from_4store query in
   let tags_tuple = List.map tuple_tag_from solutions in
