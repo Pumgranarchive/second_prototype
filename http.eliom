@@ -38,13 +38,13 @@ let links_from_research content_uri research =
 module Service =
 struct
 
+  open GUI_tools
+
   let prefix =
     let url = Js.to_string Dom_html.document##_URL in
-    let length = String.length url in
-    let last_char = String.get url (length - 1) in
-    if Char.compare last_char '/' = 0
-    then String.sub url 0 (length - 1)
-    else url
+    let http_length = Str.search_forward "://" url 0 + 3 in
+    try String.sub url 0 (Str.search_forward "/" url http_length)
+    with Not_found -> url
 
   let research_contents =
     Eliom_service.external_service ~prefix

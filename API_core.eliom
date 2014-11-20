@@ -444,6 +444,7 @@ let get_links_from_research content_uri research =
     let merged = List.merge compare results results' in
     let limited = List.limit 10 merged in
     let json = List.map build_assoc limited in
+
     Lwt.return (`List json)
   in
   API_tools.check_return ~param_name:API_tools.links_ret_name aux
