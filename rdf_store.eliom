@@ -208,11 +208,6 @@ let build_list ref_list new_list element =
 
 (*** Research  *)
 
-
-let cut_research str =
-  let regex = Str.regexp "[ \t]+" in
-  Str.split regex str
-
 let build_filter_research research_strings =
   let build_filter filter research_string =
     let filter' = next_query filter " || " in
@@ -350,8 +345,7 @@ let get_tags tag_type tags_uri =
   let tuple_tags = List.map tuple_tag_from solutions in
   Lwt.return (tuple_tags)
 
-let get_tags_from_research research_string =
-  let research_strings = cut_research research_string in
+let get_tags_from_research research_strings =
   let filter_query = build_filter_research research_strings in
   let query =
     "SELECT ?tag ?subject WHERE
@@ -536,8 +530,7 @@ let get_triple_contents content_type tags_uri =
   in
   Lwt.return res
 
-let research_contents content_type research_string =
-  let research_strings = cut_research research_string in
+let research_contents content_type research_strings =
   let filter_query = build_filter_research research_strings in
   let select, where = get_content_query ~complex:false content_type in
   let query =
@@ -727,8 +720,7 @@ let build_research_query content_type content_uri research_strings =
     ?target <"^tagged_content_r^"> ?tag .
     "^ filter_query ^" "^ half_query ^" } GROUP BY ?target LIMIT 10"
 
-let links_from_research content_type content_uri research_string =
-  let research_strings = cut_research research_string in
+let links_from_research content_type content_uri research_strings =
   let query = build_research_query content_type content_uri research_strings in
   lwt solutions = get_from_4store query in
   match content_type with

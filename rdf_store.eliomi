@@ -84,7 +84,7 @@ val uri_from_platform : string -> string -> uri Lwt.t
 val get_triple_contents : content_type -> uri list -> condcontent Lwt.t
 
 (** [research_contents content_type research_string]  *)
-val research_contents : content_type -> string -> condcontent Lwt.t
+val research_contents : content_type -> string list -> condcontent Lwt.t
 
 (** [insert_content content_id title summary tags_uri]
     [tags_uri] can be an empty list
@@ -116,7 +116,7 @@ val links_from_content : content_type -> uri -> condlink Lwt.t
 val links_from_content_tags : content_type -> uri -> uri list -> condlink Lwt.t
 
 (** [get_links_from_research content_id research]  *)
-val links_from_research : content_type -> uri -> string -> condlink Lwt.t
+val links_from_research : content_type -> uri -> string list -> condlink Lwt.t
 
 (** [insert_links (origin_uri, targets_uri, tag_uri list) list]
     @raise Invalid_argument if at least one tags list is empty. *)
@@ -137,7 +137,7 @@ val delete_links : link_id list -> unit Lwt.t
 val get_tags : tag_type -> uri list -> tag list Lwt.t
 
 (** [get_tags_from_research research] *)
-val get_tags_from_research : string -> tag list Lwt.t
+val get_tags_from_research : string list -> tag list Lwt.t
 
 (** [get_tags_from_link link_id] *)
 val get_tags_from_link : link_id -> tag list Lwt.t

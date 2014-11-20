@@ -1,3 +1,30 @@
+module Bot =
+struct
+
+  let call str_uri =
+    let path = "../pum_bot/pum_bot -n " in
+    Lwt.async (fun () ->
+      let cmd = Sys.command (path^" -n \""^str_uri^"\" > /dev/null 2>&1 &") in
+      Lwt.return ())
+
+end
+
+module Str =
+struct
+
+  include Str
+
+  let regexps = List.map Str.regexp
+
+  let contains regexp str =
+    try ignore (Str.search_forward regexp str 0); true
+    with Not_found -> false
+
+  let exists regexps str =
+    List.exists (fun r -> contains r str) regexps
+
+end
+
 module List =
 struct
 
@@ -16,6 +43,23 @@ struct
     in
     List.rev (aux [] list)
 
+  let limit size l =
+    let rec aux bl s = function
+      | []   -> bl
+      | h::t ->
+        if s >= size then bl else
+          aux (h::bl) (s + 1) t
+    in
+    List.rev (aux [] 0 l)
+
+  let merge func l1 l2 =
+    let add list e =
+      if List.exists (func e) list
+      then list
+      else e::list
+    in
+    List.fold_left add l1 l2
+
 end
 
 module Lwt_list =
@@ -26,6 +70,14 @@ struct
   let hd lwt_l =
     lwt l = lwt_l in
     Lwt.return (List.hd l)
+
+  let filter f lwt_l =
+    lwt l = lwt_l in
+    Lwt.return (List.filter f l)
+
+  let map f lwt_l =
+    lwt l = lwt_l in
+    Lwt.return (List.map f l)
 
   let wait x = x
 

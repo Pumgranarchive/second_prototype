@@ -35,6 +35,10 @@ let link_id_of_string str =
   with Rdf_store.Invalid_link_id str_err ->
     raise API_conf.(Pum_exc (return_not_found, str_err))
 
+let cut_research str =
+  let regex = Str.regexp "[ \t]+" in
+  Str.split regex str
+
 (*
 ** Content
 *)
@@ -116,24 +120,28 @@ let get_detail content_str_uri =
   in
   API_tools.check_return ~param_name:API_tools.contents_ret_name aux
 
-let format_content (uri, title, summary) =
+let content_assoc (uri, title, summary) =
   `Assoc [(API_tools.uri_field, `String (Rdf_store.string_of_uri uri));
           (API_tools.title_field, `String title);
           (API_tools.summary_field, `String summary)]
 
-let internal_format_content res =
-  let aux (id, title, summary) =
-    format_content (Rdf_store.uri_of_content_id id, title, summary)
-  in
-  Lwt.return (List.map aux res)
+let data_of_internal res =
+  let aux (id, t, s) = Rdf_store.uri_of_content_id id, t, s in
+  List.map aux res
 
-let external_format_content res =
-  lwt triples = get_data_list_from res triple_platforms in
-  Lwt.return (List.map format_content triples)
+let data_of_external res =
+  get_data_list_from res triple_platforms
 
-let build_content_json = function
-  | Rdf_store.Cc_internal r -> internal_format_content r
-  | Rdf_store.Cc_external r -> external_format_content r
+let get_data = function
+  | Rdf_store.Cc_internal r -> Lwt.return (data_of_internal r)
+  | Rdf_store.Cc_external r -> data_of_external r
+
+let on_both func p =
+  let ons = Rdf_store.([Internal; External]) in
+  lwt requests = Lwt_list.map_exc (fun on -> func on p) ons in
+  lwt results = Lwt_list.(map_s_exc wait requests) in
+  lwt data = Lwt_list.(map_s_exc get_data results) in
+  Lwt.return (List.concat data)
 
 let content_filter = function
   | None                    -> ()
@@ -151,22 +159,35 @@ let get_contents filter tags_str_uri =
       | Some t -> List.map uri_of_string t
       | None   -> []
     in
-    lwt i_res = Rdf_store.get_triple_contents Rdf_store.Internal tags_uri in
-    lwt e_res = Rdf_store.get_triple_contents Rdf_store.External tags_uri in
-    lwt i_json = build_content_json i_res in
-    lwt e_json = build_content_json e_res in
-    Lwt.return (`List (i_json@e_json))
+    lwt results = on_both Rdf_store.get_triple_contents tags_uri in
+    let json = List.map content_assoc results in
+    Lwt.return (`List json)
   in
   API_tools.check_return ~param_name:API_tools.contents_ret_name aux
 
-let research_contents filter r_string =
+let find regexps (uri, title, summary) =
+  Str.exists regexps title || Str.exists regexps summary
+
+let research_contents filter research =
   let aux () =
     let () = content_filter filter in
-    lwt i_res = Rdf_store.research_contents Rdf_store.Internal r_string in
-    lwt e_res = Rdf_store.research_contents Rdf_store.External r_string in
-    lwt i_json = build_content_json i_res in
-    lwt e_json = build_content_json e_res in
-    Lwt.return (`List (i_json@e_json))
+    let research = cut_research research in
+    let regexps = Str.regexps research in
+
+    (* Rdf research *)
+    lwt results = on_both Rdf_store.research_contents research in
+
+    (* title / summary research *)
+    lwt results' = on_both Rdf_store.get_triple_contents [] in
+    let results' = List.filter (find regexps) results' in
+
+    let compare (uri1, _, _) (uri2, _, _) =
+      Rdf_store.compare_uri uri1 uri2 = 0
+    in
+    let merged = List.merge compare results results' in
+    let limited = List.limit 10 merged in
+    let json = List.map content_assoc limited in
+    Lwt.return (`List json)
   in
   API_tools.check_return ~param_name:API_tools.contents_ret_name aux
 
@@ -263,7 +284,6 @@ let to_tag_type = function
   | x          ->
     raise API_conf.(Pum_exc (return_not_found, errstr_not_expected x))
 
-
 let get_tags_by_type type_name =
   let aux () =
     let tag_type = to_tag_type type_name in
@@ -275,6 +295,7 @@ let get_tags_by_type type_name =
 
 let get_tags_from_research research =
   let aux () =
+    let research = cut_research research in
     lwt tags = Rdf_store.get_tags_from_research research in
     let json = `List (List.map tag_format tags) in
     Lwt.return json
@@ -364,34 +385,33 @@ let build_assoc (link_id, uri, title, summary) =
           (API_tools.content_title_ret_name, `String title);
           (API_tools.content_summary_ret_name, `String summary)]
 
-
-let internal_build_assoc l =
-  Lwt.return (List.map build_assoc l)
-
-let external_build_assoc l =
+let data_of_external l =
   let uris = List.map (fun (li, u) -> u) l in
   let mlink = List.fold_left (fun m (li, u) -> Map.add u li m) Map.empty l in
-  let format (uri, title, summary) =
-    build_assoc (Map.find uri mlink, uri, title, summary)
-  in
+  let format (uri, title, summary) = Map.find uri mlink, uri, title, summary in
   lwt ret = get_data_list_from uris triple_platforms in
   Lwt.return (List.map format ret)
 
-let build_json = function
-  | Rdf_store.Cl_internal l -> internal_build_assoc l
-  | Rdf_store.Cl_external l -> external_build_assoc l
+let get_data = function
+  | Rdf_store.Cl_internal l -> Lwt.return l
+  | Rdf_store.Cl_external l -> data_of_external l
 
-let get_links_from_content_tags content_uri opt_tags_uri =
+let on_both func p1 p2 =
+  let ons = Rdf_store.([Internal; External]) in
+  lwt requests = Lwt_list.map_exc (fun on -> func on p1 p2) ons in
+  lwt results = Lwt_list.(map_s_exc wait requests) in
+  lwt data = Lwt_list.(map_s_exc get_data results) in
+  Lwt.return (List.concat data)
+
+let get_links_from_content_tags str_content_uri opt_tags_uri =
   let aux tags_str_uri () =
-    let content_uri = Rdf_store.uri_of_string content_uri in
+    let uri = Rdf_store.uri_of_string str_content_uri in
     let tags_uri = List.map Rdf_store.uri_of_string tags_str_uri in
-    lwt i_ret = Rdf_store.links_from_content_tags
-        Rdf_store.Internal content_uri tags_uri in
-    lwt e_ret = Rdf_store.links_from_content_tags
-        Rdf_store.External content_uri tags_uri in
-    lwt i_json = build_json i_ret in
-    lwt e_json = build_json e_ret in
-    Lwt.return (`List (i_json@e_json))
+    lwt results = on_both Rdf_store.links_from_content_tags uri tags_uri in
+    let list = List.map build_assoc results in
+    (* if List.length list = 0 *)
+    (* then Bot.call str_content_uri; *)
+    Lwt.return (`List list)
   in
   let tags_str_uri = match opt_tags_uri with
     | Some x -> x
@@ -402,16 +422,29 @@ let get_links_from_content_tags content_uri opt_tags_uri =
 let get_links_from_content content_uri =
   get_links_from_content_tags content_uri None
 
+let find regexps (link_id, uri, title, summary) =
+  Str.exists regexps title || Str.exists regexps summary
+
 let get_links_from_research content_uri research =
   let aux () =
+    let research = cut_research research in
+    let regexps = Str.regexps research in
     let content_uri = Rdf_store.uri_of_string content_uri in
-    lwt i_ret = Rdf_store.links_from_research
-        Rdf_store.Internal content_uri research in
-    lwt e_ret = Rdf_store.links_from_research
-        Rdf_store.External content_uri research in
-    lwt i_json = build_json i_ret in
-    lwt e_json = build_json e_ret in
-    Lwt.return (`List (i_json@e_json))
+
+    (* Rdf research *)
+    lwt results = on_both Rdf_store.links_from_research content_uri research in
+
+    (* title / summary research *)
+    lwt results' = on_both Rdf_store.links_from_content_tags content_uri [] in
+    let results' = List.filter (find regexps) results' in
+
+    let compare (_, uri1, _, _) (_, uri2, _, _) =
+      Rdf_store.compare_uri uri1 uri2 = 0
+    in
+    let merged = List.merge compare results results' in
+    let limited = List.limit 10 merged in
+    let json = List.map build_assoc limited in
+    Lwt.return (`List json)
   in
   API_tools.check_return ~param_name:API_tools.links_ret_name aux
 
