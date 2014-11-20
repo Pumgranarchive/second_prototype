@@ -89,9 +89,12 @@ let get_data_list_from uris platforms =
 
 (*** Getters *)
 let uri_from_platform plateform content_name =
+  print_endline "from_platform";
   let aux () =
     try_lwt
+      print_endline "call";
       lwt uri = Rdf_store.uri_from_platform plateform content_name in
+      print_endline "ret";
       Lwt.return (`String (Rdf_store.string_of_uri uri))
     with e -> (print_endline (Printexc.to_string e); Lwt.return `Null)
   in

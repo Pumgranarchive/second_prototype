@@ -95,6 +95,7 @@ let sub str start length =
 end
 
 let tuple_of_id str_uri =
+  print_endline str_uri;
   let str_uri = Str.remove_http_prefix str_uri in
   let end_pos = (String.length str_uri) - 1 in
   let slash_pos =
@@ -112,6 +113,7 @@ let tuple_of_id str_uri =
     with Not_found -> Str.search_backward "/" str_uri end_pos
   in
   let content_name = Str.sub str_uri (ct_pos + 1) (end_pos - ct_pos) in
+  print_endline (str_uri^" => "^platform_name^" "^content_name);
   platform_name, content_name
 
 module Tag =
@@ -152,9 +154,9 @@ struct
   let build_list links =
     let aux html (link_id, id, title, summary) =
       let str_id = GUI_deserialize.string_of_id id in
-      let linked = a ~service:%GUI_services.content_detail_by_platform
+      let linked = a ~service:%GUI_services.content_detail
         [div ~a:[a_class["content_current_linked_main_list_elem"]]
-            [h3 [pcdata title]; p [pcdata summary]]] (tuple_of_id str_id)
+            [h3 [pcdata title]; p [pcdata summary]]] str_id
       in
       if List.length html == 0
       then [linked]
@@ -172,9 +174,9 @@ struct
     let aux html (id, title, summary) =
       let str_id = GUI_deserialize.string_of_id id in
       let content =
-        D.a ~service:%GUI_services.content_detail_by_platform
+        D.a ~service:%GUI_services.content_detail
           [div ~a:[a_class ["content_main_list_elem"]]
-              [h3 [pcdata title]; p [pcdata summary]]] (tuple_of_id str_id)
+              [h3 [pcdata title]; p [pcdata summary]]] str_id
       in
       if List.length html == 0
       then [content]

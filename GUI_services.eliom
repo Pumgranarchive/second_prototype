@@ -33,12 +33,12 @@ let content_detail =
     ()
 
 (* Content detail view service *)
-let content_detail_by_platform =
-  Eliom_service.Http.service
-    ~path:["view"]
-    ~get_params:Eliom_parameter.(suffix (string "plateform_name" **
-                                           string "content_name"))
-    ()
+(* let content_detail_by_platform = *)
+(*   Eliom_service.Http.service *)
+(*     ~path:["view"] *)
+(*     ~get_params:Eliom_parameter.(suffix (string "plateform_name" ** *)
+(*                                            string "content_name")) *)
+(*     () *)
 
 (* Update content detail *)
 (* let content_update_service = *)

@@ -55,10 +55,10 @@ let _ =
     ~service:GUI_services.content_detail
     (launcher GUI_html.content_detail uri_of_id identity)
 
-let _ =
-  Pumgrana.App.register
-    ~service:GUI_services.content_detail_by_platform
-    (launcher GUI_html.content_detail uri_of_tuple identity)
+(* let _ = *)
+(*   Pumgrana.App.register *)
+(*     ~service:GUI_services.content_detail_by_platform *)
+(*     (launcher GUI_html.content_detail uri_of_tuple identity) *)
 
 (* let _ = *)
 (*   Pumgrana.App.register *)
