@@ -306,6 +306,7 @@ let get_tags_from_content content_str_uri =
   let aux () =
     let content_uri = uri_of_string content_str_uri in
     lwt tags = Rdf_store.get_tags_from_content content_uri in
+    if List.length tags = 0 then PumBot.launch [uri];
     let result = `List (List.map tag_format tags) in
     Lwt.return result
   in
@@ -409,8 +410,7 @@ let get_links_from_content_tags str_content_uri opt_tags_uri =
     let tags_uri = List.map Rdf_store.uri_of_string tags_str_uri in
     lwt results = on_both Rdf_store.links_from_content_tags uri tags_uri in
     let list = List.map build_assoc results in
-    (* if List.length list = 0 *)
-    (* then Bot.call str_content_uri; *)
+    if List.length list = 0 then PumBot.launch [uri];
     Lwt.return (`List list)
   in
   let tags_str_uri = match opt_tags_uri with

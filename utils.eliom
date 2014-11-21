@@ -1,14 +1,3 @@
-(* module Bot = *)
-(* struct *)
-
-(*   let call str_uri = *)
-(*     let path = "../pum_bot/pum_bot -n " in *)
-(*     Lwt.async (fun () -> *)
-(*       let cmd = Sys.command (path^" -n \""^str_uri^"\" > /dev/null 2>&1 &") in *)
-(*       Lwt.return ()) *)
-
-(* end *)
-
 module Str =
 struct
 
