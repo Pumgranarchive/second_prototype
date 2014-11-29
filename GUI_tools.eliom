@@ -156,7 +156,8 @@ struct
       let str_id = GUI_deserialize.string_of_id id in
       let linked = a ~service:%GUI_services.content_detail
         [div ~a:[a_class["content_current_linked_main_list_elem"]]
-            [h3 [pcdata title]; p [pcdata summary]]] (Ptype.uri_encode str_id)
+            [h3 [pcdata title]; p [pcdata str_id; br (); pcdata summary]]]
+        (Ptype.uri_encode str_id)
       in
       if List.length html == 0
       then [linked]
