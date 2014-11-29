@@ -23,6 +23,12 @@ let refresh_links curi input div_list =
   let elm_of_result links = [div (Link.build_list links)] in
   refresh_list ~make_request ~elm_of_result To_dom.of_div input div_list
 
+let reload () =
+  Dom_html.window##location##reload()
+
+let timeout f s =
+  ignore (Dom_html.window##setTimeout(Js.wrap_callback f, s))
+
 }}
 
 let make_img class_name name =
@@ -41,6 +47,7 @@ let get_links content_uri =
 
 let make_links content_uri =
   lwt links = get_links content_uri in
+  if List.length links = 0 then ignore {unit{ timeout reload 10000. }};
   let link_div = D.div (Link.build_list links) in
   let html = div ~a:[a_class["content_current_linked_main_list"]] [link_div] in
   Lwt.return (link_div, html)
