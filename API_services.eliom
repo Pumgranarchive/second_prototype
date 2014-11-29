@@ -16,6 +16,21 @@ let map func = function
   | Some x -> Some (func x)
   | None   -> None
 
+(** [empty_fallback path msg]
+    Generate an empty fallback which return an error [msg] at [path] *)
+let empty_fallback path msg =
+  let get_params = Eliom_parameter.unit in
+  let service = Eliom_service.Http.service ~path ~get_params () in
+  let handler () () = return_of_error (API_tools.bad_request msg) in
+  let _ =  Eliom_registration.String.register ~service handler in
+  service
+
+(** [post_json fallback]
+    Generate a post json service on the [fallback] path.  *)
+let post_json fallback =
+  let post_params = Eliom_parameter.raw_post_data in
+  Eliom_service.Http.post_service ~fallback ~post_params ()
+
 (*
 ** Content
 *)
@@ -88,23 +103,10 @@ let _ =
 
 (* Insert content *)
 let fallback_insert_content =
-  Eliom_service.Http.service
-    ~path:["api"; "content"; "insert"]
-    ~get_params:Eliom_parameter.unit
-    ()
+  empty_fallback ["api"; "content"; "insert"]
+    "title, summary and text parameters are mandatory"
 
-let _ =
-  Eliom_registration.String.register
-    ~service:fallback_insert_content
-    (fun () () ->
-      return_of_error (API_tools.bad_request
-                          "title, summary and text parameters are mandatory"))
-
-let insert_content_json =
-  Eliom_service.Http.post_service
-    ~fallback:fallback_insert_content
-    ~post_params:Eliom_parameter.raw_post_data
-    ()
+let insert_content_json = post_json fallback_insert_content
 
 let insert_content =
   Eliom_service.Http.post_service
@@ -137,23 +139,10 @@ let _ =
 
 (* Update content *)
 let fallback_update_content =
-  Eliom_service.Http.service
-    ~path:["api"; "content"; "update"]
-    ~get_params:Eliom_parameter.unit
-    ()
+  empty_fallback ["api"; "content"; "update"]
+    "content_uri parameter is mandatory"
 
-let _ =
-  Eliom_registration.String.register
-    ~service:fallback_update_content
-    (fun () () ->
-      return_of_error (API_tools.bad_request
-                          "content_uri parameter is mandatory"))
-
-let update_content_json =
-  Eliom_service.Http.post_service
-    ~fallback:fallback_update_content
-    ~post_params:Eliom_parameter.raw_post_data
-    ()
+let update_content_json = post_json fallback_update_content
 
 let update_content =
   Eliom_service.Http.post_service
@@ -190,23 +179,10 @@ let _ =
 
 (* Update content tags *)
 let fallback_update_content_tags =
-  Eliom_service.Http.service
-    ~path:["api"; "content"; "update_tags"]
-    ~get_params:Eliom_parameter.unit
-    ()
+  empty_fallback ["api"; "content"; "update_tags"]
+    "content_uri parameter is mandatory"
 
-let _ =
-  Eliom_registration.String.register
-    ~service:fallback_update_content_tags
-    (fun () () ->
-      return_of_error (API_tools.bad_request
-                          "content_uri parameter is mandatory"))
-
-let update_content_tags_json =
-  Eliom_service.Http.post_service
-    ~fallback:fallback_update_content_tags
-    ~post_params:Eliom_parameter.raw_post_data
-    ()
+let update_content_tags_json = post_json fallback_update_content_tags
 
 let update_content_tags =
   Eliom_service.Http.post_service
@@ -239,23 +215,10 @@ let _ =
 
 (* Delete content *)
 let fallback_delete_contents =
-  Eliom_service.Http.service
-    ~path:["api"; "content"; "delete"]
-    ~get_params:Eliom_parameter.unit
-    ()
+  empty_fallback ["api"; "content"; "delete"]
+    "contents_uri parameter is mandatory"
 
-let _ =
-  Eliom_registration.String.register
-    ~service:fallback_delete_contents
-    (fun () () ->
-      return_of_error (API_tools.bad_request
-                          "contents_uri parameter is mandatory"))
-
-let delete_contents_json =
-  Eliom_service.Http.post_service
-    ~fallback:fallback_delete_contents
-    ~post_params:Eliom_parameter.raw_post_data
-    ()
+let delete_contents_json = post_json fallback_delete_contents
 
 let delete_contents =
   Eliom_service.Http.post_service
@@ -344,23 +307,9 @@ let _ =
 
 (* Insert tags *)
 let fallback_insert_tags =
-  Eliom_service.Http.service
-    ~path:["api"; "tag"; "insert"]
-    ~get_params:Eliom_parameter.unit
-    ()
+  empty_fallback ["api"; "tag"; "insert"] "tags_subject parameter is mandatory"
 
-let _ =
-  Eliom_registration.String.register
-    ~service:fallback_insert_tags
-    (fun () () ->
-      return_of_error (API_tools.bad_request
-                          "tags_subject parameter is mandatory"))
-
-let insert_tags_json =
-  Eliom_service.Http.post_service
-    ~fallback:fallback_insert_tags
-    ~post_params:Eliom_parameter.raw_post_data
-    ()
+let insert_tags_json = post_json fallback_insert_tags
 
 let insert_tags =
   Eliom_service.Http.post_service
@@ -392,22 +341,9 @@ let _ =
 
 (* Delete tags *)
 let fallback_delete_tags =
-  Eliom_service.Http.service
-    ~path:["api"; "tag"; "delete"]
-    ~get_params:Eliom_parameter.unit
-    ()
+  empty_fallback ["api"; "tag"; "delete"] "tags_uri parameter is mandatory"
 
-let _ =
-  Eliom_registration.String.register
-    ~service:fallback_delete_tags
-    (fun () () ->
-      return_of_error (API_tools.bad_request "tags_uri parameter is mandatory"))
-
-let delete_tags_json =
-  Eliom_service.Http.post_service
-    ~fallback:fallback_delete_tags
-    ~post_params:Eliom_parameter.raw_post_data
-    ()
+let delete_tags_json = post_json fallback_delete_tags
 
 let delete_tags =
   Eliom_service.Http.post_service
@@ -499,16 +435,7 @@ let _ =
 
 (* Insert links *)
 let fallback_insert_links =
-  Eliom_service.Http.service
-    ~path:["api"; "link"; "insert"]
-    ~get_params:Eliom_parameter.unit
-    ()
-
-let _ =
-  Eliom_registration.String.register
-    ~service:fallback_insert_links
-    (fun () () ->
-      return_of_error (API_tools.bad_request "All parameters are mandatory"))
+  empty_fallback ["api"; "link"; "insert"] "All parameters are mandatory"
 
 let insert_links =
   Eliom_service.Http.post_service
@@ -519,11 +446,7 @@ let insert_links =
                                        list "tags" (string "uri")))
     ()
 
-let insert_links_json =
-  Eliom_service.Http.post_service
-    ~fallback:fallback_insert_links
-    ~post_params:Eliom_parameter.raw_post_data
-    ()
+let insert_links_json = post_json fallback_insert_links
 
 let _ =
   Eliom_registration.String.register
@@ -551,18 +474,52 @@ let _ =
       in
       API_tools.manage_bad_request aux)
 
-(* Update links *)
-let fallback_update_link =
-  Eliom_service.Http.service
-    ~path:["api"; "link"; "update"]
-    ~get_params:Eliom_parameter.unit
+(* Insert scored links *)
+let fallback_insert_scored_links =
+  empty_fallback ["api"; "link"; "scored_insert"] "All parameters are mandatory"
+
+let insert_scored_links =
+  Eliom_service.Http.post_service
+    ~fallback:fallback_insert_scored_links
+    ~post_params:Eliom_parameter.(list "data"
+                                    (string "origin_uri" **
+                                       string "target_uri" **
+                                       list "tags" (string "uri") **
+                                       int "score"))
     ()
+
+let insert_scored_links_json = post_json fallback_insert_scored_links
 
 let _ =
   Eliom_registration.String.register
-    ~service:fallback_update_link
-    (fun () () ->
-      return_of_error (API_tools.bad_request "All parameter are mandatory"))
+    ~service:insert_scored_links_json
+    (fun () (input_type, ostream) ->
+      let aux () =
+        lwt yojson = API_tools.json_of_ocsigen_string_stream input_type ostream in
+        let data = API_deserialize.get_insert_scored_links_data yojson in
+        return_of_json (API_core.insert_scored_links data)
+      in
+      API_tools.manage_bad_request aux)
+
+let _ =
+  Eliom_registration.String.register
+    ~service:insert_scored_links
+    (fun () data ->
+      let aux () =
+        let to_triple (origin_uri, (target_uri, (tags_uri, score))) =
+          (Rdf_store.uri_decode origin_uri,
+           Rdf_store.uri_decode target_uri,
+           List.map Rdf_store.uri_decode tags_uri,
+           score)
+        in
+        let formated_data = List.map to_triple data in
+        return_of_json (API_core.insert_scored_links formated_data)
+      in
+      API_tools.manage_bad_request aux)
+
+(* Update links *)
+let fallback_update_link =
+  empty_fallback ["api"; "link"; "update"] "All parameter are mandatory"
 
 let update_links =
   Eliom_service.Http.post_service
@@ -572,11 +529,7 @@ let update_links =
                                        list "tags" (string "uri")))
     ()
 
-let update_links_json =
-  Eliom_service.Http.post_service
-    ~fallback:fallback_update_link
-    ~post_params:Eliom_parameter.raw_post_data
-    ()
+let update_links_json = post_json fallback_update_link
 
 let _ =
   Eliom_registration.String.register
@@ -603,23 +556,9 @@ let _ =
 
 (* Delete links *)
 let fallback_delete_links =
-  Eliom_service.Http.service
-    ~path:["api"; "link"; "delete"]
-    ~get_params:Eliom_parameter.unit
-    ()
+  empty_fallback ["api"; "link"; "delete"] "links_uri parameter is mandatory"
 
-let _ =
-  Eliom_registration.String.register
-    ~service:fallback_delete_links
-    (fun () () ->
-      return_of_error (API_tools.bad_request
-                          "links_uri parameter is mandatory"))
-
-let delete_links_json =
-  Eliom_service.Http.post_service
-    ~fallback:fallback_delete_links
-    ~post_params:Eliom_parameter.raw_post_data
-    ()
+let delete_links_json = post_json fallback_delete_links
 
 let delete_links =
   Eliom_service.Http.post_service

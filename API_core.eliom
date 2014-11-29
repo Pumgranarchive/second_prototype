@@ -306,7 +306,7 @@ let get_tags_from_content content_str_uri =
   let aux () =
     let content_uri = uri_of_string content_str_uri in
     lwt tags = Rdf_store.get_tags_from_content content_uri in
-    if List.length tags = 0 then PumBot.launch [uri];
+    if List.length tags = 0 then PumBot.launch [content_uri];
     let result = `List (List.map tag_format tags) in
     Lwt.return result
   in
@@ -449,18 +449,19 @@ let get_links_from_research content_uri research =
   in
   API_tools.check_return ~param_name:API_tools.links_ret_name aux
 
-let insert_links data =
+let internal_insert_links data =
   let aux () =
-    let triple_uri (origin_str_uri, target_str_uri, tags_str_uri) =
+    let link_of_uri (origin_str_uri, target_str_uri, tags_str_uri, score) =
       let data =
         Rdf_store.uri_of_string origin_str_uri,
         Rdf_store.uri_of_string target_str_uri,
-        List.map Rdf_store.uri_of_string tags_str_uri
+        List.map Rdf_store.uri_of_string tags_str_uri,
+        score
       in
       data
     in
-    let triple_list = List.map triple_uri data in
-    lwt links_id = Rdf_store.insert_links triple_list in
+    let link_list = List.map link_of_uri data in
+    lwt links_id = Rdf_store.insert_links link_list in
     let format link_id =
       let str_link_id = Rdf_store.string_of_link_id link_id in
       `Assoc [(API_tools.uri_field, `String str_link_id)]
@@ -472,6 +473,13 @@ let insert_links data =
     ~default_return:API_conf.return_created
     ~param_name:API_tools.linksid_ret_name
     aux
+
+let insert_links data =
+  let link_of_tripe (ouri, turi, tags) = (ouri, turi, tags, -1) in
+  let data' = List.map link_of_tripe data in
+  internal_insert_links data'
+
+let insert_scored_links = internal_insert_links
 
 let update_links data =
   let aux () =

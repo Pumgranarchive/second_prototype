@@ -60,6 +60,10 @@ struct
     lwt l = lwt_l in
     Lwt.return (List.hd l)
 
+  let concat lwt_l =
+    lwt l = lwt_l in
+    Lwt.return (List.concat l)
+
   let filter f lwt_l =
     lwt l = lwt_l in
     Lwt.return (List.filter f l)
@@ -122,6 +126,24 @@ struct
   let get_not_null default = function
     | None -> default
     | Some x -> x
+
+end
+
+module Sparql =
+struct
+
+  let select vname where =
+    if List.length vname = 0
+    then raise (Invalid_argument "vname can not be null");
+    let vname = List.map ((^) "?") vname in
+    let select = String.concat " " vname in
+    "SELECT "^select^" WHERE { "^where^" }"
+
+  let insert_data where =
+    "INSERT DATA { "^where^" }"
+
+  let delete_data where =
+    "DELETE DATA { "^where^" }"
 
 end
 

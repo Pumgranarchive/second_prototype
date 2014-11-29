@@ -89,6 +89,10 @@ val get_links_from_research: string -> string ->
 val insert_links: (string * string * string list) list ->
   Yojson.Basic.json Lwt.t
 
+(** [insert_scored_links (origin_uri, target_uri, tags_uri, score) list]  *)
+val insert_scored_links: (string * string * string list * int) list ->
+  Yojson.Basic.json Lwt.t
+
 (** [update_link (link_id tag_uri list) list]  *)
 val update_links: (string * string list) list -> Yojson.Basic.json Lwt.t
 

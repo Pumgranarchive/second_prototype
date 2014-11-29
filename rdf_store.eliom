@@ -238,14 +238,22 @@ let half_get_from_4store query =
     raise e
 
 let get_from_4store query =
-  lwt results = half_get_from_4store query in
-  let solutions = get_solutions (get_result results) in
-  Lwt.return (solutions)
+  try_lwt
+    lwt results = half_get_from_4store query in
+    let solutions = get_solutions (get_result results) in
+    Lwt.return solutions
+  with e ->
+    print_endline query;
+    raise e
 
 let ask_to_4store query =
-  lwt results = half_get_from_4store query in
-  let boolean = get_boolean (get_result results) in
-  Lwt.return (boolean)
+  try_lwt
+    lwt results = half_get_from_4store query in
+    let boolean = get_boolean (get_result results) in
+    Lwt.return boolean
+  with e ->
+    print_endline query;
+    raise e
 
 let post_on_4store query =
   let fake_base = Rdf_iri.iri ~check:false domain in
@@ -350,7 +358,7 @@ let get_tags_from_research research_strings =
   let query =
     "SELECT ?tag ?subject WHERE
      { " ^ filter_query ^" FILTER regex(str(?res), \"^"^tag_content_r^"\") }
-     GROUP BY ?tag LIMIT 10"
+     GROUP BY ?tag LIMIT 100"
   in
   lwt solutions = get_from_4store query in
   let tuple_tags = List.map tuple_tag_from solutions in
@@ -534,7 +542,7 @@ let research_contents content_type research_strings =
   let filter_query = build_filter_research research_strings in
   let select, where = get_content_query ~complex:false content_type in
   let query =
-    "SELECT "^ select ^" WHERE {"^ where ^ filter_query ^"} GROUP BY ?content LIMIT 20"
+    "SELECT "^ select ^" WHERE {"^ where ^ filter_query ^"} GROUP BY ?content LIMIT 100"
   in
   lwt solutions = get_from_4store query in
   let res = match content_type with
@@ -718,7 +726,7 @@ let build_research_query content_type content_uri research_strings =
   "SELECT " ^ select ^ " WHERE
   { <"^content_str_uri^"> ?own_tag ?target .
     ?target <"^tagged_content_r^"> ?tag .
-    "^ filter_query ^" "^ half_query ^" } GROUP BY ?target LIMIT 10"
+    "^ filter_query ^" "^ half_query ^" } GROUP BY ?target LIMIT 100"
 
 let links_from_research content_type content_uri research_strings =
   let query = build_research_query content_type content_uri research_strings in
@@ -767,62 +775,92 @@ let delete_links links_id =
 let internal_update_links mode triple_list =
 
   (* Format entry as string triple *)
-  let to_str_triple str_list (origin_uri, target_uri, tags_uri) =
+  let to_str_triple str_list (origin_uri, target_uri, tags_uri, score) =
     if List.length tags_uri == 0
     then raise (Invalid_argument "Empty tags list is not allowed");
     let str_o = string_of_uri origin_uri in
     let str_t = string_of_uri target_uri in
     let list = List.map (fun t -> str_o, str_t, string_of_uri t) tags_uri in
-    list@str_list
+    let list' = (str_o, str_t, string_of_int score)::list in
+    list'@str_list
   in
   let str_triple_list = List.fold_left to_str_triple [] triple_list in
 
   (* Getting existing links *)
-  let make_requests (str_origin, str_target, _) =
-    let s = "SELECT ?tag WHERE { <"^str_origin^"> ?tag <"^str_target^"> }" in
-    let request = get_from_4store s in
-    str_origin, str_target, request
+  let make_requests (origin_uri, target_uri, _, _) =
+    let str_o = string_of_uri origin_uri in
+    let str_t = string_of_uri target_uri in
+    let tag_request =
+      let select = Sparql.select ["tag"] ("<"^str_o^"> ?tag <"^str_t^">") in
+      get_from_4store select
+    in
+    let score_request =
+      let select = Sparql.select ["score"] ("<"^str_o^"> <"^str_t^"> ?score") in
+      get_from_4store select
+    in
+    str_o, str_t, tag_request, score_request
   in
-  let format (str_origin, str_target, request) =
-    lwt solutions = request in
-    let interf s = str_origin, str_target, from_solution "tag" s in
-    Lwt.return (List.map interf solutions)
+
+  (** Get existing tag + removed old score *)
+  let format (str_origin, str_target, tag_request, score_request) =
+    lwt tag_solutions = tag_request in
+    lwt score_solutions = score_request in
+    let tag_aux s = str_origin, str_target, from_solution "tag" s in
+    let delete_old_score s =
+      let score = from_solution "score" s in
+      let where = "<"^str_origin^">  <"^str_target^"> "^score^"" in
+      let delete_query = Sparql.delete_data where in
+      Lwt.async (fun () -> post_on_4store delete_query)
+    in
+    let () = List.iter delete_old_score score_solutions in
+    Lwt.return (List.map tag_aux tag_solutions)
   in
-  lwt requests = Lwt_list.map_exc make_requests str_triple_list in
-  lwt existing_double_l = Lwt_list.map_s_exc format requests in
-  let existing_l = List.concat existing_double_l in
+  lwt requests = Lwt_list.map_exc make_requests triple_list in
+  lwt existing = Lwt_list.concat (Lwt_list.map_s_exc format requests) in
 
   (* Adding / Deleting tools *)
-  let build_list ref_list new_list (origin, target, tag) =
+  let is_uri str_uri =
+    let http = Str.regexp "^https?://.*" in
+    Str.string_partial_match http str_uri 0
+  in
+  let build_list ref_list new_list (origin, target, data) =
     let are_equal (ori, tar, ta) =
       (String.compare origin ori) == 0 &&
       (String.compare target tar) == 0 &&
-      (String.compare tag ta) == 0
+      (String.compare data ta) == 0
     in
-    if List.exists are_equal ref_list
+    if (is_uri data && List.exists are_equal ref_list)
     then new_list
-    else (origin, target, tag)::new_list
+    else (origin, target, data)::new_list
   in
-  let build_query q (ori_uri, tar_uri, tag_uri) =
-    q ^"<"^ ori_uri ^">  <"^ tag_uri ^"> <"^ tar_uri ^"> . "
+  let build_query q (ori_uri, tar_uri, p) =
+    let target_q = "<"^tar_uri^">" in
+    let end_q =
+      if is_uri p
+      then "<"^p^"> "^target_q
+      else target_q^" "^p^""
+    in
+    q ^"<"^ ori_uri ^">  "^end_q^"  . "
   in
 
   (* Adding not existing links *)
-  let a_list = List.fold_left (build_list existing_l) [] str_triple_list in
-  let half_insert_query = List.fold_left build_query "" a_list in
-  let insert_query = "INSERT DATA { " ^ half_insert_query ^ " }" in
+  let adding = List.fold_left (build_list existing) [] str_triple_list in
+  let where = List.fold_left build_query "" adding in
+  let insert_query = Sparql.insert_data where in
+  print_endline insert_query;
   let () = Lwt.async (fun () -> post_on_4store insert_query) in
 
-  (* Deleting existing and not expected links *)
+  (* Deleting existing and not expected tags *)
   let () = if mode == Replacing then
-      let d_list = List.fold_left (build_list str_triple_list) [] existing_l in
-      let half_delete_query = List.fold_left build_query "" d_list in
-      let delete_query = "DELETE DATA { " ^ half_delete_query ^ " }" in
-      Lwt.async (fun () -> post_on_4store delete_query)
+      let deleting = List.fold_left (build_list str_triple_list) [] existing in
+      let where = List.fold_left build_query "" deleting in
+      let delete_query = Sparql.delete_data where in
+      if List.length deleting > 0
+      then Lwt.async (fun () -> post_on_4store delete_query)
   in
 
   (* Formating the return *)
-  let link_id (origin, target, _) = link_id origin target in
+  let link_id (origin, target, _, _) = link_id origin target in
   let link_ids = List.map link_id triple_list in
 
   Lwt.return link_ids
@@ -833,7 +871,7 @@ let insert_links triple_list =
 let update_links tuple_list =
   let triple_from_tuple (link_id, tags_uri) =
     let origin_uri, target_uri = tuple_of_link_id link_id in
-    (origin_uri, target_uri, tags_uri)
+    (origin_uri, target_uri, tags_uri, -1)
   in
   let triple_list = List.map triple_from_tuple tuple_list in
   lwt_ignore (internal_update_links Replacing triple_list)

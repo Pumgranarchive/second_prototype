@@ -118,9 +118,9 @@ val links_from_content_tags : content_type -> uri -> uri list -> condlink Lwt.t
 (** [get_links_from_research content_id research]  *)
 val links_from_research : content_type -> uri -> string list -> condlink Lwt.t
 
-(** [insert_links (origin_uri, targets_uri, tag_uri list) list]
+(** [insert_links (origin_uri, targets_uri, tag_uri list, score) list]
     @raise Invalid_argument if at least one tags list is empty. *)
-val insert_links : (uri * uri * uri list) list -> link_id list Lwt.t
+val insert_links : (uri * uri * uri list * int) list -> link_id list Lwt.t
 
 (** [update_link (link_id, new_tag_uri list) list]
     @raise Invalid_argument if at least one tags list is empty. *)
