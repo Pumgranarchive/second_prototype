@@ -7,8 +7,8 @@ type 'a t = (float * 'a) Ocsipersist.table * 'a listenner
 
 let max_length = 1000
 
-(* 24 heures *)
-let life_time = 60. *. 60. *. 24.
+(* 1 semaine *)
+let life_time = 60. *. 60. *. 24. *. 7.
 
 let calc_deadline () = (Unix.time ()) +. life_time
 
