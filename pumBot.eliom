@@ -18,6 +18,5 @@ let launch uris =
   let str_uris = List.map string_of_uri uris in
   let concat_uris = String.concat " " str_uris in
   let cmd = String.concat " " [path; options; concat_uris; redirect; bg] in
-  print_endline cmd;
   if List.length uris > 0
-  then Lwt.async (fun () -> Lwt.return (ignore (Sys.command cmd)))
+  then Lwt.async (fun () -> print_endline cmd; Lwt.return (ignore (Sys.command cmd)))
