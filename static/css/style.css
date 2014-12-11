@@ -269,6 +269,27 @@ body, html {
   background-size: 24px;
 }
 
+
+.content_current_linked_mainlogo input {
+  margin-left: 19px;
+  margin-top: 29px;
+  width: 300px;
+  height: 28px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  border-radius: 5px;
+}
+
+#sidebar input {
+  margin-left: 10px;
+  margin-top: 10px;
+  width: 80%;
+  height: 28px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  border-radius: 5px;
+}
+
 .window_pop_up form input {
   width: 100%;
   height: 38px;
