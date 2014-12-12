@@ -9,6 +9,7 @@ body, html {
   background-color: #f9f9f9;
   height: 100%;
   margin: 0;
+  overflow: hidden;
 }
 
 
@@ -167,10 +168,11 @@ body, html {
   height: 100%;
   position: fixed;
   right: 0;
-  width: 40%;
+  top: 0;
+  width: 430px;
   padding-left: 20px;
   background: #f3f3f3 url("../images/link_bar_fade.png") repeat-y 0px top;
-  overflow: auto;
+  overflow: scroll;
 }
 
 .content_current_linked_main_list {
@@ -185,7 +187,7 @@ body, html {
   -moz-border-radius: 6px;
   border-radius: 6px;
   width: 356px;
-  max-height: 85px;
+  max-height: 98px;
   overflow: hidden;
   padding-left: 10px;
   -webkit-transition: all .1s ease-in;
@@ -246,13 +248,16 @@ body, html {
 
 .content_current h3 {
   font-size: 30px;
+  margin-top: 0px;
+  padding-top: 25px;
 }
 
 .content_current {
-  width: 40%;
-  padding-right: 60px;
-  background-color: #f9f9f9;
+  max-height: 100vh;
+  width: calc(100% - 450px);
   float: left;
+  background-color: #f9f9f9;
+  overflow-y: scroll;
 }
 
 .content_main_list a,
