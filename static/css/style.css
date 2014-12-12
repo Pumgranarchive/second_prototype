@@ -257,7 +257,7 @@ body, html {
   width: calc(100% - 450px);
   float: left;
   background-color: #f9f9f9;
-  overflow-y: scroll;
+  overflow-y: auto;
 }
 
 .content_main_list a,
