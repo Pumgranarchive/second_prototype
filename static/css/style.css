@@ -290,21 +290,12 @@ body, html {
   border-radius: 5px;
 }
 
-.window_pop_up form input {
+.window_pop_up input {
   width: 100%;
   height: 38px;
   border: 1px solid #ccc;
   font-size: 19px;
   border-radius: 5px;
-}
-
-.window_pop_up {
-  color: #fa4b4e;
-  margin: auto;
-  width: 600px;
-  height: 340px;
-  padding: 30px;
-  background-color: #f3f3f3;
 }
 
 .window_pop_up_form_submit {
@@ -316,9 +307,19 @@ body, html {
   padding: 4px;
   margin: 1px;
   width: 140px;
+  margin-top: 20px;
 }
 
-#window_pop_up_bg {
+.window_pop_up {
+  color: #fa4b4e;
+  width: 600px;
+  height: 340px;
+  padding: 30px;
+  background-color: #f3f3f3;
+  margin: auto;
+}
+
+.window_pop_up_bg {
   width: 100%;
   height: 100%;
   position: fixed;
