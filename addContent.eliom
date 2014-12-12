@@ -23,12 +23,12 @@ let vcenter_this elm =
       let wheight = Js.Optdef.case (Dom_html.window##innerHeight)
         (fun () -> 0) (fun x -> x)
       in
-      let eheight =
-        try int_of_string (Js.to_string (elm##style##height))
-        with _ -> 0
+      let eheight = 400 (* Doesn't look like it's finding the good value *)
+        (* try int_of_string (Js.to_string (elm##style##height))
+        with _ -> 0 *)
       in
-      let hposition = string_of_int ((wheight - eheight) / 2) in
-      Lwt.return (elm##style##top <- Js.string (hposition ^ "px"))
+      let hposition = string_of_int (((wheight - eheight) / 2)) in
+      Lwt.return (elm##style##marginTop <- Js.string (hposition ^ "px"))
   in
   Lwt.async (vcenter ());
   Lwt.async (fun () -> Lwt_js_events.onresizes vcenter);
@@ -61,14 +61,15 @@ let bind_click_to_switch click_elm target_elm =
 
 let make mode =
   let my_elm =
-    D.div ~a:[a_style "background-color: #0000ff; position: absolute; margin: auto;"]
-      [pcdata "!!! HERE !!!!"]
+    D.div ~a:[a_class["window_pop_up"]]
+          [h1 ~a:[a_class["window_pop_up_button_add"]] [pcdata "Add a content"];
+	  raw_input ~input_type:`Text ~name:"content_name" ();
+	  h1 [pcdata "Add Tags"];
+	  raw_input ~input_type:`Text ~name:"content_tags" ();
+	  raw_input ~a:[a_class["window_pop_up_form_submit"]] ~input_type:`Submit ~value:"Add" ()]
   in
   let background =
-    D.div ~a:[a_style "background-color: #A4A4A4; \
-                       position: absolute; width:100%; height:100%; \
-                       visibility: hidden;"]
-      [my_elm]
+    D.div ~a:[a_class["window_pop_up_bg"]] [my_elm]
   in
   ignore {unit{ vcenter_this %my_elm }};
   ignore {unit{ scroll_adjust_this %background }};
