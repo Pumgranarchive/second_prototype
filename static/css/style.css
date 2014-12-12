@@ -170,6 +170,7 @@ body, html {
   width: 40%;
   padding-left: 20px;
   background: #f3f3f3 url("../images/link_bar_fade.png") repeat-y 0px top;
+  overflow: auto;
 }
 
 .content_current_linked_main_list {
