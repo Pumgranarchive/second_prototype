@@ -1,0 +1,24 @@
+{1 Pumgrana Server Documentation}
+
+{!modules:
+        API_conf
+        API_core
+        API_tools
+        Pcash
+        Nosql_store
+        Rdf_store
+        Preadability
+        Pyoutube
+        PumBot
+        AddContent
+        Container
+        ContentList
+        LinkBar
+        SideBar
+        MainLogo
+        MiddleSearch
+}
+
+{2 Index}
+
+{!indexlist}

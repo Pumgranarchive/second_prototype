@@ -1,5 +1,6 @@
 let old = ref []
 
+(** Add given uris only if there are totaly unkown *)
 let filter_and_add uris =
   let aux uri =
     let exists = List.exists (fun x -> Ptype.compare_uri uri x = 0) !old in

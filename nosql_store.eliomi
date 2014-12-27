@@ -18,6 +18,7 @@ val id_of_string : string -> id
 (** Create a string from an id *)
 val string_of_id : id -> string
 
+(** Check if the given id is a nosql id *)
 val is_nosql_id : string -> bool
 
 }}

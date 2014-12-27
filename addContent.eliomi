@@ -1,10 +1,17 @@
+(**
+   {b AddContent HTML Module}
+*)
+
+(** The two possible mode to build AddContent *)
 type mode =
 [`Contents of (Html5_types.div Eliom_content.Html5.D.elt Lwt.t * string option * string)
 | `Detail of Rdf_store.uri]
+
+(** The AddContent type  *)
 type 'a t
 
 (** [make mode]
-    build an addContent element in function of the given mode *)
+    build an addContent HTML element in function of the given mode *)
 val make : mode -> mode t
 
 (** [to_html t]

@@ -14,12 +14,9 @@ CLIENT_FILES := $(wildcard *.eliomi *.eliom)
 SERVER_FILES_DOC :=     $(wildcard *.eliomi)
 
 # Source files for the client
-CLIENT_FILES_DOC :=     API_conf.eliomi \
-                        API_core.eliomi \
-                        API_tools.eliomi \
-                        GUI_core.eliomi \
-                        GUI_html.eliomi \
-                        nosql_store.eliomi
+CLIENT_FILES_DOC :=     API_conf.eliomi         \
+                        nosql_store.eliomi      \
+                        rdf_store.eliomi
 
 # OCamlfind packages for the server
 SERVER_PACKAGES := yojson bson cohttp cohttp.lwt mongo mongo.lwt rdf rdf.lwt ptools readability_http bfy tidy pumgrana_http

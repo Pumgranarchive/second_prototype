@@ -10,16 +10,22 @@ exception Invalid_uri of string
 (** raised in case ok invalid link_id  *)
 exception Invalid_link_id of string
 
+(** The uri type which is clearly using Ptype.uri  *)
 type uri = Ptype.uri
 
+(** The link_id type used for the API  *)
 type link_id = Ptype.link_id
 
+(** The return content type, used in that module only *)
 type content = Nosql_store.id * string * string
 
 (** uri * subject  *)
 type tag = uri * string
+
+(** The tag_type type, used for selection  *)
 type tag_type = TagLink | TagContent
 
+(** The content_type type, used for selection   *)
 type content_type = Internal | External
 
 (** link_id * target_uri * title * summary  *)
@@ -51,9 +57,13 @@ val link_id_of_string : string -> link_id
 (** Create a string from a link_id  *)
 val string_of_link_id : link_id -> string
 
+(** Return target_uri of the given link_id  *)
 val target_uri_from_link_id : link_id -> uri
+
+(** Return origin_uri of the given link_id  *)
 val origin_uri_from_link_id : link_id -> uri
 
+(** Transform content_id of uri  *)
 val uri_of_content_id : Nosql_store.id -> uri
 
 (** Create an id from an uri
@@ -67,6 +77,7 @@ val uri_encode : string -> string
 (** Decode all slash of the given string url  *)
 val uri_decode : string -> string
 
+(** Comapre two uri with the String.compare *)
 val compare_uri : uri -> uri -> int
 
 }}

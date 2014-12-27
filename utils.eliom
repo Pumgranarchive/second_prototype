@@ -139,11 +139,11 @@ struct
     let select = String.concat " " vname in
     "SELECT "^select^" WHERE { "^where^" }"
 
-  let insert_data where =
-    "INSERT DATA { "^where^" }"
+  let insert_data data =
+    "INSERT DATA { "^data^" }"
 
-  let delete_data where =
-    "DELETE DATA { "^where^" }"
+  let delete_data data =
+    "DELETE DATA { "^data^" }"
 
 end
 

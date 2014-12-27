@@ -1,5 +1,3 @@
-{server{
-
 (**
    {b API tools -
       This module provides some tools to help API implementation}
@@ -8,9 +6,6 @@
 
 (** {6 Selection string } *)
 
-
-(** content type return by API' services *)
-(* val content_type: string *)
 
 (** Value of the uri field in the database *)
 val uri_field: string
@@ -99,8 +94,10 @@ val check_empty_ocaml_list: 'a list -> string -> 'a list
 
 (** {6 Http tools } *)
 
+(** Transform Json of API return *)
 val return_of_json : Yojson.Basic.json Lwt.t -> (string * string) Lwt.t
 
+(** Transform Json of API error *)
 val return_of_error : string Lwt.t -> (string * string) Lwt.t
 
 (** {6 Manage return tools } *)
@@ -127,5 +124,3 @@ val bad_request: ?error_value:int -> string -> string Lwt.t
     call the [fun], catch the exception and write it in the returned string *)
 val manage_bad_request: (unit -> (string * string) Lwt.t) ->
   (string * string) Lwt.t
-
-}}

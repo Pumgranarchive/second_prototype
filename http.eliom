@@ -47,20 +47,20 @@ struct
     with Not_found -> url
 
   let research_contents =
-    Eliom_service.Http.external_service ~prefix
+    Eliom_service.external_service ~prefix
       ~path:["api"; "content"; "research"]
       ~get_params:Eliom_parameter.(suffix (opt (string "filter") **
                                              (string "research")))
       ()
 
   let get_tags_from_research =
-    Eliom_service.Http.external_service ~prefix
+    Eliom_service.external_service ~prefix
       ~path:["api"; "tag"; "list_from_research"]
       ~get_params:Eliom_parameter.(suffix (string "research"))
       ()
 
   let get_links_from_research =
-    Eliom_service.Http.external_service ~prefix
+    Eliom_service.external_service ~prefix
       ~path:["api"; "link"; "list_from_research"]
       ~get_params:Eliom_parameter.(suffix ((string "content_uri") **
                                               (string "research")))

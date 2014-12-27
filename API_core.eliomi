@@ -1,5 +1,3 @@
-{server{
-
 (**
    {b API Core -
    This Module do request to database and format the return}
@@ -98,5 +96,3 @@ val update_links: (string * string list) list -> Yojson.Basic.json Lwt.t
 
 (** [delete_links links_id]  *)
 val delete_links: string list -> Yojson.Basic.json Lwt.t
-
-}}

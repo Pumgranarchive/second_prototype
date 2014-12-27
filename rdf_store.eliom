@@ -484,6 +484,7 @@ let uri_from_platform plt name =
        { ?content ?x ?y } UNION
        { ?x ?content ?y } UNION
        { ?x ?y ?content } .
+       (?content = <>)
        FILTER regex(str(?content), \"^https?://[^/]*"^plt^".*(/|=)"^name^"$\")
      } GROUP BY ?content LIMIT 20"
   in
@@ -695,7 +696,7 @@ let build_tags_query content_type content_uri tags =
   { <"^content_str_uri^"> ?tag ?target .
     "^filter_query^"
     FILTER regex(str(?tag), \"^"^base_tag_url^"\") .
-    " ^ half_query ^ " } GROUP BY ?target LIMIT 10"
+    " ^ half_query ^ " } GROUP BY ?target LIMIT 100"
 
 let links_from_content_tags content_type content_uri tags_uri =
   let query = build_tags_query content_type content_uri tags_uri in
