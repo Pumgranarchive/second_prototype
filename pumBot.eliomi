@@ -1,3 +1,5 @@
+{server{
+
 (**
    {b Pumgrana Bot abstraction module}
 *)
@@ -6,3 +8,5 @@
     Launch the PumBot.
     Protected against double launching. *)
 val launch : Ptype.uri list -> unit
+
+}}

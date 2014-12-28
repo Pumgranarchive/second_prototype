@@ -15,8 +15,6 @@ exception Internal_error of string
 type uri = Ptype.uri
 type link_id = Ptype.link_id
 
-type content = Nosql_store.id * string * string
-
 type tag = uri * string
 type tag_type = TagLink | TagContent
 

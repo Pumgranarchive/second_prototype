@@ -1,3 +1,5 @@
+{server{
+
 (**
    {b Content HTML module}
 *)
@@ -10,7 +12,9 @@ val make :
   Html5_types.div Eliom_content.Html5.F.elt Lwt.t
 
 (** [get_data content_uri]
-    return data of the given content by uri
-    The return is formated as (title, html_body) *)
-val get_data : Rdf_store.uri ->
+    @return data of the given content by uri
+    formated as (title, html_body) *)
+val get_data : Ptype.uri ->
   (string * Html5_types.div Eliom_content.Html5.F.elt Lwt.t) Lwt.t
+
+}}

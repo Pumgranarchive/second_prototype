@@ -1,13 +1,14 @@
+{server{
+
 (**
-   {b API Core -
-   This Module do request to database and format the return}
+   {b API Core module manage requests to databases and format return}
 *)
 
 
 (** {6 Content} *)
 
 (** [uri_from_platform plateform_name content_name]
-    Return the known uri from [plateform_name] and [content_name] *)
+    @return the known uri from [plateform_name] and [content_name] *)
 val uri_from_platform : string -> string -> Yojson.Basic.json Lwt.t
 
 (** [get_detail content_uri]  *)
@@ -96,3 +97,5 @@ val update_links: (string * string list) list -> Yojson.Basic.json Lwt.t
 
 (** [delete_links links_id]  *)
 val delete_links: string list -> Yojson.Basic.json Lwt.t
+
+}}

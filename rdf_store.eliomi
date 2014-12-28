@@ -4,6 +4,9 @@
    {b Rdf_store abstraction module}
 *)
 
+(* module type NOSQL_STORE = sig type id end *)
+(* module Nosql_store : NOSQL_STORE *)
+
 (** Raised in case of invalid uri  *)
 exception Invalid_uri of string
 
@@ -15,9 +18,6 @@ type uri = Ptype.uri
 
 (** The link_id type used for the API  *)
 type link_id = Ptype.link_id
-
-(** The return content type, used in that module only *)
-type content = Nosql_store.id * string * string
 
 (** uri * subject  *)
 type tag = uri * string
@@ -47,20 +47,21 @@ val uri_of_string : string -> uri
 (** Create a string from a URI  *)
 val string_of_uri : uri -> string
 
-(** If the given string URI is a pumgrana one, return true *)
+(** If the given string URI is a pumgrana one
+    @return true *)
 val is_pumgrana_uri: uri -> bool
 
 (** Create a link_id from a string
-    @raise Invalid_link_id *)
+    @raise Invalid_link_id in case of invalid string id *)
 val link_id_of_string : string -> link_id
 
 (** Create a string from a link_id  *)
 val string_of_link_id : link_id -> string
 
-(** Return target_uri of the given link_id  *)
+(** @return target_uri of the given link_id  *)
 val target_uri_from_link_id : link_id -> uri
 
-(** Return origin_uri of the given link_id  *)
+(** @return origin_uri of the given link_id  *)
 val origin_uri_from_link_id : link_id -> uri
 
 (** Transform content_id of uri  *)
@@ -68,7 +69,7 @@ val uri_of_content_id : Nosql_store.id -> uri
 
 (** Create an id from an uri
     @raise Invalid_uri in case of a full invalid or a not Pumgrana uri.
-    may @raise Nosql_store.Invalid_id *)
+    @raise Nosql_store.Invalid_id in case of invalid uri *)
 val content_id_of_uri : uri -> Nosql_store.id
 
 (** Encode all slash of the given string url  *)
@@ -87,11 +88,12 @@ val compare_uri : uri -> uri -> int
 (** {6 Contents}  *)
 
 (** [uri_from_platform plateform_name content_name]
-    Return the known uri from [plateform_name] and [content_name] *)
+    @return the known uri from [plateform_name] and [content_name] *)
 val uri_from_platform : string -> string -> uri Lwt.t
 
 (** [get_triple_contents content_type tags_uri]
-    if [tags_uri] is an empty list, return all contents' triple. *)
+    if [tags_uri] is an empty list
+    @return all contents' triple. *)
 val get_triple_contents : content_type -> uri list -> condcontent Lwt.t
 
 (** [research_contents content_type research_string]  *)
@@ -102,11 +104,12 @@ val research_contents : content_type -> string list -> condcontent Lwt.t
     @raise Invalid_argument if the content is already registred. *)
 val insert_content : Nosql_store.id -> string -> string -> uri list -> unit Lwt.t
 
-(** [delete_contents contents_id *)
+(** [delete_contents contents_id] *)
 val delete_contents : Nosql_store.id list -> unit Lwt.t
 
 (** [update_content content_id ?title ?summary ?tags_uri ()]
-    @param at least one have to be gave, otherwised @raise Invalid_argument,
+    @param at least one have to be gave
+    @raise Invalid_argument otherwise,
     @raise Not_found if the content is not registred. *)
 val update_content : Nosql_store.id -> ?title: string -> ?summary: string ->
   ?tags_uri: uri list -> unit -> unit Lwt.t
@@ -160,9 +163,9 @@ val get_tags_from_content: uri -> tag list Lwt.t
 val get_tags_from_content_link : uri -> tag list Lwt.t
 
 (** [insert_tags tag_type ?link_id ?content_uri subjects]
-    @param [link_id] and [content_uri] have to correspond with the tag_type,
-    @param [link_id] or [content_uri] can be setted to associate all new tags on,
-    return a list of existing + created tags_uri *)
+    @param link_id and content_uri have to correspond with the tag_type,
+    @param link_id or content_uri can be setted to associate all new tags on,
+    @return a list of existing + created tags_uri *)
 val insert_tags : tag_type -> ?link_id:link_id -> ?content_uri:uri ->
   string list -> uri list Lwt.t
 

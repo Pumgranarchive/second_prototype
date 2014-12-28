@@ -29,11 +29,11 @@ val is_nosql_id : string -> bool
 
 (** [get_detail content_id]
     @raise Not_found if no content exist with this id,
-    return (content_id, title, summary, body) *)
+    @return (content_id, title, summary, body) *)
 val get_detail: id -> (id * string * string * string) Lwt.t
 
 (** [insert_content title summary body]
-    return the id of the created content *)
+    @return the id of the created content *)
 val insert_content: string -> string -> string -> id Lwt.t
 
 (** [update_content content_id ?title ?summary ?body ()]

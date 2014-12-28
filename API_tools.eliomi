@@ -1,6 +1,7 @@
+{server{
+
 (**
-   {b API tools -
-      This module provides some tools to help API implementation}
+   {b API tools module provides some helpful tools for the API}
 *)
 
 
@@ -81,6 +82,7 @@ val detail_ret_name: string
 
 (** {6 Cast tools } *)
 
+(** Transform an ocsigen string stream into json *)
 val json_of_ocsigen_string_stream:
   ((string * string) * (string * string) list) option->
   string Ocsigen_stream.t option ->
@@ -124,3 +126,5 @@ val bad_request: ?error_value:int -> string -> string Lwt.t
     call the [fun], catch the exception and write it in the returned string *)
 val manage_bad_request: (unit -> (string * string) Lwt.t) ->
   (string * string) Lwt.t
+
+}}
