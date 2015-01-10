@@ -154,12 +154,16 @@ body, html {
   padding-left: 10px;
 }
 
-
-
-.content_current_linked_mainlogo {
+#bottom_right_logo {
   background-image: url('../images/LOGO_Pumgrana.png');
   background-repeat: no-repeat;
   background-position: bottom right;
+  bottom: 3px;
+  right: 3px;
+  position: fixed;
+}
+
+.content_current_linked_mainlogo {
   height: 100%;
   background-size: 150px;
 }
@@ -172,7 +176,13 @@ body, html {
   width: 430px;
   padding-left: 20px;
   background: #f3f3f3 url("../images/link_bar_fade.png") repeat-y 0px top;
-  overflow: scroll;
+  overflow-y: auto;
+}
+
+
+.content_current_linked_main_list_elem_url {
+  color: #fa4b4e;
+  font-weight: bold;
 }
 
 .content_current_linked_main_list {
@@ -187,7 +197,7 @@ body, html {
   -moz-border-radius: 6px;
   border-radius: 6px;
   width: 356px;
-  max-height: 98px;
+  max-height: 85px;
   overflow: hidden;
   padding-left: 10px;
   -webkit-transition: all .1s ease-in;
@@ -243,7 +253,22 @@ body, html {
 
 .content_main_list_elem p,
 .content_current_linked_main_list_elem p {
-  margin-top: -6px;
+  margin-top: -14px;
+}
+
+.content_current a:hover {
+  text-decoration: underline;
+}
+
+.content_current img {
+  margin: 10px;
+  float: right;
+}
+
+
+.content_current a {
+  text-decoration: inherit;
+  color: #0855ff;
 }
 
 .content_current h3 {
@@ -274,7 +299,6 @@ body, html {
   background-position: 4px center;
   background-size: 24px;
 }
-
 
 .content_current_linked_mainlogo input {
   margin-left: 19px;

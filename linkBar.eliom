@@ -54,10 +54,10 @@ let make_links content_uri =
 
 let make content_uri =
   (* let link_sub_arrow = make_img "link_sub_arrow" "Icons_web-links_red.png" in *)
-  let link_arrow = make_img "link_arrow" "linked_content_arrow.png" in
+  (* let link_arrow = make_img "link_arrow" "linked_content_arrow.png" in *)
   lwt div_links, links = make_links content_uri in
   let search_input = make_search_input content_uri div_links in
-  let contents = [link_arrow; search_input; links] in
+  let contents = [(*link_arrow; *) search_input; links] in
   let clinked = div ~a:[a_class["content_current_linked_mainlogo"]] contents in
   let html = div ~a:[a_class["content_current_linked"]] [clinked] in
   Lwt.return html
