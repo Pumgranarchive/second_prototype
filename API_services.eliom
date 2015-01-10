@@ -398,7 +398,8 @@ let _ =
   Eliom_registration.String.register
     ~service:get_links_from_content
     (fun content_uri () ->
-      return_of_json (API_core.get_links_from_content content_uri))
+      let content_uri_dcd = Rdf_store.uri_decode content_uri in
+      return_of_json (API_core.get_links_from_content content_uri_dcd))
 
 
 (* Get_links_from_content_tags *)
