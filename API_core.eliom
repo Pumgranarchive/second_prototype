@@ -185,7 +185,7 @@ let research_contents filter research =
       Rdf_store.compare_uri uri1 uri2 = 0
     in
     let merged = List.merge compare results results' in
-    let limited = List.limit 10 merged in
+    let limited = List.limit 20 merged in
     let json = List.map content_assoc limited in
     Lwt.return (`List json)
   in
@@ -442,12 +442,26 @@ let get_links_from_research content_uri research =
       Rdf_store.compare_uri uri1 uri2 = 0
     in
     let merged = List.merge compare results results' in
-    let limited = List.limit 10 merged in
+    let limited = List.limit 20 merged in
     let json = List.map build_assoc limited in
 
     Lwt.return (`List json)
   in
   API_tools.check_return ~param_name:API_tools.links_ret_name aux
+
+let click_onlink link_id =
+  let aux () =
+    lwt () = Nosql_store.click_onlink link_id in
+    Lwt.return `Null
+  in
+  API_tools.check_return aux
+
+let back_button link_id =
+  let aux () =
+    lwt () = Nosql_store.back_button link_id in
+    Lwt.return `Null
+  in
+  API_tools.check_return aux
 
 let internal_insert_links data =
   let aux () =

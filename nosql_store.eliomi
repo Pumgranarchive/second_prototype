@@ -45,4 +45,13 @@ val update_content: id -> ?title:string -> ?summary:string ->
 (** [delete_contents content_ids]  *)
 val delete_contents: id list -> unit Lwt.t
 
+(** [click_onlink link_id]
+    Increment the user's mark of the given link
+*)
+val click_onlink : Ptype.link_id -> unit Lwt.t
+
+(** [back_button link_id]
+    Decrement the user's mark of the given link *)
+val back_button : Ptype.link_id -> unit Lwt.t
+
 }}

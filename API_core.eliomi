@@ -84,6 +84,15 @@ val get_links_from_content_tags: string -> string list option ->
 val get_links_from_research: string -> string ->
   Yojson.Basic.json Lwt.t
 
+(** [click_onlink link_id]
+    Increment the user's mark of the given link
+*)
+val click_onlink : Ptype.link_id -> Yojson.Basic.json Lwt.t
+
+(** [back_button link_id]
+    Decrement the user's mark of the given link *)
+val back_button : Ptype.link_id -> Yojson.Basic.json Lwt.t
+
 (** [insert_links (origin_uri, target_uri, tags_uri) list]  *)
 val insert_links: (string * string * string list) list ->
   Yojson.Basic.json Lwt.t
