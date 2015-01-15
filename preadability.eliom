@@ -3,6 +3,7 @@
 *******************************************************************************)
 module Yojson = Yojson.Basic
 
+open Yojson
 open Yojson.Util
 open Utils
 
@@ -35,10 +36,17 @@ let data_from_uri uri =
       try_lwt Readability_http.get_parser ruri
       with e -> (print_endline (Printexc.to_string e); raise e)
   in
-  let title = to_string (member "title" json) in
-  let summary = get_short_summary (to_string (member "excerpt" json)) in
-  lwt body = Tidy.xhtml_of_html (to_string (member "content" json)) in
-  Lwt.return (uri, title, summary, body, true)
+  try
+    let title = to_string (member "title" json) in
+    let summary = get_short_summary (to_string (member "excerpt" json)) in
+    let content = to_string (member "content" json) in
+    lwt body = Tidy.xhtml_of_html content in
+    Lwt.return (uri, title, summary, body, true)
+  with e ->
+    (print_endline "\nReadability Json error";
+     print_endline (pretty_to_string json);
+     print_endline (Printexc.to_string e);
+     raise e)
 
 lwt cash = Pcash.make "Readability" data_from_uri
 
