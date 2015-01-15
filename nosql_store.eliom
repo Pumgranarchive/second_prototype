@@ -28,10 +28,18 @@ let title_field = "title"
 let summary_field = "summary"
 let body_field = "body"
 
+let mark_field = "mark"
+let link_id_field = "link_id"
+
+let link_marks_coll_name = "usermarks"
+
 (*** DB's collection *)
 
 let contents_coll = Mongo_lwt.create db_url db_port
   db_name contents_coll_name
+
+let link_marks_coll = Mongo_lwt.create db_url db_port
+  db_name link_marks_coll_name
 
 (*** Request format tools  *)
 
@@ -42,6 +50,11 @@ let content_format =
     (Bson.add_element title_field yes_value
        (Bson.add_element summary_field yes_value
           (Bson.add_element body_field yes_value Bson.empty)))
+
+let link_marks_format =
+  Bson.add_element id_field yes_value
+    (Bson.add_element mark_field yes_value
+      (Bson.add_element link_id_field yes_value Bson.empty))
 
 (******************************************************************************
 ********************************** Tools **************************************
@@ -212,3 +225,62 @@ let delete_contents content_ids =
   let bson_query = MongoQueryOp.or_op (List.map build_query content_ids) in
   lwt coll = contents_coll in
   Mongo_lwt.delete_all coll bson_query
+
+(******************************************************************************
+*********************************** Mark **************************************
+*******************************************************************************)
+
+let get_link_marks link_id =
+  let bson_link = Bson.create_string (Ptype.string_of_link_id link_id) in
+  let bson_query = Bson.add_element link_id_field bson_link Bson.empty in
+  lwt coll = link_marks_coll in
+  lwt results = Mongo_lwt.find_q_s_one coll bson_query link_marks_format in
+  let res = MongoReply.get_document_list results in
+  if List.length res < 1 then raise Not_found;
+  let json = yojson_of_bson (List.hd res) in
+  let link = to_string (member link_id_field json) in
+  let mark = to_string (member mark_field json) in
+  Lwt.return (link, mark)
+
+let insert_link_mark link_id mark =
+  let bson_link = Bson.create_string (Ptype.string_of_link_id link_id) in
+  let bson_mark = Bson.create_string (string_of_int mark) in
+  let link_mark = Bson.add_element link_id_field bson_link
+       (Bson.add_element mark_field bson_mark Bson.empty)
+  in
+  lwt coll = link_marks_coll in
+  lwt () = Mongo_lwt.insert coll [link_mark] in
+  Lwt.return ()
+
+let update_link_mark link_id mark =
+  let bson_link = Bson.create_string (Ptype.string_of_link_id link_id) in
+  lwt elem = get_link_marks link_id in
+  let bson_query = Bson.add_element link_id_field bson_link Bson.empty in
+  let bson_mark mark new_mark =
+    Bson.create_string (string_of_int ((int_of_string mark) + new_mark))
+  in
+  let add_mark (link, old_mark) = Bson.add_element link_id_field bson_link
+    (Bson.add_element mark_field (bson_mark old_mark mark) Bson.empty)
+  in
+  lwt coll = link_marks_coll in
+  Mongo_lwt.update_one coll (bson_query, (add_mark elem))
+
+let click_onlink link_id =
+  let bson_link = Bson.create_string (Ptype.string_of_link_id link_id) in
+  let bson_query = Bson.add_element id_field bson_link Bson.empty in
+  lwt coll = link_marks_coll in
+  lwt results = Mongo_lwt.find_q_s_one coll bson_query link_marks_format in
+  let res = MongoReply.get_document_list results in
+  if List.length res < 1
+  then insert_link_mark link_id 1
+  else update_link_mark link_id 1
+
+let back_button link_id =
+  let bson_link = Bson.create_string (Ptype.string_of_link_id link_id) in
+  let bson_query = Bson.add_element id_field bson_link Bson.empty in
+  lwt coll = link_marks_coll in
+  lwt results = Mongo_lwt.find_q_s_one coll bson_query link_marks_format in
+  let res = MongoReply.get_document_list results in
+  if List.length res < 1
+  then insert_link_mark link_id (-2)
+  else update_link_mark link_id (-2)

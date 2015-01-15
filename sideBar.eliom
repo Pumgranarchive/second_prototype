@@ -72,7 +72,7 @@ let action atype =
   in
   let fill = D.div ~a:[a_class["side_button_link"]] [] in
   let link = match atype with
-    | Ahome    -> a ~service:GUI_services.contents [fill] None
+    | Ahome    -> a ~service:GUI_services.home [fill] ()
     | Aplus ac -> AddContent.switch_onclick ac fill; fill
     | _        -> fill
   in

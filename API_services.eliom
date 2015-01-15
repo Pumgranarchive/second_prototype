@@ -434,6 +434,40 @@ let _ =
       let uri_dcd = Rdf_store.uri_decode content_uri in
       return_of_json (API_core.get_links_from_research uri_dcd research))
 
+(* Click on Link *)
+let click_onlink =
+  Eliom_service.Http.service
+    ~path:["api"; "link"; "click"]
+    ~get_params:Eliom_parameter.(suffix (string "link_id")) ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:click_onlink
+    (fun str_link_id () ->
+      let aux () =
+        let link_id_dcd = Rdf_store.uri_decode str_link_id in
+        let link_id = Ptype.link_id_of_string link_id_dcd in
+        return_of_json (API_core.click_onlink link_id)
+      in
+      API_tools.manage_bad_request aux)
+
+(* Back button *)
+let back_button =
+  Eliom_service.Http.service
+    ~path:["api"; "link"; "back_button"]
+    ~get_params:Eliom_parameter.(suffix (string "link_id")) ()
+
+let _ =
+  Eliom_registration.String.register
+    ~service:back_button
+    (fun str_link_id () ->
+      let aux () =
+        let link_id_dcd = Rdf_store.uri_decode str_link_id in
+        let link_id = Ptype.link_id_of_string link_id_dcd in
+        return_of_json (API_core.back_button link_id)
+      in
+      API_tools.manage_bad_request aux)
+
 (* Insert links *)
 let fallback_insert_links =
   empty_fallback ["api"; "link"; "insert"] "All parameters are mandatory"
