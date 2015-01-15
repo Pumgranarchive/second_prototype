@@ -285,6 +285,30 @@ body, html {
   overflow-y: auto;
 }
 
+.middle_search_div {
+  margin-left: auto;
+  margin-right: auto;
+  width: 800px;
+}
+
+.middle_search_logo {
+  background-image: url('../images/logo.png');
+  background-repeat: no-repeat;
+  background-position: center 231px;
+  background-size: 443px;
+  height: 400px;
+}
+
+.middle_search {
+  margin: auto;
+  width: 800px;
+  height: 75px;
+  padding-left: 14px;
+  font-family: "PT Sans";
+  font-size: 17px;
+  src: url('../font/PTS55F.ttf');
+}
+
 .content_main_list a,
 .content_current_linked a {
   color: inherit;

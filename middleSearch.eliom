@@ -37,7 +37,8 @@ let redirect input =
 }}
 
 let make_search_input div_tags =
-    let search_input = D.raw_input ~input_type:`Text ~name:"research" () in
+    let search_input = D.raw_input ~a:[a_class["middle_search"] ;
+    a_placeholder "This is not really like a common search engine ;-)"] ~input_type:`Text ~name:"research" () in
     let () = ignore {unit{ refresh %search_input %div_tags }} in
     let () = ignore {unit{ redirect %search_input }} in
     search_input
@@ -48,5 +49,6 @@ let make_tags () =
 let make () =
   let tags = make_tags () in
   let search_input = make_search_input tags  in
-  let html = div [search_input; tags] in
+  let middlelogo = div ~a:[a_class["middle_search_logo"]] [] in
+  let html =  div ~a:[a_class["middle_search_div"]] [middlelogo; search_input; tags] in
   Lwt.return html
