@@ -134,10 +134,12 @@ struct
     aux [] tags
 
   (** Build tags ul list *)
-  let build_ul ?(active_click=false) tags =
+  let build_ul ?(active_click=false) ?(home=false) tags =
+    let prefix = if home then "home" else "side" in
+    let div_class = prefix ^ "_taglist" in
+    let ul_class = div_class ^ "_list" in
     let lis = build_li ~active_click tags in
-    div ~a:[a_class["side_taglist"]]
-      [ul ~a:[a_class["side_taglist_list"]] lis]
+    div ~a:[a_class[div_class]] [ul ~a:[a_class[ul_class]] lis]
 
   (** Build add tag html *)
   let build_add () =
