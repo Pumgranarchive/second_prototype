@@ -19,9 +19,10 @@ open GUI_tools
 open Utils.Client
 
 let refresh input div_tag =
+  let home = true in
   let active_click = true in
   let make_request () = Http.tags_from_research (get_research input) in
-  let elm_of_result tags = [div [Tag.build_ul ~active_click tags]] in
+  let elm_of_result tags = [div [Tag.build_ul ~active_click ~home tags]] in
   refresh_list ~make_request ~elm_of_result To_dom.of_div input div_tag
 
 let redirect input =
