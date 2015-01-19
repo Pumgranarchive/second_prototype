@@ -10,6 +10,13 @@ let home =
     ~get_params:Eliom_parameter.unit
     ()
 
+(* 404 sample service *)
+let s404 =
+  Eliom_service.App.service
+    ~path:["404"]
+    ~get_params:Eliom_parameter.unit
+    ()
+
 (* Contents list service *)
 let contents =
   Eliom_service.Http.service

@@ -33,12 +33,17 @@ let launcher func get_process post_process get_params post_params =
   with e ->
     let err_msg = Printexc.to_string e in
     let () = print_endline err_msg in
-    GUI_html.empty_html ~msg:"404" ()
+    GUI_html.error_404 () ()
 
 let _ =
   Pumgrana.App.register
     ~service:GUI_services.home
     (launcher GUI_html.home identity identity)
+
+let _ =
+  Pumgrana.App.register
+    ~service:GUI_services.s404
+    (launcher GUI_html.error_404 identity identity)
 
 let _ =
   Pumgrana.App.register
