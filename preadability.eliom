@@ -7,7 +7,7 @@ open Yojson
 open Yojson.Util
 open Utils
 
-exception Readability of string
+exception PReadability of string
 
 let get_token () =
   let ic = open_in "token" in
@@ -31,26 +31,9 @@ let get_short_summary str =
   then (String.sub str 0 200) ^ "..."
   else  str
 
-let elog_file = "readability.error"
-
-let output_line oc line =
-  let line = line ^ "\n" in
-  output oc line 0 (String.length line)
-
-let error str_uri exc detail =
-  let etitle = "Error on " ^ str_uri in
-  let oc = open_out_gen
-    [Open_wronly; Open_creat; Open_append; Open_text]
-    0o666
-    elog_file
-  in
-  output_line oc "";
-  output_line oc etitle;
-  output_line oc (Printexc.to_string exc);
-  if (String.length detail > 0) then output_line oc detail;
-  output_line oc "";
-  close_out oc;
-  raise (Readability etitle)
+let error suri exc detail =
+  let title = Log.log "readability.error" suri exc detail in
+  raise (PReadability title)
 
 let data_from_uri uri =
   let str_uri = Rdf_store.string_of_uri uri in
