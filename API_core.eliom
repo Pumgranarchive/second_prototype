@@ -180,7 +180,7 @@ let research_contents filter research =
     (* Rdf research *)
     let length = deep_cout research in
     lwt results =
-        if length > 1
+        if length > 2
         then on_both Rdf_store.research_contents research
         else Lwt.return []
     in
@@ -305,7 +305,7 @@ let get_tags_from_research research =
   let aux () =
     let research = cut_research research in
     let length = deep_cout research in
-    if length <= 1 then Lwt.return `Null else
+    if length <= 2 then Lwt.return `Null else
       lwt tags = Rdf_store.get_tags_from_research research in
       let json = `List (List.map tag_format tags) in
       Lwt.return json
@@ -444,7 +444,7 @@ let get_links_from_research content_uri research =
     (* Rdf research on tags *)
     let length = deep_cout research in
     lwt results =
-        if length > 1
+        if length > 2
         then on_both Rdf_store.links_from_research content_uri research
         else Lwt.return []
     in
