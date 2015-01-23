@@ -39,6 +39,9 @@ let cut_research str =
   let regex = Str.regexp "[ \t]+" in
   Str.split regex str
 
+let deep_cout str_list =
+  List.fold_left (fun c s -> (String.length s) + c) 0 str_list
+
 (*
 ** Content
 *)
@@ -175,7 +178,12 @@ let research_contents filter research =
     let regexps = Str.regexps research in
 
     (* Rdf research *)
-    lwt results = on_both Rdf_store.research_contents research in
+    let length = deep_cout research in
+    lwt results =
+        if length > 1
+        then on_both Rdf_store.research_contents research
+        else Lwt.return []
+    in
 
     (* title / summary research *)
     lwt results' = on_both Rdf_store.get_triple_contents [] in
@@ -296,9 +304,11 @@ let get_tags_by_type type_name =
 let get_tags_from_research research =
   let aux () =
     let research = cut_research research in
-    lwt tags = Rdf_store.get_tags_from_research research in
-    let json = `List (List.map tag_format tags) in
-    Lwt.return json
+    let length = deep_cout research in
+    if length <= 1 then Lwt.return `Null else
+      lwt tags = Rdf_store.get_tags_from_research research in
+      let json = `List (List.map tag_format tags) in
+      Lwt.return json
   in
   API_tools.check_return ~param_name:API_tools.tags_ret_name aux
 
@@ -431,8 +441,13 @@ let get_links_from_research content_uri research =
     let regexps = Str.regexps research in
     let content_uri = Rdf_store.uri_of_string content_uri in
 
-    (* Rdf research *)
-    lwt results = on_both Rdf_store.links_from_research content_uri research in
+    (* Rdf research on tags *)
+    let length = deep_cout research in
+    lwt results =
+        if length > 1
+        then on_both Rdf_store.links_from_research content_uri research
+        else Lwt.return []
+    in
 
     (* title / summary research *)
     lwt results' = on_both Rdf_store.links_from_content_tags content_uri [] in
