@@ -172,6 +172,7 @@ let find regexps (uri, title, summary) =
   Str.exists regexps title || Str.exists regexps summary
 
 let research_contents filter research =
+  let compressed_search = Str.global_replace (Str.regexp " ") "" research in
   let aux () =
     let () = content_filter filter in
     let research = cut_research research in
@@ -197,7 +198,9 @@ let research_contents filter research =
     let json = List.map content_assoc limited in
     Lwt.return (`List json)
   in
-  API_tools.check_return ~param_name:API_tools.contents_ret_name aux
+  if (String.length compressed_search == 0)
+  then get_contents filter None
+  else API_tools.check_return ~param_name:API_tools.contents_ret_name aux
 
 (*** Setters  *)
 
@@ -436,6 +439,7 @@ let find regexps (link_id, uri, title, summary) =
   Str.exists regexps title || Str.exists regexps summary
 
 let get_links_from_research content_uri research =
+  let compressed_search = Str.global_replace (Str.regexp " ") "" research in
   let aux () =
     let research = cut_research research in
     let regexps = Str.regexps research in
@@ -462,7 +466,9 @@ let get_links_from_research content_uri research =
 
     Lwt.return (`List json)
   in
-  API_tools.check_return ~param_name:API_tools.links_ret_name aux
+  if (String.length compressed_search == 0)
+  then get_links_from_content content_uri
+  else API_tools.check_return ~param_name:API_tools.links_ret_name aux
 
 let click_onlink link_id =
   let aux () =
