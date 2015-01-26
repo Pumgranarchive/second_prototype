@@ -49,6 +49,10 @@ struct
     in
     List.fold_left add l1 l2
 
+  (** Add at the end  *)
+  let (@@) list elem =
+    list@[elem]
+
 end
 
 module Lwt_list =

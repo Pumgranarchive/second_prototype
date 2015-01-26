@@ -1,5 +1,5 @@
 type 'a listenner = (Rdf_store.uri -> 'a Lwt.t)
-type 'a t = (float * 'a) Ocsipersist.table * 'a listenner
+type 'a t = (float * 'a) Ocsipersist.table * 'a listenner * (float * string) list ref
 
 (******************************************************************************
 ********************************** Utils **************************************
@@ -13,21 +13,45 @@ let life_time = 60. *. 60. *. 24. *. 7. *. 4.
 (** Return now + life time  *)
 let calc_deadline () = (Unix.time ()) +. life_time
 
-(** Pull the first value of the table  *)
-let pull table =
-  let action k v is_removed =
-    if is_removed then Lwt.return true else
-      lwt () = Ocsipersist.remove table k in
-      Lwt.return true
-  in
-  lwt _ = Ocsipersist.fold_table action table false in
-  Lwt.return ()
+module History =
+struct
+
+  (** Make history from table  *)
+  let make table =
+    let now = Unix.time () in
+    let make key value history =
+      Lwt.return ((now, key)::history)
+    in
+    lwt history = Ocsipersist.fold_table make table [] in
+    Lwt.return (ref history)
+
+  (** Update the access time on the given key  *)
+  let access table history key =
+    let open Utils.List in
+    let now = Unix.time () in
+    let remove_duplicate k new_history (time, key) =
+      if (String.compare k key) == 0
+      then new_history
+      else new_history@@(time, key)
+    in
+    let cleaned_history = List.fold_left (remove_duplicate key) [] !history in
+    history := cleaned_history@@(now, key);
+    Lwt.return ()
+
+  (** Pull the oldest access key to the table *)
+  let pull table history =
+    let (time, oldest) = List.hd !history in
+    Lwt.async (fun () -> Ocsipersist.remove table oldest);
+    history := List.tl !history;
+    Lwt.return ()
+
+end
 
 (** Limit the table size  *)
-let limit table =
+let limit table history =
   lwt length = Ocsipersist.length table in
   if length > max_length
-  then pull table
+  then History.pull table history
   else Lwt.return ()
 
 (** Refresh data of the given key *)
@@ -80,18 +104,21 @@ let assign_listenner table sublistenner =
 let make name sublistenner =
   let table = Ocsipersist.open_table name  in
   lwt () = assign_listenner table sublistenner in
-  Lwt.return (table, sublistenner)
+  lwt history = History.make table in
+  Lwt.return (table, sublistenner, history)
 
-let add (table, sublistenner) key data =
+let add (table, sublistenner, history) key data =
   let str_key = Rdf_store.string_of_uri key in
   let deadline = new_deadline table sublistenner str_key in
   lwt () = Ocsipersist.add table str_key (deadline, data) in
-  lwt () = limit table in
+  lwt () = History.access table history str_key in
+  lwt () = limit table history in
   Lwt.return ()
 
-let get (table, sublistenner) key =
+let get (table, sublistenner, history) key =
   let str_key = Rdf_store.string_of_uri key in
   lwt _, data = Ocsipersist.find table str_key in
+  lwt () = History.access table history str_key in
   Lwt.return data
 
 let exists pcash key =
