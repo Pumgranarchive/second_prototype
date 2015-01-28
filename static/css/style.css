@@ -217,7 +217,6 @@ body, html {
 }
 
 #content {
-  overflow-y: scroll;
   height: 100%;
   font-size: 13px;
   color: #323232;
@@ -350,7 +349,7 @@ body, html {
 
 .content_current {
   max-height: 100vh;
-  width: calc(100% - 450px);
+  width: calc(100% - 435px);
   float: left;
   background-color: #f9f9f9;
   overflow-y: auto;
