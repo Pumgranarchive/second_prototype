@@ -60,6 +60,31 @@ body, html {
   margin-bottom: -16px;
 }
 
+.button404 a div {
+  text-decoration: none;
+  color: white;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.button404 a {
+  text-decoration: none;
+  color: white;
+  margin: auto;
+  background-color: #fa4b4e;
+  -webkit-border-radius: 3px;
+  -moz-border-radius: 3px;
+  border-radius: 3px;
+  float: left;
+  padding: 5px 10px;
+  margin: 3px;
+  font-size: 17px;
+}
+
+.button404 {
+  width: 100vh;
+}
+
 .middle_404 {
   margin-left: auto;
   margin-right: auto;
@@ -349,10 +374,10 @@ body, html {
 
 .content_current {
   max-height: 100vh;
-  width: calc(100% - 435px);
+  width: calc(100% - 450px);
   float: left;
   background-color: #f9f9f9;
-  overflow-y: auto;
+  overflow: auto;
 }
 
 .middle_search_div {
