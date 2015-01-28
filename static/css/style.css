@@ -177,6 +177,7 @@ body, html {
 }
 
 #content {
+  overflow-y: scroll;
   height: 100%;
   font-size: 13px;
   color: #323232;
@@ -249,8 +250,9 @@ body, html {
 
 .content_main_list {
   padding-top: 21px;
-  width: 556px;
+  width: 596px;
   padding-bottom: 21px;
+  max-height: 100vh;
 }
 
 .content_main_list_elem:hover {
