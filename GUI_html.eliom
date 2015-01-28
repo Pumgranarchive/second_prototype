@@ -40,9 +40,13 @@ end
 (** Display the 404 error as html service *)
 let error_404 () () =
   let main_logo = MainLogo.make () in
-  let msg = Msg.make [pcdata "404"; br ();
-                      pcdata "Sorry an error occured"; br ();
-                      pcdata "Try to refresh the page in few seconds"]
+  let msg = Msg.make [div ~a:[a_class["middle_404"]] [
+  div ~a:[a_class["container404"]] [
+  div ~a:[a_class["smiley404"]] [pcdata ": /"];
+  div ~a:[a_class["sep404"]] [];
+  p ~a:[a_class["code404"]] [pcdata "404!"];
+  p ~a:[a_class["text404"]]
+  [pcdata "Sorry, this page does not exist anymore :("]]]]
   in
   let button = HomeButton.make () in
   let container = Container.make [msg; button; main_logo] in

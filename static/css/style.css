@@ -17,6 +17,8 @@ body, html {
   width: 100%;
   min-height: 100%;
   margin: 0 auto;
+  overflow-y: scroll;
+  max-height: 100vh;
 }
 
 #sidebar {
@@ -26,6 +28,43 @@ body, html {
   height: 100%;
   float: left;
   background: #f3f3f3 url("../images/side_bar_fade.png") repeat-y 84px top;
+}
+
+.smiley404 {
+  font-family: "PT Sans";
+  font-size: 144px;
+  color: #fa4b5e;
+}
+
+.container404 {
+  padding-top: 184px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+
+.sep404 {
+  margin-top: 30px;
+  margin-bottom: 30px;
+  border-top: 2px solid #d8d9da;
+}
+
+.text404 {
+  color: #767676;
+  font-size: 17px;
+}
+
+.code404 {
+  color: #767676;
+  font-size: 52px;
+  margin-bottom: -16px;
+}
+
+.middle_404 {
+  margin-left: auto;
+  margin-right: auto;
+  width: 560px;
+  padding-bottom: 70px;
 }
 
 .link_sub_arrow {
@@ -321,6 +360,7 @@ body, html {
   margin-left: auto;
   margin-right: auto;
   width: 800px;
+  padding-bottom: 70px;
 }
 
 .middle_search_logo {
