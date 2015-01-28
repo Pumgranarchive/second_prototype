@@ -7,6 +7,12 @@ open Yojson
 open Yojson.Util
 open Utils
 
+exception Preadability of string
+
+(******************************************************************************
+********************************** Utils **************************************
+*******************************************************************************)
+
 let get_token () =
   let ic = open_in "token" in
   try
@@ -19,34 +25,30 @@ let get_token () =
 
 let () = Readability_http.set_token (get_token ())
 
-(******************************************************************************
-********************************** Utils **************************************
-*******************************************************************************)
-
 let get_short_summary str =
   let length = String.length str in
   if length > 200
   then (String.sub str 0 200) ^ "..."
   else  str
 
+let log suri exc detail =
+  let title = Log.log "readability.error" suri exc detail in
+  raise (Preadability title)
+
 let data_from_uri uri =
   let str_uri = Rdf_store.string_of_uri uri in
   let ruri = Rdf_uri.uri str_uri in
   lwt json =
       try_lwt Readability_http.get_parser ruri
-      with e -> (print_endline (Printexc.to_string e); raise e)
+      with exc -> log str_uri exc ""
   in
-  try
+  try_lwt
     let title = to_string (member "title" json) in
     let summary = get_short_summary (to_string (member "excerpt" json)) in
     let content = to_string (member "content" json) in
     lwt body = Tidy.xhtml_of_html content in
     Lwt.return (uri, title, summary, body, true)
-  with e ->
-    (print_endline "\nReadability Json error";
-     print_endline (pretty_to_string json);
-     print_endline (Printexc.to_string e);
-     raise e)
+  with exc -> log str_uri exc (pretty_to_string json)
 
 lwt cash = Pcash.make "Readability" data_from_uri
 

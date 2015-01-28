@@ -15,15 +15,38 @@ module Yojson = Yojson.Basic
 
 }}
 
-let empty_html ?msg () =
-  let body_list = match msg with
-    | Some s    -> [Lwt.return (pcdata s)]
-    | None      -> []
-  in
-  GUI_tools.make_html body_list
+(******************************************************************************
+********************************* Modules *************************************
+*******************************************************************************)
 
-let internal_error_html () =
-  empty_html ~msg:"Internal Error" ()
+module Msg =
+struct
+  let make m = Lwt.return (div m)
+end
+
+module HomeButton =
+struct
+  let make () =
+    let text = "Back to the Pumgrana Home" in
+    let button = a ~service:GUI_services.home [div [pcdata text]] () in
+    let wrapper = div [button] in
+    Lwt.return wrapper
+end
+
+(******************************************************************************
+********************************** Pages **************************************
+*******************************************************************************)
+
+(** Display the 404 error as html service *)
+let error_404 () () =
+  let main_logo = MainLogo.make () in
+  let msg = Msg.make [pcdata "404"; br ();
+                      pcdata "Sorry an error occured"; br ();
+                      pcdata "Try to refresh the page in few seconds"]
+  in
+  let button = HomeButton.make () in
+  let container = Container.make [msg; button; main_logo] in
+  GUI_tools.make_html [container]
 
 (** Display the home html service *)
 let home () () =

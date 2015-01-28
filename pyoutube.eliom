@@ -1,5 +1,11 @@
 open Utils
 
+exception Pyoutube of string
+
+(******************************************************************************
+********************************** Utils **************************************
+*******************************************************************************)
+
 let is_youtube_uri uri =
   let str_uri = Rdf_store.string_of_uri uri in
   try ignore (Youtube_http.get_video_id_from_url str_uri); true
@@ -12,14 +18,25 @@ let format (_, title, str_uri, summary, _) =
   let uri = Rdf_store.uri_of_string str_uri in
   uri, title, summary
 
+let log uri exc detail =
+  let suri = Rdf_store.string_of_uri uri in
+  let title = Log.log "youtube.error" suri exc detail in
+  raise (Pyoutube title)
+
 let listenner uri =
-  let id = id_of_uri uri in
-  lwt videos = Youtube_http.get_videos_from_ids [id] in
-  let new_data_list = List.map format videos in
-  let new_data = List.hd new_data_list in
-  Lwt.return new_data
+  try_lwt
+    let id = id_of_uri uri in
+    lwt videos = Youtube_http.get_videos_from_ids [id] in
+    let new_data_list = List.map format videos in
+    let new_data = List.hd new_data_list in
+    Lwt.return new_data
+  with exc -> log uri exc ""
 
 lwt cash = Pcash.make "Youtube" listenner
+
+(******************************************************************************
+******************************** Funtions *************************************
+*******************************************************************************)
 
 let get_youtube_triple uris =
   lwt know_uris = Lwt_list.filter_p (Pcash.exists cash) uris in

@@ -73,8 +73,9 @@ body, html {
   -moz-border-radius: 4px;
   border-radius: 4px;
   float: left;
-  padding: 4px;
-  margin: 1px;
+  padding: 5px 10px;
+  margin: 3px;
+  font-size: 17px;
 }
 
 .middle_taglist_list li:hover {
@@ -337,7 +338,7 @@ body, html {
 
   margin: auto;
   width: 800px;
-  height: 75px;
+  height: 61px;
   padding-left: 14px;
   font-family: "PT Sans";
   font-size: 17px;
